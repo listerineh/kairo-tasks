@@ -133,8 +133,8 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                     const SizedBox(width: AppSpacing.spacing12),
                     Text(
                       _dueDate != null
-                          ? '${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}'
-                          : 'Set due date (optional)',
+                          ? _formatDateTime(_dueDate!)
+                          : 'Set due date & time (optional)',
                       style: context.textTheme.bodyMedium,
                     ),
                     const Spacer(),
@@ -166,15 +166,39 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
   }
 
   Future<void> _pickDueDate() async {
-    final picked = await showDatePicker(
+    final pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
+      initialDate: _dueDate ?? DateTime.now().add(const Duration(days: 1)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
-    if (picked != null) {
-      setState(() => _dueDate = picked);
-    }
+    if (pickedDate == null || !mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(
+        _dueDate ?? DateTime.now().add(const Duration(hours: 1)),
+      ),
+    );
+    if (!mounted) return;
+
+    final time = pickedTime ?? const TimeOfDay(hour: 23, minute: 59);
+    setState(() {
+      _dueDate = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        time.hour,
+        time.minute,
+      );
+    });
+  }
+
+  String _formatDateTime(DateTime dt) {
+    final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    return '${dt.day}/${dt.month}/${dt.year} $hour:$minute $period';
   }
 
   void _createTask() {

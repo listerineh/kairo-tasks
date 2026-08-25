@@ -28,13 +28,10 @@ class TaskCard extends StatelessWidget {
       key: ValueKey(task.id),
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
-          // Swipe right → toggle complete
           onToggleStatus();
         } else {
-          // Swipe left → delete
           onDismissed?.call();
         }
-        // Always return false - realtime stream handles list updates
         return false;
       },
       background: Container(
@@ -61,106 +58,130 @@ class TaskCard extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: colors.surfaceElevated,
             borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
             border: Border.all(color: colors.border, width: 0.5),
           ),
-          child: IntrinsicHeight(
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Priority indicator bar
-              Container(
-                width: 4,
-                decoration: BoxDecoration(
-                  color: _priorityColor(colors),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(AppSpacing.radiusMedium),
-                    bottomLeft: Radius.circular(AppSpacing.radiusMedium),
-                  ),
-                ),
-              ),
-              // Content
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.spacing16),
-                  child: Row(
-                    children: [
-                      // Task info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+              IntrinsicHeight(
+                child: Row(
+                  children: [
+                    // Priority indicator bar
+                    Container(
+                      width: 4,
+                      decoration: BoxDecoration(
+                        color: _priorityColor(colors),
+                        borderRadius: BorderRadius.only(
+                          topLeft:
+                              const Radius.circular(AppSpacing.radiusMedium),
+                          bottomLeft: task.dueDate == null
+                              ? const Radius.circular(AppSpacing.radiusMedium)
+                              : Radius.zero,
+                        ),
+                      ),
+                    ),
+                    // Content
+                    Expanded(
+                      child: Padding(
+                        padding:
+                            const EdgeInsets.all(AppSpacing.spacing16),
+                        child: Row(
                           children: [
-                            Text(
-                              task.title,
-                              style:
-                                  context.textTheme.titleSmall?.copyWith(
-                                decoration: isCompleted
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                                color: isCompleted
-                                    ? colors.textMuted
-                                    : colors.textPrimary,
+                            // Task info
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    task.title,
+                                    style: context.textTheme.titleSmall
+                                        ?.copyWith(
+                                      decoration: isCompleted
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                      color: isCompleted
+                                          ? colors.textMuted
+                                          : colors.textPrimary,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (task.description != null) ...[
+                                    const SizedBox(
+                                      height: AppSpacing.spacing4,
+                                    ),
+                                    Text(
+                                      task.description!,
+                                      style: context.textTheme.bodySmall
+                                          ?.copyWith(
+                                        color: isCompleted
+                                            ? colors.textMuted
+                                            : null,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                  if (task.dueDate != null &&
+                                      !isCompleted) ...[
+                                    const SizedBox(
+                                      height: AppSpacing.spacing8,
+                                    ),
+                                    _DueDateChip(
+                                      dueDate: task.dueDate!,
+                                      isOverdue: task.isOverdue,
+                                    ),
+                                  ],
+                                ],
                               ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                            if (task.description != null) ...[
-                              const SizedBox(height: AppSpacing.spacing4),
-                              Text(
-                                task.description!,
-                                style: context.textTheme.bodySmall?.copyWith(
+                            const SizedBox(width: AppSpacing.spacing12),
+                            // Status circle
+                            AnimatedContainer(
+                              duration:
+                                  const Duration(milliseconds: 200),
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isCompleted
+                                    ? colors.accent
+                                    : Colors.transparent,
+                                border: Border.all(
                                   color: isCompleted
-                                      ? colors.textMuted
-                                      : null,
+                                      ? colors.accent
+                                      : colors.border,
+                                  width: 2,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                            ],
-                            if (task.dueDate != null) ...[
-                              const SizedBox(height: AppSpacing.spacing8),
-                              _DueDateChip(
-                                dueDate: task.dueDate!,
-                                isOverdue: task.isOverdue,
-                              ),
-                            ],
+                              child: isCompleted
+                                  ? const Icon(
+                                      Icons.check,
+                                      size: 14,
+                                      color: Colors.white,
+                                    )
+                                  : null,
+                            ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: AppSpacing.spacing12),
-                      // Status circle (right side, visual only)
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isCompleted
-                              ? colors.accent
-                              : Colors.transparent,
-                          border: Border.all(
-                            color: isCompleted
-                                ? colors.accent
-                                : colors.border,
-                            width: 2,
-                          ),
-                        ),
-                        child: isCompleted
-                            ? const Icon(
-                                Icons.check,
-                                size: 14,
-                                color: Colors.white,
-                              )
-                            : null,
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
+              // Time progress bar
+              if (task.dueDate != null && !isCompleted)
+                _TimeProgressBar(
+                  createdAt: task.createdAt,
+                  dueDate: task.dueDate!,
+                ),
             ],
           ),
-        ),
         ),
       ),
     );
@@ -180,6 +201,56 @@ class TaskCard extends StatelessWidget {
   }
 }
 
+class _TimeProgressBar extends StatelessWidget {
+  const _TimeProgressBar({
+    required this.createdAt,
+    required this.dueDate,
+  });
+
+  final DateTime createdAt;
+  final DateTime dueDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final now = DateTime.now();
+
+    final totalDuration = dueDate.difference(createdAt).inMinutes;
+    final elapsed = now.difference(createdAt).inMinutes;
+
+    // Clamp progress between 0 and 1
+    final progress = totalDuration > 0
+        ? (elapsed / totalDuration).clamp(0.0, 1.0)
+        : 0.0;
+
+    // Red when less than 10% time remaining
+    final isUrgent = progress >= 0.9;
+    final isOverdue = now.isAfter(dueDate);
+
+    final barColor = isOverdue || isUrgent ? colors.urgent : colors.accent;
+
+    return Container(
+      height: 3,
+      width: double.infinity,
+      color: colors.surfaceSubtle,
+      child: FractionallySizedBox(
+        alignment: Alignment.centerLeft,
+        widthFactor: progress,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 500),
+          decoration: BoxDecoration(
+            color: barColor,
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(2),
+              bottomRight: Radius.circular(2),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _DueDateChip extends StatelessWidget {
   const _DueDateChip({
     required this.dueDate,
@@ -193,20 +264,37 @@ class _DueDateChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final now = DateTime.now();
-    final difference = dueDate.difference(now).inDays;
+    final difference = dueDate.difference(now);
 
     String label;
-    if (difference == 0) {
-      label = 'Today';
-    } else if (difference == 1) {
+    if (difference.isNegative) {
+      final overdue = -difference.inHours;
+      if (overdue < 1) {
+        label = '${-difference.inMinutes}m overdue';
+      } else if (overdue < 24) {
+        label = '${overdue}h overdue';
+      } else {
+        label = '${-difference.inDays}d overdue';
+      }
+    } else if (difference.inHours < 1) {
+      label = '${difference.inMinutes}m left';
+    } else if (difference.inHours < 24) {
+      label = '${difference.inHours}h left';
+    } else if (difference.inDays == 1) {
       label = 'Tomorrow';
-    } else if (difference < 0) {
-      label = '${-difference}d overdue';
-    } else if (difference < 7) {
-      label = 'In $difference days';
+    } else if (difference.inDays < 7) {
+      label = 'In ${difference.inDays} days';
     } else {
-      label =
-          '${dueDate.day}/${dueDate.month}/${dueDate.year}';
+      label = '${dueDate.day}/${dueDate.month}/${dueDate.year}';
+    }
+
+    // Show time if due within 24h
+    if (!difference.isNegative && difference.inHours < 24) {
+      final hour = dueDate.hour;
+      final minute = dueDate.minute.toString().padLeft(2, '0');
+      final period = hour >= 12 ? 'PM' : 'AM';
+      final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+      label += ' ($displayHour:$minute $period)';
     }
 
     return Row(

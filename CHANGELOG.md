@@ -9,6 +9,21 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.01.10 - Time progress bar & date+time picker (2026-08-25)
+
+### Added
+- Visual time progress bar at the bottom of each task card (shows elapsed time from creation to due date)
+- Bar turns red when less than 10% time remains or task is overdue
+- Date+time picker: selecting a due date now also prompts for time
+- Due date chip shows hours/minutes remaining when due within 24h
+- Overdue display shows hours/minutes granularity
+
+### Changed
+- Due date stored with time component (not just date)
+- DueDateChip shows "3h left", "45m left" for near-term tasks
+
+---
+
 ## V 01.01.09 - Task interactions & animations (2026-08-25)
 
 ### Changed
