@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/calendar/presentation/pages/calendar_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
 import '../router/shell_scaffold.dart';
@@ -45,8 +46,8 @@ class AppRouter {
           GoRoute(
             path: '/calendar',
             name: RouteNames.calendar,
-            pageBuilder: (context, state) => NoTransitionPage(
-              child: _placeholder('Calendar'),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: CalendarPage(),
             ),
           ),
           GoRoute(

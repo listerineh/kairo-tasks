@@ -9,6 +9,20 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.02.00 - Calendar views (2026-08-25)
+
+### Added
+- Calendar page with 3 views: Day, Week, Month (Google Calendar style)
+- Day view: vertical timeline (24h), tasks positioned by due time, current time red indicator
+- Week view: 7-column grid with hour rows, day headers with today highlight, task blocks by time
+- Month view: grid with task dots, tap day to drill into day view
+- View selector (Day/Week/Month) with animated toggle
+- Navigation arrows + "Today" quick jump
+- Tasks displayed from BLoC state with priority-based colors
+- Tapping a task in calendar toggles its completion status
+
+---
+
 ## V 01.01.11 - Timezone fix (2026-08-25)
 
 ### Fixed
