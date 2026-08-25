@@ -278,7 +278,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
         'priority': event.priority.name,
         'status': 'pending',
         if (event.dueDate != null)
-          'due_date': event.dueDate!.toIso8601String(),
+          'due_date': event.dueDate!.toUtc().toIso8601String(),
       });
       // Realtime stream will update the list automatically
     } catch (e) {
@@ -296,7 +296,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
         'description': event.description,
         if (event.priority != null) 'priority': event.priority!.name,
         if (event.dueDate != null)
-          'due_date': event.dueDate!.toIso8601String(),
+          'due_date': event.dueDate!.toUtc().toIso8601String(),
       }).eq('id', event.taskId);
     } catch (e) {
       emit(state.copyWith(errorMessage: 'Failed to edit task: $e'));
@@ -341,11 +341,11 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
       priority: _parsePriority(json['priority'] as String? ?? 'medium'),
       status: _parseStatus(json['status'] as String? ?? 'pending'),
       dueDate: json['due_date'] != null
-          ? DateTime.parse(json['due_date'] as String)
+          ? DateTime.parse(json['due_date'] as String).toLocal()
           : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
       updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
+          ? DateTime.parse(json['updated_at'] as String).toLocal()
           : null,
     );
   }

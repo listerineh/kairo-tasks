@@ -9,6 +9,15 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.01.11 - Timezone fix (2026-08-25)
+
+### Fixed
+- Due dates now correctly stored as UTC (`.toUtc().toIso8601String()`)
+- Dates read from Supabase converted to local time (`.toLocal()`)
+- Fixes issue where times appeared offset by the user's timezone (e.g. ECT/UTC-5)
+
+---
+
 ## V 01.01.10 - Time progress bar & date+time picker (2026-08-25)
 
 ### Added
