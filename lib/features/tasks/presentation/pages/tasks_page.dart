@@ -15,10 +15,7 @@ class TasksPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => TasksBloc()..add(const TasksLoadRequested()),
-      child: const _TasksView(),
-    );
+    return const _TasksView();
   }
 }
 
