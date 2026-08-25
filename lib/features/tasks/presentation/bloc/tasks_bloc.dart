@@ -73,12 +73,21 @@ class TasksState extends Equatable {
   final TasksFilter filter;
   final String? errorMessage;
 
+  static const _priorityOrder = {
+    TaskPriority.urgent: 0,
+    TaskPriority.high: 1,
+    TaskPriority.medium: 2,
+    TaskPriority.low: 3,
+  };
+
   List<TaskEntity> get filteredTasks {
+    List<TaskEntity> result;
     switch (filter) {
       case TasksFilter.all:
-        return tasks.where((t) => t.status != TaskStatus.completed).toList();
+        result =
+            tasks.where((t) => t.status != TaskStatus.completed).toList();
       case TasksFilter.urgent:
-        return tasks
+        result = tasks
             .where(
               (t) =>
                   t.priority == TaskPriority.urgent &&
@@ -86,7 +95,7 @@ class TasksState extends Equatable {
             )
             .toList();
       case TasksFilter.high:
-        return tasks
+        result = tasks
             .where(
               (t) =>
                   t.priority == TaskPriority.high &&
@@ -94,7 +103,7 @@ class TasksState extends Equatable {
             )
             .toList();
       case TasksFilter.medium:
-        return tasks
+        result = tasks
             .where(
               (t) =>
                   t.priority == TaskPriority.medium &&
@@ -102,7 +111,7 @@ class TasksState extends Equatable {
             )
             .toList();
       case TasksFilter.low:
-        return tasks
+        result = tasks
             .where(
               (t) =>
                   t.priority == TaskPriority.low &&
@@ -110,10 +119,14 @@ class TasksState extends Equatable {
             )
             .toList();
       case TasksFilter.completed:
-        return tasks
-            .where((t) => t.status == TaskStatus.completed)
-            .toList();
+        result =
+            tasks.where((t) => t.status == TaskStatus.completed).toList();
     }
+    result.sort(
+      (a, b) => (_priorityOrder[a.priority] ?? 2)
+          .compareTo(_priorityOrder[b.priority] ?? 2),
+    );
+    return result;
   }
 
   TasksState copyWith({
