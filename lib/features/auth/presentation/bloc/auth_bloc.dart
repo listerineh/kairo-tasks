@@ -190,10 +190,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       const webClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
       const iosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
 
+      // Generate nonce for token verification
+      final rawNonce = _generateNonce();
+      final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
       final googleSignIn = GoogleSignIn.instance;
       await googleSignIn.initialize(
         clientId: iosClientId.isNotEmpty ? iosClientId : null,
         serverClientId: webClientId.isNotEmpty ? webClientId : null,
+        nonce: hashedNonce,
       );
 
       final googleUser = await googleSignIn.authenticate();
@@ -212,6 +217,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final response = await _client.auth.signInWithIdToken(
         provider: OAuthProvider.google,
         idToken: idToken,
+        nonce: rawNonce,
       );
 
       emit(

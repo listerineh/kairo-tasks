@@ -9,6 +9,46 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.01.09 - Task interactions & animations (2026-08-25)
+
+### Changed
+- Swipe right to complete/uncomplete a task (replaces tap on circle)
+- Swipe left to delete a task
+- Status circle moved to right side of card (visual only, non-interactive)
+- Dismissible uses confirmDismiss pattern to avoid tree conflicts with realtime stream
+
+### Added
+- Tap on a task opens edit sheet (title, description, priority, due date)
+- Edit task persists changes to Supabase
+- TaskEditRequested event in TasksBloc
+- Animated task cards: fade + scale entrance animation
+- Completed tasks section below active tasks, ordered by most recently completed first
+
+---
+
+## V 01.01.08 - Profile page (2026-08-25)
+
+### Added
+- Profile page with user info (avatar, name, email, member since)
+- Google avatar displayed when signed in with Google
+- Settings tiles (Edit Profile, Appearance, Notifications placeholders)
+- About section with version and open source link
+- Sign out button with route guard back to login
+
+---
+
+## V 01.01.07 - iOS Google Sign-In config (2026-08-25)
+
+### Added
+- Reversed Google Client ID in Info.plist via xcconfig variable
+- Env.xcconfig for iOS-specific environment values (gitignored)
+- Nonce generation for Google Sign-In token verification
+
+### Changed
+- Login page shows only Google button (Apple deferred until paid developer account)
+
+---
+
 ## V 01.01.06 - Google & Apple OAuth (2026-08-25)
 
 ### Added

@@ -52,6 +52,7 @@ app.*.map.json
 .env.local
 .env.production
 !.env.example
+**/ios/Flutter/Env.xcconfig
 
 # Generated files
 *.g.dart

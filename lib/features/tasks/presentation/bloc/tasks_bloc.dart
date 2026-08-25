@@ -51,6 +51,25 @@ class TaskStatusToggled extends TasksEvent {
   List<Object?> get props => [taskId];
 }
 
+class TaskEditRequested extends TasksEvent {
+  const TaskEditRequested({
+    required this.taskId,
+    required this.title,
+    this.description,
+    this.priority,
+    this.dueDate,
+  });
+
+  final String taskId;
+  final String title;
+  final String? description;
+  final TaskPriority? priority;
+  final DateTime? dueDate;
+
+  @override
+  List<Object?> get props => [taskId, title, description, priority, dueDate];
+}
+
 class TaskDeleted extends TasksEvent {
   const TaskDeleted(this.taskId);
   final String taskId;
@@ -91,7 +110,8 @@ class TasksState extends Equatable {
     TaskPriority.low: 3,
   };
 
-  List<TaskEntity> get filteredTasks {
+  /// Active (non-completed) tasks for the current filter, sorted by priority.
+  List<TaskEntity> get activeTasks {
     List<TaskEntity> result;
     switch (filter) {
       case TasksFilter.all:
@@ -130,8 +150,7 @@ class TasksState extends Equatable {
             )
             .toList();
       case TasksFilter.completed:
-        result =
-            tasks.where((t) => t.status == TaskStatus.completed).toList();
+        return [];
     }
     result.sort(
       (a, b) => (_priorityOrder[a.priority] ?? 2)
@@ -139,6 +158,21 @@ class TasksState extends Equatable {
     );
     return result;
   }
+
+  /// Completed tasks, sorted by most recently completed first (updatedAt desc).
+  List<TaskEntity> get completedTasks {
+    final completed =
+        tasks.where((t) => t.status == TaskStatus.completed).toList()
+          ..sort((a, b) {
+            final aDate = a.updatedAt ?? a.createdAt;
+            final bDate = b.updatedAt ?? b.createdAt;
+            return bDate.compareTo(aDate);
+          });
+    return completed;
+  }
+
+  /// Legacy getter for backward compat - returns active tasks only.
+  List<TaskEntity> get filteredTasks => activeTasks;
 
   TasksState copyWith({
     List<TaskEntity>? tasks,
@@ -166,6 +200,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     on<TasksLoadRequested>(_onLoadRequested);
     on<TasksFilterChanged>(_onFilterChanged);
     on<TaskCreateRequested>(_onCreateRequested);
+    on<TaskEditRequested>(_onEditRequested);
     on<TaskStatusToggled>(_onStatusToggled);
     on<TaskDeleted>(_onDeleted);
     on<_TasksUpdatedFromStream>(_onStreamUpdate);
@@ -248,6 +283,23 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
       // Realtime stream will update the list automatically
     } catch (e) {
       emit(state.copyWith(errorMessage: 'Failed to create task: $e'));
+    }
+  }
+
+  Future<void> _onEditRequested(
+    TaskEditRequested event,
+    Emitter<TasksState> emit,
+  ) async {
+    try {
+      await _client.from('tasks').update({
+        'title': event.title,
+        'description': event.description,
+        if (event.priority != null) 'priority': event.priority!.name,
+        if (event.dueDate != null)
+          'due_date': event.dueDate!.toIso8601String(),
+      }).eq('id', event.taskId);
+    } catch (e) {
+      emit(state.copyWith(errorMessage: 'Failed to edit task: $e'));
     }
   }
 

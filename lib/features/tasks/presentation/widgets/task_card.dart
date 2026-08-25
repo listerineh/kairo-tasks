@@ -10,12 +10,14 @@ class TaskCard extends StatelessWidget {
     required this.task,
     required this.onToggleStatus,
     this.onDismissed,
+    this.onTap,
     super.key,
   });
 
   final TaskEntity task;
   final VoidCallback onToggleStatus;
   final VoidCallback? onDismissed;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -24,9 +26,30 @@ class TaskCard extends StatelessWidget {
 
     return Dismissible(
       key: ValueKey(task.id),
-      direction: DismissDirection.endToStart,
-      onDismissed: (_) => onDismissed?.call(),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          // Swipe right → toggle complete
+          onToggleStatus();
+        } else {
+          // Swipe left → delete
+          onDismissed?.call();
+        }
+        // Always return false - realtime stream handles list updates
+        return false;
+      },
       background: Container(
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: AppSpacing.spacing24),
+        decoration: BoxDecoration(
+          color: colors.accent.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+        ),
+        child: Icon(
+          isCompleted ? Icons.undo : Icons.check_circle_outline,
+          color: colors.accent,
+        ),
+      ),
+      secondaryBackground: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: AppSpacing.spacing24),
         decoration: BoxDecoration(
@@ -35,13 +58,15 @@ class TaskCard extends StatelessWidget {
         ),
         child: Icon(Icons.delete_outline, color: colors.urgent),
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: colors.surfaceElevated,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
-          border: Border.all(color: colors.border, width: 0.5),
-        ),
-        child: IntrinsicHeight(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors.surfaceElevated,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+            border: Border.all(color: colors.border, width: 0.5),
+          ),
+          child: IntrinsicHeight(
           child: Row(
             children: [
               // Priority indicator bar
@@ -61,35 +86,6 @@ class TaskCard extends StatelessWidget {
                   padding: const EdgeInsets.all(AppSpacing.spacing16),
                   child: Row(
                     children: [
-                      // Checkbox
-                      GestureDetector(
-                        onTap: onToggleStatus,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: AppSpacing.minTouchTarget - 12,
-                          height: AppSpacing.minTouchTarget - 12,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isCompleted
-                                ? colors.accent
-                                : Colors.transparent,
-                            border: Border.all(
-                              color: isCompleted
-                                  ? colors.accent
-                                  : colors.border,
-                              width: 2,
-                            ),
-                          ),
-                          child: isCompleted
-                              ? const Icon(
-                                  Icons.check,
-                                  size: 16,
-                                  color: Colors.white,
-                                )
-                              : null,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.spacing12),
                       // Task info
                       Expanded(
                         child: Column(
@@ -113,7 +109,11 @@ class TaskCard extends StatelessWidget {
                               const SizedBox(height: AppSpacing.spacing4),
                               Text(
                                 task.description!,
-                                style: context.textTheme.bodySmall,
+                                style: context.textTheme.bodySmall?.copyWith(
+                                  color: isCompleted
+                                      ? colors.textMuted
+                                      : null,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -128,12 +128,39 @@ class TaskCard extends StatelessWidget {
                           ],
                         ),
                       ),
+                      const SizedBox(width: AppSpacing.spacing12),
+                      // Status circle (right side, visual only)
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isCompleted
+                              ? colors.accent
+                              : Colors.transparent,
+                          border: Border.all(
+                            color: isCompleted
+                                ? colors.accent
+                                : colors.border,
+                            width: 2,
+                          ),
+                        ),
+                        child: isCompleted
+                            ? const Icon(
+                                Icons.check,
+                                size: 14,
+                                color: Colors.white,
+                              )
+                            : null,
+                      ),
                     ],
                   ),
                 ),
               ),
             ],
           ),
+        ),
         ),
       ),
     );

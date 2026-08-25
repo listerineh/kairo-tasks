@@ -159,29 +159,16 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: AppSpacing.spacing24),
 
-                // Social login buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => context
-                            .read<AuthBloc>()
-                            .add(const AuthGoogleSignInRequested()),
-                        icon: const Icon(Icons.g_mobiledata, size: 24),
-                        label: const Text('Google'),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.spacing12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => context
-                            .read<AuthBloc>()
-                            .add(const AuthAppleSignInRequested()),
-                        icon: const Icon(Icons.apple, size: 22),
-                        label: const Text('Apple'),
-                      ),
-                    ),
-                  ],
+                // Google sign-in button
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context
+                        .read<AuthBloc>()
+                        .add(const AuthGoogleSignInRequested()),
+                    icon: const Icon(Icons.g_mobiledata, size: 24),
+                    label: const Text('Continue with Google'),
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.spacing32),
 

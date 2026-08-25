@@ -3,8 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../domain/entities/task_entity.dart';
 import '../bloc/tasks_bloc.dart';
 import '../widgets/create_task_sheet.dart';
+import '../widgets/edit_task_sheet.dart';
 import '../widgets/task_card.dart';
 import '../widgets/task_filter_chips.dart';
 
@@ -70,9 +72,10 @@ class _TasksView extends StatelessWidget {
                   );
                 }
 
-                final tasks = state.filteredTasks;
+                final active = state.activeTasks;
+                final completed = state.completedTasks;
 
-                if (tasks.isEmpty) {
+                if (active.isEmpty && completed.isEmpty) {
                   return SliverFillRemaining(
                     child: _EmptyState(filter: state.filter),
                   );
@@ -83,12 +86,12 @@ class _TasksView extends StatelessWidget {
                     horizontal: AppSpacing.spacing24,
                   ),
                   sliver: SliverList.separated(
-                    itemCount: tasks.length,
+                    itemCount: active.length,
                     separatorBuilder: (_, __) =>
                         const SizedBox(height: AppSpacing.spacing12),
                     itemBuilder: (context, index) {
-                      final task = tasks[index];
-                      return TaskCard(
+                      final task = active[index];
+                      return _AnimatedTaskCard(
                         task: task,
                         onToggleStatus: () => context
                             .read<TasksBloc>()
@@ -96,8 +99,55 @@ class _TasksView extends StatelessWidget {
                         onDismissed: () => context
                             .read<TasksBloc>()
                             .add(TaskDeleted(task.id)),
+                        onTap: () =>
+                            _showEditTaskSheet(context, task),
                       );
                     },
+                  ),
+                );
+              },
+            ),
+            // Completed section
+            BlocBuilder<TasksBloc, TasksState>(
+              builder: (context, state) {
+                final completed = state.completedTasks;
+                if (completed.isEmpty) {
+                  return const SliverToBoxAdapter(child: SizedBox.shrink());
+                }
+
+                return SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.spacing24,
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      const SizedBox(height: AppSpacing.spacing24),
+                      Text(
+                        'Completed',
+                        style: context.textTheme.titleSmall?.copyWith(
+                          color: context.appColors.textMuted,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.spacing12),
+                      ...completed.map(
+                        (task) => Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: AppSpacing.spacing12,
+                          ),
+                          child: _AnimatedTaskCard(
+                            task: task,
+                            onToggleStatus: () => context
+                                .read<TasksBloc>()
+                                .add(TaskStatusToggled(task.id)),
+                            onDismissed: () => context
+                                .read<TasksBloc>()
+                                .add(TaskDeleted(task.id)),
+                            onTap: () =>
+                                _showEditTaskSheet(context, task),
+                          ),
+                        ),
+                      ),
+                    ]),
                   ),
                 );
               },
@@ -130,6 +180,80 @@ class _TasksView extends StatelessWidget {
       builder: (_) => BlocProvider.value(
         value: context.read<TasksBloc>(),
         child: const CreateTaskSheet(),
+      ),
+    );
+  }
+
+  void _showEditTaskSheet(BuildContext context, TaskEntity task) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => BlocProvider.value(
+        value: context.read<TasksBloc>(),
+        child: EditTaskSheet(task: task),
+      ),
+    );
+  }
+}
+
+class _AnimatedTaskCard extends StatefulWidget {
+  const _AnimatedTaskCard({
+    required this.task,
+    required this.onToggleStatus,
+    this.onDismissed,
+    this.onTap,
+  });
+
+  final TaskEntity task;
+  final VoidCallback onToggleStatus;
+  final VoidCallback? onDismissed;
+  final VoidCallback? onTap;
+
+  @override
+  State<_AnimatedTaskCard> createState() => _AnimatedTaskCardState();
+}
+
+class _AnimatedTaskCardState extends State<_AnimatedTaskCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
+    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: TaskCard(
+          task: widget.task,
+          onToggleStatus: widget.onToggleStatus,
+          onDismissed: widget.onDismissed,
+          onTap: widget.onTap,
+        ),
       ),
     );
   }
