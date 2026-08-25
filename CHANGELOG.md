@@ -9,6 +9,22 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.02.01 - Task start date & duration (2026-08-25)
+
+### Added
+- `start_date` field on tasks (new DB column via migration)
+- Start date/time picker in create and edit sheets ("Start" + "End" fields)
+- Tasks now have explicit duration (start → end)
+- Calendar blocks sized proportionally to task duration
+- `duration` getter on TaskEntity
+
+### Changed
+- Progress bar uses startDate (falls back to createdAt if not set)
+- Calendar day/week views position blocks at startDate with correct height
+- Calendar _tasksForDate checks range overlap for multi-hour/day tasks
+
+---
+
 ## V 01.02.00 - Calendar views (2026-08-25)
 
 ### Added

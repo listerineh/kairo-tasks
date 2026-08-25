@@ -146,18 +146,18 @@ class DayView extends StatelessWidget {
     AppColorScheme colors,
   ) {
     final dueDate = task.dueDate!;
-    // Position task 1 hour before due time
-    final startHour = (dueDate.hour - 1).clamp(0, 23);
-    final startMinute = dueDate.minute;
+    final startTime = task.startDate ?? dueDate.subtract(const Duration(hours: 1));
     final top =
-        (startHour - _startHour) * _hourHeight + startMinute * _hourHeight / 60;
-    const blockHeight = _hourHeight; // 1 hour duration visual
+        (startTime.hour - _startHour) * _hourHeight + startTime.minute * _hourHeight / 60;
+    // Calculate block height from duration
+    final durationMinutes = dueDate.difference(startTime).inMinutes.clamp(30, 480);
+    final blockHeight = durationMinutes * _hourHeight / 60;
 
     final taskColor = _taskColor(task, colors);
     final isCompleted = task.status == TaskStatus.completed;
 
     return Positioned(
-      top: top,
+      top: top.clamp(0, _hourHeight * (_endHour - _startHour) - blockHeight),
       left: 52,
       right: AppSpacing.spacing8,
       height: blockHeight,

@@ -18,6 +18,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   TaskPriority _priority = TaskPriority.medium;
+  DateTime? _startDate;
   DateTime? _dueDate;
 
   @override
@@ -112,6 +113,48 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
             ),
             const SizedBox(height: AppSpacing.spacing20),
 
+            // Start date
+            GestureDetector(
+              onTap: _pickStartDate,
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.spacing16),
+                decoration: BoxDecoration(
+                  color: colors.surfaceSubtle,
+                  borderRadius:
+                      BorderRadius.circular(AppSpacing.radiusMedium),
+                  border: Border.all(color: colors.border),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.play_circle_outline,
+                      size: 20,
+                      color: colors.textSecondary,
+                    ),
+                    const SizedBox(width: AppSpacing.spacing12),
+                    Expanded(
+                      child: Text(
+                        _startDate != null
+                            ? 'Start: ${_formatDateTime(_startDate!)}'
+                            : 'Set start date & time (optional)',
+                        style: context.textTheme.bodyMedium,
+                      ),
+                    ),
+                    if (_startDate != null)
+                      GestureDetector(
+                        onTap: () => setState(() => _startDate = null),
+                        child: Icon(
+                          Icons.close,
+                          size: 18,
+                          color: colors.textMuted,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.spacing12),
+
             // Due date
             GestureDetector(
               onTap: _pickDueDate,
@@ -126,18 +169,19 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                 child: Row(
                   children: [
                     Icon(
-                      Icons.calendar_today_outlined,
+                      Icons.flag_outlined,
                       size: 20,
                       color: colors.textSecondary,
                     ),
                     const SizedBox(width: AppSpacing.spacing12),
-                    Text(
-                      _dueDate != null
-                          ? _formatDateTime(_dueDate!)
-                          : 'Set due date & time (optional)',
-                      style: context.textTheme.bodyMedium,
+                    Expanded(
+                      child: Text(
+                        _dueDate != null
+                            ? 'End: ${_formatDateTime(_dueDate!)}'
+                            : 'Set end date & time (optional)',
+                        style: context.textTheme.bodyMedium,
+                      ),
                     ),
-                    const Spacer(),
                     if (_dueDate != null)
                       GestureDetector(
                         onTap: () => setState(() => _dueDate = null),
@@ -165,11 +209,11 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
     );
   }
 
-  Future<void> _pickDueDate() async {
+  Future<void> _pickStartDate() async {
     final pickedDate = await showDatePicker(
       context: context,
-      initialDate: _dueDate ?? DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
+      initialDate: _startDate ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 30)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (pickedDate == null || !mounted) return;
@@ -177,7 +221,37 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
     final pickedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(
-        _dueDate ?? DateTime.now().add(const Duration(hours: 1)),
+        _startDate ?? DateTime.now(),
+      ),
+    );
+    if (!mounted) return;
+
+    final time = pickedTime ?? TimeOfDay.fromDateTime(DateTime.now());
+    setState(() {
+      _startDate = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        time.hour,
+        time.minute,
+      );
+    });
+  }
+
+  Future<void> _pickDueDate() async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate:
+          _dueDate ?? _startDate?.add(const Duration(hours: 1)) ?? DateTime.now().add(const Duration(hours: 1)),
+      firstDate: _startDate ?? DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (pickedDate == null || !mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(
+        _dueDate ?? _startDate?.add(const Duration(hours: 1)) ?? DateTime.now().add(const Duration(hours: 1)),
       ),
     );
     if (!mounted) return;
@@ -212,6 +286,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                 ? _descriptionController.text.trim()
                 : null,
             priority: _priority,
+            startDate: _startDate,
             dueDate: _dueDate,
           ),
         );

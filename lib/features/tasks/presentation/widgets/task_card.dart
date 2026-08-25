@@ -177,7 +177,7 @@ class TaskCard extends StatelessWidget {
               // Time progress bar
               if (task.dueDate != null && !isCompleted)
                 _TimeProgressBar(
-                  createdAt: task.createdAt,
+                  startDate: task.startDate ?? task.createdAt,
                   dueDate: task.dueDate!,
                 ),
             ],
@@ -203,11 +203,11 @@ class TaskCard extends StatelessWidget {
 
 class _TimeProgressBar extends StatelessWidget {
   const _TimeProgressBar({
-    required this.createdAt,
+    required this.startDate,
     required this.dueDate,
   });
 
-  final DateTime createdAt;
+  final DateTime startDate;
   final DateTime dueDate;
 
   @override
@@ -215,8 +215,8 @@ class _TimeProgressBar extends StatelessWidget {
     final colors = context.appColors;
     final now = DateTime.now();
 
-    final totalDuration = dueDate.difference(createdAt).inMinutes;
-    final elapsed = now.difference(createdAt).inMinutes;
+    final totalDuration = dueDate.difference(startDate).inMinutes;
+    final elapsed = now.difference(startDate).inMinutes;
 
     // Clamp progress between 0 and 1
     final progress = totalDuration > 0

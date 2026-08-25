@@ -13,6 +13,7 @@ class TaskEntity extends Equatable {
     this.description,
     this.priority = TaskPriority.medium,
     this.status = TaskStatus.pending,
+    this.startDate,
     this.dueDate,
     this.updatedAt,
   });
@@ -23,6 +24,7 @@ class TaskEntity extends Equatable {
   final String? description;
   final TaskPriority priority;
   final TaskStatus status;
+  final DateTime? startDate;
   final DateTime? dueDate;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -34,6 +36,12 @@ class TaskEntity extends Equatable {
 
   bool get hasDueDate => dueDate != null;
 
+  /// Duration of the task (startDate to dueDate).
+  Duration? get duration =>
+      startDate != null && dueDate != null
+          ? dueDate!.difference(startDate!)
+          : null;
+
   @override
   List<Object?> get props => [
         id,
@@ -42,6 +50,7 @@ class TaskEntity extends Equatable {
         description,
         priority,
         status,
+        startDate,
         dueDate,
         createdAt,
         updatedAt,

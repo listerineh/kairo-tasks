@@ -206,17 +206,19 @@ class WeekView extends StatelessWidget {
     AppColorScheme colors,
   ) {
     final dueDate = task.dueDate!;
-    final startHour = (dueDate.hour - 1).clamp(_startHour, _endHour - 1);
-    final top = (startHour - _startHour) * _hourHeight +
-        dueDate.minute * _hourHeight / 60;
+    final startTime = task.startDate ?? dueDate.subtract(const Duration(hours: 1));
+    final top = (startTime.hour - _startHour) * _hourHeight +
+        startTime.minute * _hourHeight / 60;
+    final durationMinutes = dueDate.difference(startTime).inMinutes.clamp(20, 480);
+    final blockHeight = (durationMinutes * _hourHeight / 60).clamp(20.0, _hourHeight * 4);
     final taskColor = _taskColor(task, colors);
     final isCompleted = task.status == TaskStatus.completed;
 
     return Positioned(
-      top: top,
+      top: top.clamp(0, _hourHeight * (_endHour - _startHour) - blockHeight),
       left: 1,
       right: 1,
-      height: _hourHeight - 2,
+      height: blockHeight,
       child: GestureDetector(
         onTap: () => onTaskTap(task),
         child: Container(

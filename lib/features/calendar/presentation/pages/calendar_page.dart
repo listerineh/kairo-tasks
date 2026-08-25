@@ -248,16 +248,15 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   List<TaskEntity> _tasksForDate(List<TaskEntity> tasks, DateTime date) {
+    final dayStart = DateTime(date.year, date.month, date.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+
     return tasks.where((t) {
-      if (t.dueDate != null) {
-        return t.dueDate!.year == date.year &&
-            t.dueDate!.month == date.month &&
-            t.dueDate!.day == date.day;
-      }
-      // Tasks without due date show on creation day
-      return t.createdAt.year == date.year &&
-          t.createdAt.month == date.month &&
-          t.createdAt.day == date.day;
+      final start = t.startDate ?? t.dueDate ?? t.createdAt;
+      final end = t.dueDate ?? start;
+
+      // Task spans this day if its range overlaps with [dayStart, dayEnd)
+      return start.isBefore(dayEnd) && end.isAfter(dayStart);
     }).toList();
   }
 

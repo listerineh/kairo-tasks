@@ -31,16 +31,18 @@ class TaskCreateRequested extends TasksEvent {
     required this.title,
     this.description,
     this.priority = TaskPriority.medium,
+    this.startDate,
     this.dueDate,
   });
 
   final String title;
   final String? description;
   final TaskPriority priority;
+  final DateTime? startDate;
   final DateTime? dueDate;
 
   @override
-  List<Object?> get props => [title, description, priority, dueDate];
+  List<Object?> get props => [title, description, priority, startDate, dueDate];
 }
 
 class TaskStatusToggled extends TasksEvent {
@@ -57,6 +59,7 @@ class TaskEditRequested extends TasksEvent {
     required this.title,
     this.description,
     this.priority,
+    this.startDate,
     this.dueDate,
   });
 
@@ -64,10 +67,12 @@ class TaskEditRequested extends TasksEvent {
   final String title;
   final String? description;
   final TaskPriority? priority;
+  final DateTime? startDate;
   final DateTime? dueDate;
 
   @override
-  List<Object?> get props => [taskId, title, description, priority, dueDate];
+  List<Object?> get props =>
+      [taskId, title, description, priority, startDate, dueDate];
 }
 
 class TaskDeleted extends TasksEvent {
@@ -277,6 +282,8 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
         if (event.description != null) 'description': event.description,
         'priority': event.priority.name,
         'status': 'pending',
+        if (event.startDate != null)
+          'start_date': event.startDate!.toUtc().toIso8601String(),
         if (event.dueDate != null)
           'due_date': event.dueDate!.toUtc().toIso8601String(),
       });
@@ -295,6 +302,8 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
         'title': event.title,
         'description': event.description,
         if (event.priority != null) 'priority': event.priority!.name,
+        if (event.startDate != null)
+          'start_date': event.startDate!.toUtc().toIso8601String(),
         if (event.dueDate != null)
           'due_date': event.dueDate!.toUtc().toIso8601String(),
       }).eq('id', event.taskId);
@@ -340,6 +349,9 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
       description: json['description'] as String?,
       priority: _parsePriority(json['priority'] as String? ?? 'medium'),
       status: _parseStatus(json['status'] as String? ?? 'pending'),
+      startDate: json['start_date'] != null
+          ? DateTime.parse(json['start_date'] as String).toLocal()
+          : null,
       dueDate: json['due_date'] != null
           ? DateTime.parse(json['due_date'] as String).toLocal()
           : null,
