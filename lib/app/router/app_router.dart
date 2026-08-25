@@ -1,0 +1,67 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/tasks/presentation/pages/tasks_page.dart';
+import '../router/shell_scaffold.dart';
+import 'route_names.dart';
+
+class AppRouter {
+  AppRouter._();
+
+  static final router = GoRouter(
+    initialLocation: '/tasks',
+    debugLogDiagnostics: false,
+    routes: [
+      // Auth routes
+      GoRoute(
+        path: '/login',
+        name: RouteNames.login,
+        builder: (context, state) => const LoginPage(),
+      ),
+
+      // Main shell with bottom navigation
+      ShellRoute(
+        builder: (context, state, child) => ShellScaffold(child: child),
+        routes: [
+          GoRoute(
+            path: '/tasks',
+            name: RouteNames.tasks,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: TasksPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/calendar',
+            name: RouteNames.calendar,
+            pageBuilder: (context, state) => NoTransitionPage(
+              child: _placeholder('Calendar'),
+            ),
+          ),
+          GoRoute(
+            path: '/social',
+            name: RouteNames.social,
+            pageBuilder: (context, state) => NoTransitionPage(
+              child: _placeholder('Social'),
+            ),
+          ),
+          GoRoute(
+            path: '/profile',
+            name: RouteNames.profile,
+            pageBuilder: (context, state) => NoTransitionPage(
+              child: _placeholder('Profile'),
+            ),
+          ),
+        ],
+      ),
+    ],
+  );
+
+  static Widget _placeholder(String title) {
+    return Scaffold(
+      body: Center(
+        child: Text(title, style: const TextStyle(fontSize: 24)),
+      ),
+    );
+  }
+}
