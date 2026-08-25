@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../domain/entities/task_entity.dart';
 
@@ -54,6 +57,14 @@ class TaskDeleted extends TasksEvent {
 
   @override
   List<Object?> get props => [taskId];
+}
+
+class _TasksUpdatedFromStream extends TasksEvent {
+  const _TasksUpdatedFromStream(this.tasks);
+  final List<TaskEntity> tasks;
+
+  @override
+  List<Object?> get props => [tasks];
 }
 
 // Filter
@@ -139,7 +150,7 @@ class TasksState extends Equatable {
       tasks: tasks ?? this.tasks,
       status: status ?? this.status,
       filter: filter ?? this.filter,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: errorMessage,
     );
   }
 
@@ -157,7 +168,12 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     on<TaskCreateRequested>(_onCreateRequested);
     on<TaskStatusToggled>(_onStatusToggled);
     on<TaskDeleted>(_onDeleted);
+    on<_TasksUpdatedFromStream>(_onStreamUpdate);
   }
+
+  SupabaseClient get _client => Supabase.instance.client;
+  String get _userId => _client.auth.currentUser!.id;
+  StreamSubscription<List<Map<String, dynamic>>>? _subscription;
 
   Future<void> _onLoadRequested(
     TasksLoadRequested event,
@@ -165,15 +181,47 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
   ) async {
     emit(state.copyWith(status: TasksStatus.loading));
 
-    // TODO: Replace with actual repository call
-    // For now, emit demo data
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-    emit(
-      state.copyWith(
-        status: TasksStatus.loaded,
-        tasks: _demoTasks,
-      ),
-    );
+    try {
+      // Fetch initial tasks
+      final response = await _client
+          .from('tasks')
+          .select()
+          .eq('owner_id', _userId)
+          .order('created_at', ascending: false);
+
+      final tasks = (response as List)
+          .map((json) => _taskFromJson(json as Map<String, dynamic>))
+          .toList();
+
+      emit(state.copyWith(status: TasksStatus.loaded, tasks: tasks));
+
+      // Subscribe to realtime changes
+      await _subscription?.cancel();
+      _subscription = _client
+          .from('tasks')
+          .stream(primaryKey: ['id'])
+          .eq('owner_id', _userId)
+          .order('created_at', ascending: false)
+          .listen((data) {
+            final updatedTasks =
+                data.map(_taskFromJson).toList();
+            add(_TasksUpdatedFromStream(updatedTasks));
+          });
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: TasksStatus.error,
+          errorMessage: e.toString(),
+        ),
+      );
+    }
+  }
+
+  void _onStreamUpdate(
+    _TasksUpdatedFromStream event,
+    Emitter<TasksState> emit,
+  ) {
+    emit(state.copyWith(tasks: event.tasks, status: TasksStatus.loaded));
   }
 
   void _onFilterChanged(
@@ -187,97 +235,96 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     TaskCreateRequested event,
     Emitter<TasksState> emit,
   ) async {
-    final newTask = TaskEntity(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      ownerId: 'current-user',
-      title: event.title,
-      description: event.description,
-      priority: event.priority,
-      createdAt: DateTime.now(),
-      dueDate: event.dueDate,
-    );
-
-    emit(state.copyWith(tasks: [...state.tasks, newTask]));
+    try {
+      await _client.from('tasks').insert({
+        'owner_id': _userId,
+        'title': event.title,
+        if (event.description != null) 'description': event.description,
+        'priority': event.priority.name,
+        'status': 'pending',
+        if (event.dueDate != null)
+          'due_date': event.dueDate!.toIso8601String(),
+      });
+      // Realtime stream will update the list automatically
+    } catch (e) {
+      emit(state.copyWith(errorMessage: 'Failed to create task: $e'));
+    }
   }
 
-  void _onStatusToggled(
+  Future<void> _onStatusToggled(
     TaskStatusToggled event,
     Emitter<TasksState> emit,
-  ) {
-    final updatedTasks = state.tasks.map((task) {
-      if (task.id == event.taskId) {
-        return TaskEntity(
-          id: task.id,
-          ownerId: task.ownerId,
-          title: task.title,
-          description: task.description,
-          priority: task.priority,
-          status: task.status == TaskStatus.completed
-              ? TaskStatus.pending
-              : TaskStatus.completed,
-          dueDate: task.dueDate,
-          createdAt: task.createdAt,
-          updatedAt: DateTime.now(),
-        );
-      }
-      return task;
-    }).toList();
+  ) async {
+    final task = state.tasks.firstWhere((t) => t.id == event.taskId);
+    final newStatus =
+        task.status == TaskStatus.completed ? 'pending' : 'completed';
 
-    emit(state.copyWith(tasks: updatedTasks));
+    try {
+      await _client
+          .from('tasks')
+          .update({'status': newStatus})
+          .eq('id', event.taskId);
+    } catch (e) {
+      emit(state.copyWith(errorMessage: 'Failed to update task: $e'));
+    }
   }
 
-  void _onDeleted(
+  Future<void> _onDeleted(
     TaskDeleted event,
     Emitter<TasksState> emit,
-  ) {
-    final updatedTasks =
-        state.tasks.where((task) => task.id != event.taskId).toList();
-    emit(state.copyWith(tasks: updatedTasks));
+  ) async {
+    try {
+      await _client.from('tasks').delete().eq('id', event.taskId);
+    } catch (e) {
+      emit(state.copyWith(errorMessage: 'Failed to delete task: $e'));
+    }
+  }
+
+  TaskEntity _taskFromJson(Map<String, dynamic> json) {
+    return TaskEntity(
+      id: json['id'] as String,
+      ownerId: json['owner_id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String?,
+      priority: _parsePriority(json['priority'] as String? ?? 'medium'),
+      status: _parseStatus(json['status'] as String? ?? 'pending'),
+      dueDate: json['due_date'] != null
+          ? DateTime.parse(json['due_date'] as String)
+          : null,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
+    );
+  }
+
+  TaskPriority _parsePriority(String value) {
+    switch (value) {
+      case 'urgent':
+        return TaskPriority.urgent;
+      case 'high':
+        return TaskPriority.high;
+      case 'low':
+        return TaskPriority.low;
+      default:
+        return TaskPriority.medium;
+    }
+  }
+
+  TaskStatus _parseStatus(String value) {
+    switch (value) {
+      case 'in_progress':
+        return TaskStatus.inProgress;
+      case 'completed':
+        return TaskStatus.completed;
+      default:
+        return TaskStatus.pending;
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _subscription?.cancel();
+    return super.close();
   }
 }
-
-// Demo data for initial development
-final _demoTasks = [
-  TaskEntity(
-    id: '1',
-    ownerId: 'user-1',
-    title: 'Design the onboarding flow',
-    description: 'Create wireframes and high-fidelity mockups for the app onboarding experience',
-    priority: TaskPriority.high,
-    createdAt: DateTime.now().subtract(const Duration(days: 2)),
-    dueDate: DateTime.now().add(const Duration(days: 3)),
-  ),
-  TaskEntity(
-    id: '2',
-    ownerId: 'user-1',
-    title: 'Set up Supabase project',
-    description: 'Configure auth, database tables, and RLS policies',
-    priority: TaskPriority.urgent,
-    createdAt: DateTime.now().subtract(const Duration(days: 1)),
-    dueDate: DateTime.now().add(const Duration(days: 1)),
-  ),
-  TaskEntity(
-    id: '3',
-    ownerId: 'user-1',
-    title: 'Write unit tests for task bloc',
-    priority: TaskPriority.medium,
-    createdAt: DateTime.now(),
-    dueDate: DateTime.now().add(const Duration(days: 5)),
-  ),
-  TaskEntity(
-    id: '4',
-    ownerId: 'user-1',
-    title: 'Research accessibility guidelines',
-    description: 'Look into WCAG 2.2 AA standards for ADHD-friendly interfaces',
-    priority: TaskPriority.low,
-    createdAt: DateTime.now().subtract(const Duration(days: 3)),
-  ),
-  TaskEntity(
-    id: '5',
-    ownerId: 'user-1',
-    title: 'Review PR from teammate',
-    priority: TaskPriority.medium,
-    createdAt: DateTime.now(),
-    dueDate: DateTime.now().add(const Duration(days: 2)),
-  ),
-];
