@@ -49,8 +49,9 @@ app.*.map.json
 
 # Environment/Secrets
 .env
-.env.*
-**/lib/core/constants/env.dart
+.env.local
+.env.production
+!.env.example
 
 # Generated files
 *.g.dart

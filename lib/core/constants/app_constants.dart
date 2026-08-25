@@ -4,9 +4,9 @@ class AppConstants {
   static const String appName = 'KairoTasks';
   static const String appTagline = 'Your collaborative moment';
 
-  // Supabase
-  static const String supabaseUrl = 'https://gatdyxuqmdbllbmzejwh.supabase.co';
-  static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdhdGR5eHVxbWRibGxibXplandoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2MzcxMDYsImV4cCI6MjEwMzIxMzEwNn0.jHw54cYtSPo4b1Cu-J2h-Z-zjZos2W8yooVGKLY3-yc';
+  // Supabase - injected via --dart-define-from-file=.env
+  static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
   // Animation durations
   static const Duration animationFast = Duration(milliseconds: 200);
