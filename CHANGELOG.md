@@ -9,6 +9,83 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.01.06 - Google & Apple OAuth (2026-08-25)
+
+### Added
+- Google Sign-In via native flow (google_sign_in 7.x) + Supabase ID token exchange
+- Apple Sign-In via native flow (sign_in_with_apple) + nonce verification
+- OAuth client IDs injected via environment variables (GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID)
+
+---
+
+## V 01.01.05 - Auth BLoC + Login flow (2026-08-25)
+
+### Added
+- AuthBloc with full state management (unknown, loading, authenticated, unauthenticated, error)
+- Email sign-in and sign-up with Supabase Auth
+- Login page with toggle between sign-in and sign-up modes
+- Display name field during registration
+- Router redirect guard: unauthenticated → /login, authenticated → /tasks
+
+---
+
+## V 01.01.04 - Tasks persistence with Supabase (2026-08-25)
+
+### Changed
+- TasksBloc now reads/writes directly to Supabase (removed all demo data)
+- Create task inserts into Supabase `tasks` table
+- Toggle status updates task in DB
+- Delete task removes from DB
+- Realtime stream subscription: changes from other devices sync instantly
+
+---
+
+## V 01.01.03 - Sort tasks by priority (2026-08-25)
+
+### Changed
+- All task views now sort by priority order: urgent → high → medium → low
+- Priority sorting applies to every filter tab including "All"
+
+---
+
+## V 01.01.02 - Remove flutter_local_notifications (2026-08-25)
+
+### Removed
+- Removed flutter_local_notifications (incompatible with Swift Package Manager)
+- Will re-add when implementing scheduled reminders with a SPM-compatible version
+
+---
+
+## V 01.01.01 - Supabase backend integration (2026-08-25)
+
+### Added
+- Created Supabase project (gatdyxuqmdbllbmzejwh, US East)
+- Database migration: profiles, tasks, shared_tasks, friendships tables
+- Row Level Security policies on all tables
+- Realtime enabled on tasks, shared_tasks, friendships
+- Auto-create profile trigger on user signup
+- Updated_at trigger for automatic timestamps
+- Auth remote datasource (email, Google, Apple OAuth)
+- Task remote datasource (CRUD + realtime stream)
+- Task model (JSON ↔ Entity mapping)
+- Task repository implementation with Either<Failure, T>
+- iOS build verified (Xcode 26.6 + iOS 26.5 SDK)
+- CocoaPods integration for iOS plugins
+
+---
+
+## V 01.00.02 - Environment variables for secrets (2026-08-25)
+
+### Changed
+- Supabase credentials moved from hardcoded constants to environment variables
+- Credentials injected at build time via `--dart-define-from-file=.env`
+- Added .env.example as reference for contributors
+
+### Security
+- .env file gitignored (never committed to repository)
+
+---
+
 ## V 01.00.01 - Initial Project Setup (2026-08-25)
 
 ### Added
