@@ -7,6 +7,9 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../widgets/appearance_sheet.dart';
+import '../widgets/edit_profile_sheet.dart';
+import '../widgets/notifications_sheet.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -92,24 +95,18 @@ class ProfilePage extends StatelessWidget {
                 _SettingsTile(
                   icon: Icons.person_outline,
                   title: 'Edit Profile',
-                  onTap: () {
-                    // TODO: Navigate to edit profile
-                  },
+                  onTap: () => _showEditProfileSheet(context),
                 ),
                 _SettingsTile(
                   icon: Icons.palette_outlined,
                   title: 'Appearance',
                   subtitle: 'Theme, colors',
-                  onTap: () {
-                    // TODO: Navigate to appearance settings
-                  },
+                  onTap: () => _showAppearanceSheet(context),
                 ),
                 _SettingsTile(
                   icon: Icons.notifications_outlined,
                   title: 'Notifications',
-                  onTap: () {
-                    // TODO: Navigate to notifications settings
-                  },
+                  onTap: () => _showNotificationsSheet(context),
                 ),
 
                 const SizedBox(height: AppSpacing.spacing24),
@@ -175,6 +172,39 @@ class ProfilePage extends StatelessWidget {
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
     return '${months[date.month - 1]} ${date.year}';
+  }
+
+  void _showEditProfileSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const EditProfileSheet(),
+    );
+  }
+
+  void _showAppearanceSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => AppearanceSheet(
+        currentMode: ThemeMode.system,
+        onChanged: (mode) {
+          // Theme changes require app-level rebuild; kept as placeholder
+          Navigator.of(context).pop();
+        },
+      ),
+    );
+  }
+
+  void _showNotificationsSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const NotificationsSheet(),
+    );
   }
 }
 

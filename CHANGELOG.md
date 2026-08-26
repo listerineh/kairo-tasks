@@ -10,6 +10,18 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.02.04 - Profile settings (2026-08-25)
+
+### Added in V 01.02.04
+
+- Edit Profile bottom sheet (display name, username, avatar URL, calendar visibility)
+- Profile updates persist to Supabase `profiles` table and auth user metadata
+- Appearance settings sheet with light/dark/system toggle
+- Notifications settings sheet with preference toggles (placeholder / future)
+- Profile page tiles are now interactive
+
+---
+
 ## V 01.02.03 - Version sync (2026-08-25)
 
 ### Changed in V 01.02.03
