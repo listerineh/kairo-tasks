@@ -10,6 +10,20 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.07 - Profile avatar upload (2026-08-25)
+
+### Added in V 01.03.07
+
+- `image_picker` dependency for gallery and camera access
+- iOS `Info.plist` permissions for photo library and camera
+- Supabase Storage `avatars` bucket with RLS for user-scoped uploads
+- `EditProfileSheet` now shows avatar picker instead of URL field
+- Users can pick from gallery or take a photo; image uploads to Supabase Storage
+- Uploaded avatar public URL is saved to `profiles.avatar_url` and user metadata
+- `SocialPage` friend cards and `ProfilePage` display the new avatars automatically
+
+---
+
 ## V 01.03.06 - Email in profiles (2026-08-25)
 
 ### Added in V 01.03.06
