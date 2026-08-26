@@ -180,74 +180,57 @@ class _SocialPageState extends State<SocialPage>
     final colors = context.appColors;
 
     return Scaffold(
-      body: NestedScrollView(
-        floatHeaderSlivers: true,
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          SliverAppBar(
-            expandedHeight: 120,
-            pinned: true,
-            floating: true,
-            elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              centerTitle: true,
-              titlePadding: const EdgeInsets.only(bottom: 48),
-              title: Text(
-                'Social',
-                style: context.textTheme.headlineSmall?.copyWith(
-                  color: colors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+      resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        title: const Text('Social'),
+        centerTitle: true,
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: colors.accent,
+          unselectedLabelColor: colors.textSecondary,
+          indicatorColor: colors.accent,
+          indicatorWeight: 3,
+          tabs: [
+            _Tab(
+              icon: Icons.search,
+              label: 'Search',
+              count: _searchResults.length,
             ),
-            bottom: TabBar(
+            _Tab(
+              icon: Icons.people,
+              label: 'Friends',
+              count: _friends.length,
+            ),
+            _Tab(
+              icon: Icons.mail,
+              label: 'Requests',
+              count: _pendingRequests.length,
+            ),
+          ],
+        ),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : TabBarView(
               controller: _tabController,
-              labelColor: colors.accent,
-              unselectedLabelColor: colors.textSecondary,
-              indicatorColor: colors.accent,
-              indicatorWeight: 3,
-              tabs: [
-                _Tab(
-                  icon: Icons.search,
-                  label: 'Search',
-                  count: _searchResults.length,
+              children: [
+                _SearchTab(
+                  controller: _searchController,
+                  results: _searchResults,
+                  onAdd: _sendRequest,
                 ),
-                _Tab(
-                  icon: Icons.people,
-                  label: 'Friends',
-                  count: _friends.length,
+                _FriendsTab(
+                  friends: _friends,
+                  colors: colors,
                 ),
-                _Tab(
-                  icon: Icons.mail,
-                  label: 'Requests',
-                  count: _pendingRequests.length,
+                _RequestsTab(
+                  requests: _pendingRequests,
+                  onAccept: _respondRequest,
+                  onDecline: _respondRequest,
+                  colors: colors,
                 ),
               ],
             ),
-          ),
-        ],
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : TabBarView(
-                controller: _tabController,
-                children: [
-                  _SearchTab(
-                    controller: _searchController,
-                    results: _searchResults,
-                    onAdd: _sendRequest,
-                  ),
-                  _FriendsTab(
-                    friends: _friends,
-                    colors: colors,
-                  ),
-                  _RequestsTab(
-                    requests: _pendingRequests,
-                    onAccept: _respondRequest,
-                    onDecline: _respondRequest,
-                    colors: colors,
-                  ),
-                ],
-              ),
-      ),
     );
   }
 }
