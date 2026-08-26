@@ -495,13 +495,25 @@ class _SearchTab extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.spacing8),
           Expanded(
-            child: results.isEmpty
-                ? _EmptySearchState(colors: colors)
-                : RefreshIndicator(
-                    color: colors.accent,
-                    backgroundColor: colors.surfaceElevated,
-                    onRefresh: onRefresh,
-                    child: ListView.builder(
+            child: RefreshIndicator(
+              color: colors.accent,
+              backgroundColor: colors.surfaceElevated,
+              onRefresh: onRefresh,
+              child: results.isEmpty
+                  ? LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: _EmptySearchState(colors: colors),
+                          ),
+                        );
+                      },
+                    )
+                  : ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
                       itemCount: results.length,
                       itemBuilder: (context, index) {
@@ -532,7 +544,7 @@ class _SearchTab extends StatelessWidget {
                         );
                       },
                     ),
-                  ),
+            ),
           ),
         ],
       ),
@@ -557,18 +569,30 @@ class _FriendsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
-      child: friends.isEmpty
-          ? _EmptyState(
-              icon: Icons.people_outline,
-              title: context.l10n.noFriendsTitle,
-              subtitle: context.l10n.noFriendsSubtitle,
-              colors: colors,
-            )
-          : RefreshIndicator(
-              color: colors.accent,
-              backgroundColor: colors.surfaceElevated,
-              onRefresh: onRefresh,
-              child: ListView.builder(
+      child: RefreshIndicator(
+        color: colors.accent,
+        backgroundColor: colors.surfaceElevated,
+        onRefresh: onRefresh,
+        child: friends.isEmpty
+            ? LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: _EmptyState(
+                        icon: Icons.people_outline,
+                        title: context.l10n.noFriendsTitle,
+                        subtitle: context.l10n.noFriendsSubtitle,
+                        colors: colors,
+                      ),
+                    ),
+                  );
+                },
+              )
+            : ListView.builder(
                 physics: const AlwaysScrollableScrollPhysics(),
                 itemCount: friends.length,
                 itemBuilder: (context, index) {
@@ -580,7 +604,7 @@ class _FriendsTab extends StatelessWidget {
                   );
                 },
               ),
-            ),
+      ),
     );
   }
 }
@@ -604,18 +628,30 @@ class _RequestsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
-      child: requests.isEmpty
-          ? _EmptyState(
-              icon: Icons.mail_outline,
-              title: context.l10n.noPendingRequestsTitle,
-              subtitle: context.l10n.noPendingRequestsSubtitle,
-              colors: colors,
-            )
-          : RefreshIndicator(
-              color: colors.accent,
-              backgroundColor: colors.surfaceElevated,
-              onRefresh: onRefresh,
-              child: ListView.builder(
+      child: RefreshIndicator(
+        color: colors.accent,
+        backgroundColor: colors.surfaceElevated,
+        onRefresh: onRefresh,
+        child: requests.isEmpty
+            ? LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: _EmptyState(
+                        icon: Icons.mail_outline,
+                        title: context.l10n.noPendingRequestsTitle,
+                        subtitle: context.l10n.noPendingRequestsSubtitle,
+                        colors: colors,
+                      ),
+                    ),
+                  );
+                },
+              )
+            : ListView.builder(
                 physics: const AlwaysScrollableScrollPhysics(),
                 itemCount: requests.length,
                 itemBuilder: (context, index) {
@@ -652,7 +688,7 @@ class _RequestsTab extends StatelessWidget {
                   );
                 },
               ),
-            ),
+      ),
     );
   }
 }

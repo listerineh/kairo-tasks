@@ -10,6 +10,15 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.11.01 - Fix social pull-to-refresh on empty states (2026-08-26)
+
+### Fixed in V 01.11.01
+
+- `RefreshIndicator` in Social tabs now wraps both empty and populated states
+- Pull-to-refresh works on `Search`, `Friends`, and `Requests` even when the list is empty
+
+---
+
 ## V 01.11.00 - Pull-to-refresh (2026-08-26)
 
 ### Added in V 01.11.00
