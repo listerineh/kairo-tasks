@@ -63,8 +63,15 @@
 - Generated `AppLocalizations` accessible via `context.l10n`
 - Spanish is the default; the user can override it from `ProfilePage`. The device locale falls back to `es` or `en` through `supportedLocales`
 
+### Push Notifications
+- Android: FCM foreground/background messages, token registration, and token refresh
+- iOS: local notifications only; remote push requires a paid Apple Developer account for APNs
+- Notification preferences in `Profile` (task reminders, friend activity, shared task updates)
+- Tapping a notification navigates to the relevant tab
+- Note: the server-side FCM sender (Supabase Edge Function) is not set up yet because it requires Firebase service-account credentials
+
 ### Coming Soon
-- Push notifications
+- Server-side push delivery (needs FCM service account)
 - Offline support
 - ADHD/Autism accessibility tools
 

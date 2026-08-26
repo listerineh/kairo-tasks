@@ -10,6 +10,19 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.09.00 - Push notification client (2026-08-26)
+
+### Added in V 01.09.00
+
+- `AppRouter.router` exposed as static `GoRouter` for navigation from notifications
+- `NotificationService` handles `onMessageOpenedApp`, `getInitialMessage`, and `onTokenRefresh`
+- Tapping a notification navigates to the right tab based on `message.data['type']`
+- FCM token refresh updates `profiles.fcm_token` automatically
+- `NotificationsSheet` in Profile toggles task reminders, friend activity, and shared task updates
+- iOS shows a friendly message that remote push needs a paid Apple Developer account
+
+---
+
 ## V 01.08.00 - Language switcher in Profile (2026-08-26)
 
 ### Added in V 01.08.00

@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../../app/router/app_router.dart';
 import '../../features/tasks/domain/entities/task_entity.dart';
 
 // ignore_for_file: avoid_positional_boolean_parameters
@@ -86,6 +87,10 @@ class NotificationService {
         _firebaseMessagingBackgroundHandler,
       );
       FirebaseMessaging.onMessage.listen(_onForegroundMessage);
+      FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpened);
+      _messaging!.onTokenRefresh.listen(_onTokenRefresh);
+      final initial = await _messaging.getInitialMessage();
+      if (initial != null) _navigateFromMessage(initial);
     }
   }
 
@@ -125,6 +130,16 @@ class NotificationService {
   Future<bool> getTaskRemindersEnabled() async {
     _prefs ??= await SharedPreferences.getInstance();
     return _prefs!.getBool(kTaskReminders) ?? false;
+  }
+
+  Future<bool> getFriendActivityEnabled() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs!.getBool(kFriendActivity) ?? true;
+  }
+
+  Future<bool> getSharedTaskUpdatesEnabled() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs!.getBool(kSharedTaskUpdates) ?? true;
   }
 
   Future<void> scheduleTaskReminder(TaskEntity task) async {
@@ -172,6 +187,16 @@ class NotificationService {
     for (final task in tasks) {
       await scheduleTaskReminder(task);
     }
+  }
+
+  Future<void> setFriendActivityEnabled(bool value) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs!.setBool(kFriendActivity, value);
+  }
+
+  Future<void> setSharedTaskUpdatesEnabled(bool value) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs!.setBool(kSharedTaskUpdates, value);
   }
 
   Future<void> onToggleTaskReminders(
@@ -224,5 +249,45 @@ class NotificationService {
       body: notification.body ?? (message.data['body'] as String?) ?? '',
       id: message.messageId?.hashCode ?? 0,
     );
+  }
+
+  void _onMessageOpened(RemoteMessage message) {
+    _navigateFromMessage(message);
+  }
+
+  Future<void> _onTokenRefresh(String token) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    try {
+      await Supabase.instance.client
+          .from('profiles')
+          .update({'fcm_token': token})
+          .eq('id', user.id);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('FCM token refresh update failed: $e');
+      }
+    }
+  }
+
+  void _navigateFromMessage(RemoteMessage message) {
+    final router = AppRouter.router;
+    if (router == null) return;
+    if (Supabase.instance.client.auth.currentSession == null) return;
+
+    final type = message.data['type'] as String? ?? '';
+    switch (type) {
+      case 'friend_request':
+      case 'friend_accepted':
+        router.go('/social');
+      case 'shared_task':
+      case 'task_shared':
+        router.go('/tasks');
+      case 'task_due':
+      case 'task_reminder':
+        router.go('/calendar');
+      default:
+        router.go('/dashboard');
+    }
   }
 }

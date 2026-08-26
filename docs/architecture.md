@@ -60,6 +60,8 @@ lib/
 │   ├── errors/                   # Failure & Exception classes
 │   ├── extensions/               # Dart/Flutter extensions
 │   ├── network/                  # Connectivity helpers
+│   ├── services/                 # Push + local notification orchestration
+│   │   └── notification_service.dart
 │   ├── utils/                    # Formatters, validators, helpers
 │   └── widgets/                  # Shared reusable widgets
 └── features/                     # Feature modules
@@ -366,6 +368,18 @@ Using `go_router` with declarative routing.
 
 ### Shell Route
 The main tabs (tasks, calendar, social, profile) share a `ShellRoute` with `BottomNavigationBar`, preserving state between tabs.
+
+---
+
+## Notifications
+
+- `NotificationService` is a singleton in `lib/core/services/notification_service.dart`
+- Android FCM: token stored in `profiles.fcm_token`, refresh updates Supabase
+- Foreground messages are shown as local notifications
+- `onMessageOpenedApp` and `getInitialMessage` navigate via `AppRouter.router`
+- Payload `type` values (`friend_request`, `shared_task`, `task_due`, etc.) map to routes (`/social`, `/tasks`, `/calendar`)
+- iOS: no APNs/FCM remote without paid developer account; local task reminders still work
+- Server-side delivery planned via Supabase Edge Function + FCM HTTP v1 (requires credentials)
 
 ---
 

@@ -16,8 +16,10 @@ class AppRouter {
   AppRouter._();
 
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
+  static GoRouter? router;
 
-  static GoRouter create(String initialLocation) => GoRouter(
+  static GoRouter create(String initialLocation) {
+    final instance = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: initialLocation,
     debugLogDiagnostics: false,
@@ -95,4 +97,7 @@ class AppRouter {
       ),
     ],
   );
+    router = instance;
+    return instance;
+  }
 }
