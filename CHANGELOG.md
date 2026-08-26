@@ -10,6 +10,15 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.05.03 - Logo on Dashboard and Social (2026-08-25)
+
+### Added in V 01.05.03
+
+- App logo SVG in the `DashboardPage` header next to the app name
+- App logo SVG in the `SocialPage` `AppBar` title next to the screen title
+
+---
+
 ## V 01.05.02 - Dashboard metrics trimmed (2026-08-25)
 
 ### Changed in V 01.05.02

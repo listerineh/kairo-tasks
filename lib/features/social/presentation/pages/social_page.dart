@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/theme/app_colors.dart';
@@ -328,7 +329,17 @@ class _SocialPageState extends State<SocialPage>
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        title: Text(context.l10n.social),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SvgPicture.asset(
+              'assets/icons/app_icon.svg',
+              height: 24,
+            ),
+            const SizedBox(width: AppSpacing.spacing8),
+            Text(context.l10n.social),
+          ],
+        ),
         centerTitle: true,
         bottom: TabBar(
           controller: _tabController,

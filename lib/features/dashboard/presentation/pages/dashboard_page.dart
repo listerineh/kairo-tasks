@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/theme/app_spacing.dart';
@@ -37,9 +38,18 @@ class DashboardPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          context.l10n.kairoTasks,
-                          style: context.textTheme.displayMedium,
+                        Row(
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/app_icon.svg',
+                              height: 32,
+                            ),
+                            const SizedBox(width: AppSpacing.spacing12),
+                            Text(
+                              context.l10n.kairoTasks,
+                              style: context.textTheme.displayMedium,
+                            ),
+                          ],
                         ),
                         const SizedBox(height: AppSpacing.spacing4),
                         Text(
