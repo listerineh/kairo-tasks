@@ -27,21 +27,30 @@
 - Current time red indicator
 - Tap a task to toggle completion
 - Navigation arrows + "Today" quick-jump
+- See public tasks from friends with due dates on your calendar
+- Each owner gets a distinct task color: your own profile color or a per-friend color
 
 ### Authentication
 - Email sign up / sign in
 - Google Sign-In (native iOS flow)
 - Session-aware routing
 
+### Social
+- Search users by username
+- Send, accept, reject and cancel friend requests
+- Create tasks with a friend preselected
+- Remove friends
+- Assign a custom color to each friend
+
 ### Profile
 - Edit profile (display name, username, avatar URL)
 - Calendar visibility (public / private)
+- Choose your own task color
 - Appearance settings (light / dark / system)
 - Notifications preferences (placeholder)
 - Version tile pulled from package info
 
 ### Coming Soon
-- Social: friends, shared calendars, shared tasks
 - Push notifications
 - Offline support
 - ADHD/Autism accessibility tools
@@ -196,8 +205,8 @@ We welcome contributions! This project is built to be accessible to developers o
 - [x] V 01.00 - Project setup, tasks UI
 - [x] V 01.01 - Supabase integration (auth + database)
 - [x] V 01.02 - Calendar views (day, week, month)
-- [ ] V 01.03 - Social features (friends, shared calendars)
-- [ ] V 01.04 - Real-time collaboration + shared tasks
+- [x] V 01.03 - Social features (friends, public calendars, friend colors)
+- [x] V 01.04 - Real-time collaboration + shared tasks
 - [ ] V 01.05 - Push notifications
 - [ ] V 01.06 - Offline support
 - [ ] V 02.00 - ADHD/Autism accessibility tools

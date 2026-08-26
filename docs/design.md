@@ -66,9 +66,26 @@ Priority colors are used exclusively for:
 - Left-side indicator bar on task cards
 - Priority selector chips
 - Priority filter badges
-- Calendar dot indicators
+- Calendar dot indicators (when no owner color is set)
 
 Never use priority colors for backgrounds or large areas.
+
+### Visibility & Privacy
+- `profiles.calendar_visibility` controls whether an accepted friend can see your tasks in their calendar
+- Private (default): only you and users you explicitly share a task with can see it
+- Public: all accepted friends can see your tasks with due dates via the `get_public_friend_tasks` RPC
+- Task details and sharing are still protected by RLS; public only exposes task title, time and priority
+
+### Calendar Color Coding
+Calendar events are colored by their owner to help distinguish whose task is whose:
+- **Own tasks**: use the current user's `profiles.color` (default: app `accent` green `#4A6741`)
+- **Friend public tasks**: use the `friendships.*_color` assigned by the current user (default warm yellow `#FFCC00`)
+- **Priority color**: used only as a fallback when no owner color is set
+
+### Social Color Indicators
+- Each friend row in the Social tab displays a small circular color chip
+- Tapping the chip opens a color picker to change the friend's calendar color
+- Colors are stored per-side (`requester_color` / `addressee_color`) so each user can customize their own view
 
 ---
 
