@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.11 - Avatar upload RLS path fix (2026-08-25)
+
+### Fixed in V 01.03.11
+
+- Removed redundant `avatars/` prefix from `EditProfileSheet` upload path
+- Upload path is now `$userId/avatar_<timestamp>.<ext>` relative to the `avatars` bucket
+- This satisfies the RLS `storage.foldername(name)[1] = auth.uid()` policy
+- Avatar upload no longer raises 403 `Unauthorized` on save
+
+---
+
 ## V 01.03.10 - iOS CocoaPods configuration (2026-08-25)
 
 ### Changed in V 01.03.10

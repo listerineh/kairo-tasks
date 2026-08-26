@@ -166,7 +166,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
     final ext = ['jpg', 'jpeg', 'png', 'webp'].contains(extension)
         ? extension
         : 'jpg';
-    final fileName = 'avatars/$userId/avatar_${DateTime.now().millisecondsSinceEpoch}.$ext';
+    final fileName = '$userId/avatar_${DateTime.now().millisecondsSinceEpoch}.$ext';
 
     final contentType = ext == 'png'
         ? 'image/png'
