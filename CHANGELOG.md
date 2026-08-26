@@ -10,6 +10,16 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.10.01 - FCM Android config and push test (2026-08-26)
+
+### Added in V 01.10.01
+
+- Added `com.google.gms.google-services` Gradle plugin to Android build
+- `google-services.json` and `GoogleService-Info.plist` in place for FCM
+- Ready for real push testing on Android
+
+---
+
 ## V 01.10.00 - Push notification server (2026-08-26)
 
 ### Added in V 01.10.00
