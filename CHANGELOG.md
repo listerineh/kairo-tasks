@@ -32,7 +32,7 @@ Format: **V xx.yy.zz**
 - `fcm_send` now guards against `auth.jwt()` being null to avoid `pg_net` failures on service_role/admin calls
 - Better error messages in `_sendRequest`, `_removeFriend`, `_respondRequest` to include the actual exception
 
-### Database
+### Migrations
 
 - New migration `20260826000017_guard_fcm_jwt.sql` updates `fcm_send` to bail out when `auth.jwt()` or the internal key is missing
 
