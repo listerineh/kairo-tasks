@@ -139,5 +139,17 @@
   "thisWeek": "This week",
   "sharedWithYou": "Shared with you",
   "viewAllTasks": "View all tasks",
-  "iOSRemoteNotAvailable": "Remote push notifications are not available on iOS without a paid Apple Developer account."
+  "iOSRemoteNotAvailable": "Remote push notifications are not available on iOS without a paid Apple Developer account.",
+  "skip": "Skip",
+  "next": "Next",
+  "back": "Back",
+  "getStarted": "Get started",
+  "onboardingTitle1": "Welcome to KairoTasks",
+  "onboardingBody1": "A calm space to organize your tasks, share with friends, and find the right moment to focus.",
+  "onboardingTitle2": "Track what matters",
+  "onboardingBody2": "Create and prioritize tasks. Mark them complete and keep your day clear.",
+  "onboardingTitle3": "Do it together",
+  "onboardingBody3": "Connect with friends, share calendars, and work on tasks as a team.",
+  "onboardingTitle4": "Plan your time",
+  "onboardingBody4": "Use the calendar to schedule tasks and see what's coming next."
 }

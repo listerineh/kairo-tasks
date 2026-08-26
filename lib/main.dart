@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/app.dart';
@@ -41,10 +42,18 @@ Future<void> main() async {
   // Initialize dependency injection
   await configureDependencies();
 
+  // Load onboarding flag and current session
+  final prefs = await SharedPreferences.getInstance();
+  final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
+  final session = Supabase.instance.client.auth.currentSession;
+  final initialLocation = session != null
+      ? '/dashboard'
+      : (hasSeenOnboarding ? '/login' : '/onboarding');
+
   // Register Android FCM token on startup
   if (Platform.isAndroid) {
     await NotificationService.instance.registerFcmToken();
   }
 
-  runApp(const KairoTasksApp());
+  runApp(KairoTasksApp(initialLocation: initialLocation));
 }

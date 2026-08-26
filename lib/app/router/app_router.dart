@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/calendar/presentation/pages/calendar_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
+import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/social/presentation/pages/social_page.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
@@ -16,17 +17,18 @@ class AppRouter {
 
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-  static final router = GoRouter(
+  static GoRouter create(String initialLocation) => GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/dashboard',
+    initialLocation: initialLocation,
     debugLogDiagnostics: false,
     redirect: (context, state) {
       final session = Supabase.instance.client.auth.currentSession;
       final isLoggedIn = session != null;
-      final isOnLogin = state.matchedLocation == '/login';
+      final isOnAuth = state.matchedLocation == '/login' ||
+          state.matchedLocation == '/onboarding';
 
-      if (!isLoggedIn && !isOnLogin) return '/login';
-      if (isLoggedIn && isOnLogin) return '/dashboard';
+      if (!isLoggedIn && !isOnAuth) return '/login';
+      if (isLoggedIn && isOnAuth) return '/dashboard';
       return null;
     },
     routes: [
@@ -34,6 +36,10 @@ class AppRouter {
         path: '/login',
         name: RouteNames.login,
         builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingPage(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => ShellScaffold(

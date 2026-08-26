@@ -10,6 +10,19 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.07.00 - Onboarding tour (2026-08-26)
+
+### Added in V 01.07.00
+
+- 4-slide onboarding tour (`OnboardingPage`)
+- Shows only on first app launch
+- Slides: welcome, tasks, friends, calendar
+- "Get started" and "Skip" buttons
+- `has_seen_onboarding` stored in `SharedPreferences`
+- Dynamic `initialLocation` based on onboarding + auth state
+
+---
+
 ## V 01.06.03 - Fix friend calendar UUID/name operator error (2026-08-26)
 
 ### Fixed in V 01.06.03

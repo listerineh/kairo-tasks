@@ -10,7 +10,9 @@ import 'theme/app_theme.dart';
 import 'theme/theme_service.dart';
 
 class KairoTasksApp extends StatefulWidget {
-  const KairoTasksApp({super.key});
+  const KairoTasksApp({required this.initialLocation, super.key});
+
+  final String initialLocation;
 
   @override
   State<KairoTasksApp> createState() => _KairoTasksAppState();
@@ -52,7 +54,7 @@ class _KairoTasksAppState extends State<KairoTasksApp> {
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: ThemeService.instance.themeMode.value,
-        routerConfig: AppRouter.router,
+        routerConfig: AppRouter.create(widget.initialLocation),
         localizationsDelegates: AppLocalizations.localizationsDelegates +
             [
               GlobalMaterialLocalizations.delegate,
