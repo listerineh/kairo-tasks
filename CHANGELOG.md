@@ -10,6 +10,14 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.33 - Priority dot padding in calendar (2026-08-25)
+
+### Fixed in V 01.03.33
+
+- Increased left padding in Day and Week task blocks so the priority dot is not so close to the title text
+
+---
+
 ## V 01.03.32 - Shared task avatars in calendar (2026-08-25)
 
 ### Added in V 01.03.32
