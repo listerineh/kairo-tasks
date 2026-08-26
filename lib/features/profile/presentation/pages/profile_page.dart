@@ -199,6 +199,12 @@ class _ProfilePageState extends State<ProfilePage> {
                           'https://github.com/listerineh/kairo-tasks',
                         ),
                       ),
+                      _SettingsTile(
+                        icon: Icons.language,
+                        title: 'Developed by Listerineh',
+                        subtitle: 'listerineh.dev',
+                        onTap: () => _openUrl('https://listerineh.dev'),
+                      ),
 
                       const SizedBox(height: AppSpacing.spacing32),
 

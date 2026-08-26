@@ -10,6 +10,16 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.09 - Developer credit in Profile (2026-08-25)
+
+### Added in V 01.03.09
+
+- New `Developed by Listerineh` tile in `ProfilePage` under About
+- Tapping the tile opens `https://listerineh.dev` in the browser
+- Version number is displayed on the existing `Version` tile
+
+---
+
 ## V 01.03.08 - iOS build fix for avatar upload (2026-08-25)
 
 ### Fixed in V 01.03.08
