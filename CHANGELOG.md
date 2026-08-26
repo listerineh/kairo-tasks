@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.02.05 - Profile source of truth (2026-08-25)
+
+### Changed in V 01.02.05
+
+- `ProfilePage` now reads `display_name`, `username` and `avatar_url` from the `profiles` table (single source of truth)
+- `EditProfileSheet` loads from `profiles` and falls back to auth metadata only as a suggestion
+- Email sign-up now asks for both display name and username
+- `AuthSignUpRequested` passes `username` to Supabase user metadata
+
+---
+
 ## V 01.02.04 - Profile settings (2026-08-25)
 
 ### Added in V 01.02.04
