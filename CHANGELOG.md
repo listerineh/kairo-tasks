@@ -10,6 +10,21 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.02.12 - Modern login and sign-up (2026-08-25)
+
+### Added in V 01.02.12
+
+- Modern, centered login/sign-up redesign with gradient background
+- Animated title and form transitions between sign in and sign up
+- Circular elevated logo container with soft shadow
+- Modern text fields with rounded cards, floating labels, and password visibility toggle
+- Primary action button with shadow and loading state
+- Styled Google sign-in button
+- Inline "Forgot password?" placeholder
+- Better copy and visual hierarchy
+
+---
+
 ## V 01.02.11 - Tab transitions (2026-08-25)
 
 ### Added in V 01.02.11
