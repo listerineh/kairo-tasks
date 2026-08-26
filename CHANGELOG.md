@@ -12,7 +12,8 @@ Format: **V xx.yy.zz**
 
 ## V 01.02.03 - Version sync (2026-08-25)
 
-### Changed
+### Changed in V 01.02.03
+
 - `pubspec.yaml` version bumped to `1.2.2+22` to match changelog V 01.02.02
 - Profile page now reads version dynamically from `package_info_plus`
 - Added `package_info_plus` dependency for runtime version display
@@ -21,7 +22,7 @@ Format: **V xx.yy.zz**
 
 ## V 01.02.02 - Calendar UI refresh (2026-08-25)
 
-### Changed
+### Changed in V 01.02.02
 
 - Calendar UI completely refreshed to match Google Calendar more closely
 - Day view: 24h timeline, tasks positioned at startDate, height reflects duration, current time red line, all-day chip top row
@@ -35,7 +36,7 @@ Format: **V xx.yy.zz**
 
 ## V 01.02.01 - Task start date & duration (2026-08-25)
 
-### Added
+### Added in V 01.02.01
 
 - `start_date` field on tasks (new DB column via migration)
 - Start date/time picker in create and edit sheets ("Start" + "End" fields)
@@ -43,7 +44,7 @@ Format: **V xx.yy.zz**
 - Calendar blocks sized proportionally to task duration
 - `duration` getter on TaskEntity
 
-### Changed
+### Changed in V 01.02.01
 
 - Progress bar uses startDate (falls back to createdAt if not set)
 - Calendar day/week views position blocks at startDate with correct height
@@ -53,7 +54,7 @@ Format: **V xx.yy.zz**
 
 ## V 01.02.00 - Calendar views (2026-08-25)
 
-### Added
+### Added in V 01.02.00
 
 - Calendar page with 3 views: Day, Week, Month (Google Calendar style)
 - Day view: vertical timeline (24h), tasks positioned by due time, current time red indicator
@@ -68,17 +69,17 @@ Format: **V xx.yy.zz**
 
 ## V 01.01.11 - Timezone fix (2026-08-25)
 
-### Fixed
+### Fixed in V 01.01.11
 
 - Due dates now correctly stored as UTC (`.toUtc().toIso8601String()`)
 - Dates read from Supabase converted to local time (`.toLocal()`)
-- Fixes issue where times appeared offset by the user's timezone (e.g. ECT/UTC-5)
+- Fixes issue where times appeared offset by the user timezone (e.g. ECT/UTC-5)
 
 ---
 
 ## V 01.01.10 - Time progress bar & date+time picker (2026-08-25)
 
-### Added
+### Added in V 01.01.10
 
 - Visual time progress bar at the bottom of each task card (shows elapsed time from creation to due date)
 - Bar turns red when less than 10% time remains or task is overdue
@@ -86,7 +87,7 @@ Format: **V xx.yy.zz**
 - Due date chip shows hours/minutes remaining when due within 24h
 - Overdue display shows hours/minutes granularity
 
-### Changed
+### Changed in V 01.01.10
 
 - Due date stored with time component (not just date)
 - DueDateChip shows "3h left", "45m left" for near-term tasks
@@ -95,14 +96,14 @@ Format: **V xx.yy.zz**
 
 ## V 01.01.09 - Task interactions & animations (2026-08-25)
 
-### Changed
+### Changed in V 01.01.09
 
 - Swipe right to complete/uncomplete a task (replaces tap on circle)
 - Swipe left to delete a task
 - Status circle moved to right side of card (visual only, non-interactive)
 - Dismissible uses confirmDismiss pattern to avoid tree conflicts with realtime stream
 
-### Added
+### Added in V 01.01.09
 
 - Tap on a task opens edit sheet (title, description, priority, due date)
 - Edit task persists changes to Supabase
@@ -114,7 +115,7 @@ Format: **V xx.yy.zz**
 
 ## V 01.01.08 - Profile page (2026-08-25)
 
-### Added
+### Added in V 01.01.08
 
 - Profile page with user info (avatar, name, email, member since)
 - Google avatar displayed when signed in with Google
@@ -126,13 +127,13 @@ Format: **V xx.yy.zz**
 
 ## V 01.01.07 - iOS Google Sign-In config (2026-08-25)
 
-### Added
+### Added in V 01.01.07
 
 - Reversed Google Client ID in Info.plist via xcconfig variable
 - Env.xcconfig for iOS-specific environment values (gitignored)
 - Nonce generation for Google Sign-In token verification
 
-### Changed
+### Changed in V 01.01.07
 
 - Login page shows only Google button (Apple deferred until paid developer account)
 
@@ -140,7 +141,7 @@ Format: **V xx.yy.zz**
 
 ## V 01.01.06 - Google & Apple OAuth (2026-08-25)
 
-### Added
+### Added in V 01.01.06
 
 - Google Sign-In via native flow (google_sign_in 7.x) + Supabase ID token exchange
 - Apple Sign-In via native flow (sign_in_with_apple) + nonce verification
@@ -150,7 +151,7 @@ Format: **V xx.yy.zz**
 
 ## V 01.01.05 - Auth BLoC + Login flow (2026-08-25)
 
-### Added
+### Added in V 01.01.05
 
 - AuthBloc with full state management (unknown, loading, authenticated, unauthenticated, error)
 - Email sign-in and sign-up with Supabase Auth
@@ -162,7 +163,7 @@ Format: **V xx.yy.zz**
 
 ## V 01.01.04 - Tasks persistence with Supabase (2026-08-25)
 
-### Changed
+### Changed in V 01.01.04
 
 - TasksBloc now reads/writes directly to Supabase (removed all demo data)
 - Create task inserts into Supabase `tasks` table
@@ -174,7 +175,7 @@ Format: **V xx.yy.zz**
 
 ## V 01.01.03 - Sort tasks by priority (2026-08-25)
 
-### Changed
+### Changed in V 01.01.03
 
 - All task views now sort by priority order: urgent → high → medium → low
 - Priority sorting applies to every filter tab including "All"
@@ -183,7 +184,7 @@ Format: **V xx.yy.zz**
 
 ## V 01.01.02 - Remove flutter_local_notifications (2026-08-25)
 
-### Removed
+### Removed in V 01.01.02
 
 - Removed flutter_local_notifications (incompatible with Swift Package Manager)
 - Will re-add when implementing scheduled reminders with a SPM-compatible version
@@ -192,7 +193,7 @@ Format: **V xx.yy.zz**
 
 ## V 01.01.01 - Supabase backend integration (2026-08-25)
 
-### Added
+### Added in V 01.01.01
 
 - Created Supabase project (gatdyxuqmdbllbmzejwh, US East)
 - Database migration: profiles, tasks, shared_tasks, friendships tables
@@ -211,13 +212,13 @@ Format: **V xx.yy.zz**
 
 ## V 01.00.02 - Environment variables for secrets (2026-08-25)
 
-### Changed
+### Changed in V 01.00.02
 
 - Supabase credentials moved from hardcoded constants to environment variables
 - Credentials injected at build time via `--dart-define-from-file=.env`
 - Added .env.example as reference for contributors
 
-### Security
+### Security in V 01.00.02
 
 - .env file gitignored (never committed to repository)
 
@@ -225,7 +226,7 @@ Format: **V xx.yy.zz**
 
 ## V 01.00.01 - Initial Project Setup (2026-08-25)
 
-### Added
+### Added in V 01.00.01
 
 - Flutter project scaffold with Clean Architecture (feature-first)
 - Design system implementation: Zen/Calm Editorial theme with light/dark mode
@@ -242,7 +243,7 @@ Format: **V xx.yy.zz**
 - Project documentation: AGENTS.md, docs/design.md, docs/architecture.md, README.md
 - Android SDK configuration for APK generation
 
-### Technical
+### Technical in V 01.00.01
 
 - Flutter 3.47.1 (stable)
 - Dart 3.13.1
