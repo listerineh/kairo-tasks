@@ -10,6 +10,18 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.15 - Shared tasks in Tasks list (2026-08-25)
+
+### Fixed in V 01.03.15
+
+- `TasksBloc` now loads all `tasks` rows the user can see via RLS, not only `owner_id = auth.uid()`
+- Removed the `owner_id` filter from the initial task query and the `tasks` realtime stream
+- Added a `shared_tasks` realtime stream filtered by `shared_with_id = auth.uid()`
+- When someone shares a task with the user, the `shared_tasks` stream triggers a task reload
+- Shared tasks now appear in Tasks and Calendar tabs for the recipient
+
+---
+
 ## V 01.03.14 - Social friends loading fix (2026-08-25)
 
 ### Fixed in V 01.03.14

@@ -217,6 +217,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
   SupabaseClient get _client => Supabase.instance.client;
   String get _userId => _client.auth.currentUser!.id;
   StreamSubscription<List<Map<String, dynamic>>>? _subscription;
+  StreamSubscription<List<Map<String, dynamic>>>? _sharedSubscription;
 
   Future<void> _onLoadRequested(
     TasksLoadRequested event,
@@ -225,11 +226,10 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     emit(state.copyWith(status: TasksStatus.loading));
 
     try {
-      // Fetch initial tasks
+      // Fetch all tasks the user can see (owned + shared) via RLS
       final response = await _client
           .from('tasks')
           .select()
-          .eq('owner_id', _userId)
           .order('created_at', ascending: false);
 
       final tasks = (response as List)
@@ -238,18 +238,25 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
 
       emit(state.copyWith(status: TasksStatus.loaded, tasks: tasks));
 
-      // Subscribe to realtime changes
+      // Subscribe to realtime changes on tasks
       await _subscription?.cancel();
       _subscription = _client
           .from('tasks')
           .stream(primaryKey: ['id'])
-          .eq('owner_id', _userId)
           .order('created_at', ascending: false)
           .listen((data) {
-            final updatedTasks =
-                data.map(_taskFromJson).toList();
+            final updatedTasks = data.map(_taskFromJson).toList();
             add(_TasksUpdatedFromStream(updatedTasks));
           });
+
+      // Subscribe to shared_tasks to catch new shares from friends
+      await _sharedSubscription?.cancel();
+      _sharedSubscription = _client
+          .from('shared_tasks')
+          .stream(primaryKey: ['id'])
+          .eq('shared_with_id', _userId)
+          .order('created_at', ascending: false)
+          .listen((_) => add(const TasksLoadRequested()));
     } catch (e) {
       emit(
         state.copyWith(
@@ -406,6 +413,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
   @override
   Future<void> close() {
     _subscription?.cancel();
+    _sharedSubscription?.cancel();
     return super.close();
   }
 }
