@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -477,21 +478,25 @@ class _CalendarPageState extends State<CalendarPage> {
           .toList();
 
       setState(() => _friendTasks = parsedFriendTasks);
-    } catch (_) {
-      // friend calendar tasks are optional
+    } catch (e, s) {
+      if (kDebugMode) {
+        debugPrint('Failed to load friend calendar tasks: $e\n$s');
+      }
     } finally {
       _isLoadingColors = false;
     }
   }
 
   TaskEntity _taskFromJson(Map<String, dynamic> json, String? color) {
-    final isPrivate =
-        (json['calendar_visibility'] as String? ?? 'public') == 'private';
+    final isPublic =
+        (json['calendar_visibility'] as String? ?? 'public') == 'public';
+    final isSharedWithMe = json['is_shared_with_me'] as bool? ?? false;
+    final showFull = isPublic || isSharedWithMe;
     return TaskEntity(
       id: json['id'] as String,
       ownerId: json['owner_id'] as String,
-      title: isPrivate ? context.l10n.busy : json['title'] as String,
-      description: isPrivate ? null : json['description'] as String?,
+      title: showFull ? json['title'] as String : context.l10n.busy,
+      description: showFull ? json['description'] as String? : null,
       priority: _parsePriority(json['priority'] as String? ?? 'medium'),
       status: _parseStatus(json['status'] as String? ?? 'pending'),
       startDate: json['start_date'] != null

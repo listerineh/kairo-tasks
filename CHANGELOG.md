@@ -10,6 +10,18 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.06.02 - Friend calendar shared/private fix (2026-08-26)
+
+### Fixed in V 01.06.02
+
+- `get_public_friend_tasks` now returns `is_shared_with_me` per task
+- Calendar shows full details for public friend tasks
+- Calendar shows full details for private friend tasks that are explicitly shared with the viewer
+- Private friend tasks not shared are still shown as "Busy"
+- Added debug logging for friend calendar load failures
+
+---
+
 ## V 01.06.01 - Dashboard Today/Upcoming redesign (2026-08-26)
 
 ### Changed in V 01.06.01
