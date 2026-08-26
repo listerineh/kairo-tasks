@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.02.07 - Theme persistence (2026-08-25)
+
+### Added in V 01.02.07
+
+- `ThemeService` singleton using `ValueNotifier` and `SharedPreferences`
+- `KairoTasksApp` reacts to theme changes in real-time
+- Appearance settings sheet now lets the user pick light/dark/system
+- Theme selection is persisted across app restarts
+
+---
+
 ## V 01.02.06 - Instant profile refresh (2026-08-25)
 
 ### Fixed in V 01.02.06
