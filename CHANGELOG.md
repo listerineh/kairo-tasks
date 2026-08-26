@@ -10,6 +10,19 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.29 - Calendar colors and private friend "Busy" mode (2026-08-25)
+
+### Fixed in V 01.03.29
+
+- Calendar colors now update before friend tasks load (no longer blocked by `get_public_friend_tasks`)
+- `CalendarPage` deduplicates shared and friend tasks
+- New migration makes `get_public_friend_tasks` a `SECURITY DEFINER` function returning all accepted friend tasks
+- Calendar now masks private friend tasks as "Busy" while keeping their time block
+- Public friend tasks show full title and description
+- `tasks` RLS restricted back to own + shared tasks
+
+---
+
 ## V 01.03.28 - Calendar color auto-refresh (2026-08-25)
 
 ### Fixed in V 01.03.28

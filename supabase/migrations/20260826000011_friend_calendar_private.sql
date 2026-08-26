@@ -17,6 +17,8 @@ CREATE POLICY "Users can view own or shared tasks"
 
 -- Return all accepted friend tasks with owner visibility
 -- Private calendars show a "Busy" placeholder in the app
+DROP FUNCTION IF EXISTS public.get_public_friend_tasks();
+
 CREATE OR REPLACE FUNCTION public.get_public_friend_tasks()
 RETURNS TABLE (
   id UUID,
