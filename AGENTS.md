@@ -49,6 +49,7 @@ See [docs/design.md](docs/design.md) for the complete design system including to
 - Min touch target: 44x44px
 - Line height: 1.6x for body text
 - Animations: 200-300ms, ease-in-out
+- Reuse the shared `KairoHeader` widget for app branding on new screens
 
 ## Code Conventions
 

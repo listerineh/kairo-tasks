@@ -217,6 +217,22 @@ All interactive elements MUST meet minimum touch target requirements:
 - Subtitle in `bodyMedium` (secondary color)
 - Optional CTA button below
 
+### KairoHeader
+
+A reusable branded header used in Dashboard, Tasks, Calendar, Social, and Profile to keep the app branding consistent.
+
+- Logo (SVG `app_icon.svg`, height 28)
+- `Text(context.l10n.kairoTasks, style: context.textTheme.titleLarge?...)`
+
+### Onboarding
+
+The first-launch tour is shown to new users before they reach the main app.
+
+- 4-slide `PageView` with dot indicators, plus `Skip`, `Back`, and `Next` actions
+- Final slide shows a "Get started" button
+- On completion, sets `has_seen_onboarding = true` in `SharedPreferences`
+- Navigates to `/login`
+
 ---
 
 ## Animations & Motion
@@ -262,6 +278,7 @@ The app supports English and Spanish using Flutter's ARB localization workflow:
 - Source strings live in `lib/l10n/app_en.arb` and `lib/l10n/app_es.arb`
 - `flutter gen-l10n` generates `AppLocalizations` accessible via `context.l10n`
 - Spanish is the default locale; the device locale falls back to `es` or `en` through `supportedLocales`
+- The user can switch languages in `ProfilePage`; changes apply immediately without a restart
 - New UI copy is added to both ARB files to keep translations in sync
 
 ## Implementation Guide

@@ -52,11 +52,16 @@
 - Appearance settings (light / dark / system)
 - Notifications preferences (placeholder)
 - Version tile pulled from package info
+- Language switcher to override the app locale from `ProfilePage`
+
+### Onboarding
+- 4-step first-launch tour with Skip/Get started
+- Only shown once; stored in `SharedPreferences`
 
 ### Internationalization
 - Bilingual English/Spanish support using Flutter ARB files (`lib/l10n/app_en.arb`, `lib/l10n/app_es.arb`)
 - Generated `AppLocalizations` accessible via `context.l10n`
-- Spanish is the default; the device locale falls back to `es` or `en` through `supportedLocales`
+- Spanish is the default; the user can override it from `ProfilePage`. The device locale falls back to `es` or `en` through `supportedLocales`
 
 ### Coming Soon
 - Push notifications
@@ -78,6 +83,7 @@
 | Push | Firebase Cloud Messaging |
 | Version | package_info_plus |
 | Internationalization | flutter_localizations + ARB (en/es) |
+| Persistence | shared_preferences (onboarding & locale) |
 
 **100% free and open source.** Core services use free tiers.
 
@@ -162,6 +168,7 @@ lib/
 ├── core/         # Shared utilities & base classes
 └── features/     # Feature modules
     ├── auth/     # Authentication
+    ├── onboarding/ # First-launch tour
     ├── tasks/    # Task management
     ├── calendar/ # Calendar views (day, week, month)
     ├── social/   # Friends & sharing
@@ -215,7 +222,7 @@ We welcome contributions! This project is built to be accessible to developers o
 - [x] V 01.01 - Supabase integration (auth + database)
 - [x] V 01.02 - Calendar views (day, week, month)
 - [x] V 01.03 - Social features (friends, public calendars, friend colors)
-- [x] V 01.04 - Real-time collaboration + shared tasks
+- [x] V 01.04 - Real-time collaboration + shared tasks, onboarding, and in-app locale
 - [ ] V 01.05 - Push notifications
 - [ ] V 01.06 - Offline support
 - [ ] V 02.00 - ADHD/Autism accessibility tools

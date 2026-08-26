@@ -47,6 +47,10 @@ lib/
 │   │   ├── app_router.dart       # Route definitions
 │   │   ├── route_names.dart      # Named route constants
 │   │   └── shell_scaffold.dart   # Bottom navigation shell
+│   ├── locale/                   # Locale management
+│   │   └── locale_service.dart   # Selected Locale persistence
+│   ├── widgets/                  # Shared app-level widgets
+│   │   └── kairo_header.dart     # Branded header widget
 │   └── theme/                    # Design system implementation
 │       ├── app_theme.dart        # ThemeData builder
 │       ├── app_colors.dart       # Color tokens
@@ -60,6 +64,7 @@ lib/
 │   └── widgets/                  # Shared reusable widgets
 └── features/                     # Feature modules
     ├── auth/                     # Authentication
+    ├── onboarding/               # First-launch tour
     ├── tasks/                    # Task management (CRUD, priority)
     ├── calendar/                 # Calendar view
     ├── social/                   # Friends, shared calendars
@@ -221,7 +226,8 @@ All tables have RLS enabled. Key policies:
 ### Public Calendar Access (RPC)
 
 Friend calendar data is exposed through the `get_public_friend_tasks` RPC:
-- The function is defined as `SECURITY DEFINER` so it bypasses RLS and returns all accepted friend tasks
+- The function is `SECURITY DEFINER`, so it bypasses RLS and returns all accepted friend tasks
+- It uses an internal `viewer_id UUID := auth.uid()` variable (not a `current_user` parameter) to identify the calling user
 - Each result includes the owner's `calendar_visibility`
 - The client renders "Busy" blocks for private calendars and full task data for public calendars
 
@@ -297,7 +303,10 @@ The app uses Flutter's `flutter_localizations` with ARB files and code generatio
 - Translations are stored in `lib/l10n/app_en.arb` and `lib/l10n/app_es.arb`
 - `flutter gen-l10n` generates `AppLocalizations` and `AppLocalizations.localizationsDelegates` for `MaterialApp`
 - All UI strings are accessed via `context.l10n` (an extension on `BuildContext`)
-- Spanish (`es`) is the default locale; `supportedLocales` is set to `es` and `en`, with device-locale fallback
+- Spanish (`es`) remains the default; the user can override the in-app locale from `ProfilePage`
+- `LocaleService` (in `lib/app/locale/locale_service.dart`) manages and persists the selected `Locale` in `SharedPreferences` under the key `app_locale`
+- `KairoTasksApp` wraps the `MaterialApp` in a `ValueListenableBuilder<Locale>` that rebuilds from `LocaleService.instance.locale`
+- The language switcher in `ProfilePage` calls `LocaleService.instance.setLocale(...)` and applies the change immediately, without a restart
 - Adding a new string requires updating both ARB files and regenerating localizations
 
 ## Dependency Injection
@@ -339,6 +348,7 @@ Using `go_router` with declarative routing.
 
 ### Route Structure
 ```
+/onboarding         → OnboardingPage
 /login              → LoginPage
 /tasks              → TasksPage (tab 0)
 /tasks/:id          → TaskDetailPage
@@ -349,6 +359,10 @@ Using `go_router` with declarative routing.
 /profile            → ProfilePage (tab 3)
 /profile/settings   → SettingsPage
 ```
+
+`AppRouter.create(initialLocation)` computes the initial route:
+- If `has_seen_onboarding` has not been set, the user starts at `/onboarding`
+- Otherwise it falls back to the current auth session (logged-in users land on `/tasks`, logged-out users on `/login`)
 
 ### Shell Route
 The main tabs (tasks, calendar, social, profile) share a `ShellRoute` with `BottomNavigationBar`, preserving state between tabs.
