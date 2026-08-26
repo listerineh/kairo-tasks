@@ -59,14 +59,14 @@ class _TasksView extends StatelessWidget {
                         ),
                         const SizedBox(width: AppSpacing.spacing12),
                         Text(
-                          'KairoTasks',
+                          context.l10n.kairoTasks,
                           style: context.textTheme.displayMedium,
                         ),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.spacing4),
                     Text(
-                      _greeting(),
+                      _greeting(context),
                       style: context.textTheme.bodyMedium,
                     ),
                   ],
@@ -141,7 +141,7 @@ class _TasksView extends StatelessWidget {
                     delegate: SliverChildListDelegate([
                       const SizedBox(height: AppSpacing.spacing24),
                       Text(
-                        'Completed',
+                        context.l10n.completed,
                         style: context.textTheme.titleSmall?.copyWith(
                           color: context.appColors.textMuted,
                         ),
@@ -184,11 +184,11 @@ class _TasksView extends StatelessWidget {
   );
   }
 
-  String _greeting() {
+  String _greeting(BuildContext context) {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning. Here are your tasks.';
-    if (hour < 17) return 'Good afternoon. Stay focused.';
-    return 'Good evening. Review your progress.';
+    if (hour < 12) return context.l10n.goodMorning;
+    if (hour < 17) return context.l10n.goodAfternoon;
+    return context.l10n.goodEvening;
   }
 
   void _showCreateTaskSheet(BuildContext context) {
@@ -314,15 +314,15 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: AppSpacing.spacing16),
             Text(
               filter == TasksFilter.completed
-                  ? 'No completed tasks yet'
-                  : 'All clear',
+                  ? context.l10n.emptyCompletedTitle
+                  : context.l10n.emptyAllClear,
               style: context.textTheme.titleMedium,
             ),
             const SizedBox(height: AppSpacing.spacing8),
             Text(
               filter == TasksFilter.completed
-                  ? 'Complete some tasks to see them here.'
-                  : 'Tap + to create your first task.',
+                  ? context.l10n.emptyCompletedHint
+                  : context.l10n.emptyTaskHint,
               style: context.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),

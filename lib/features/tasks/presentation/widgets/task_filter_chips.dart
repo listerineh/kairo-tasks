@@ -20,7 +20,7 @@ class TaskFilterChips extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.only(right: AppSpacing.spacing8),
                 child: _FilterChip(
-                  label: _filterLabel(filter),
+                  label: _filterLabel(filter, context),
                   isSelected: state.filter == filter,
                   onTap: () => context
                       .read<TasksBloc>()
@@ -34,20 +34,20 @@ class TaskFilterChips extends StatelessWidget {
     );
   }
 
-  String _filterLabel(TasksFilter filter) {
+  String _filterLabel(TasksFilter filter, BuildContext context) {
     switch (filter) {
       case TasksFilter.all:
-        return 'All';
+        return context.l10n.all;
       case TasksFilter.urgent:
-        return 'Urgent';
+        return context.l10n.urgent;
       case TasksFilter.high:
-        return 'High';
+        return context.l10n.high;
       case TasksFilter.medium:
-        return 'Medium';
+        return context.l10n.medium;
       case TasksFilter.low:
-        return 'Low';
+        return context.l10n.low;
       case TasksFilter.completed:
-        return 'Done';
+        return context.l10n.statusDone;
     }
   }
 }

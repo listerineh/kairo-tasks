@@ -129,13 +129,13 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                 ),
                 const SizedBox(height: AppSpacing.spacing24),
                 Text(
-                  'Change photo',
+                  context.l10n.changePhoto,
                   style: context.textTheme.titleLarge,
                 ),
                 const SizedBox(height: AppSpacing.spacing20),
                 ListTile(
                   leading: const Icon(Icons.photo_library),
-                  title: const Text('Choose from gallery'),
+                  title: Text(context.l10n.chooseFromGallery),
                   onTap: () {
                     Navigator.of(context).pop();
                     _pickImage(ImageSource.gallery);
@@ -143,7 +143,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.camera_alt),
-                  title: const Text('Take a photo'),
+                  title: Text(context.l10n.takePhoto),
                   onTap: () {
                     Navigator.of(context).pop();
                     _pickImage(ImageSource.camera);
@@ -290,7 +290,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.spacing24),
-                  Text('Edit Profile', style: context.textTheme.titleLarge),
+                  Text(context.l10n.editProfile, style: context.textTheme.titleLarge),
                   const SizedBox(height: AppSpacing.spacing24),
 
                   // Avatar picker
@@ -324,9 +324,9 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                   TextField(
                     controller: _displayNameController,
                     textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Display Name',
-                      hintText: 'How others see you',
+                    decoration: InputDecoration(
+                      labelText: context.l10n.displayName,
+                      hintText: context.l10n.displayNameHint,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.spacing16),
@@ -334,9 +334,9 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                   TextField(
                     controller: _usernameController,
                     autocorrect: false,
-                    decoration: const InputDecoration(
-                      labelText: 'Username',
-                      hintText: 'Unique handle',
+                    decoration: InputDecoration(
+                      labelText: context.l10n.username,
+                      hintText: context.l10n.usernameHint,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.spacing20),
@@ -365,7 +365,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                                 CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Calendar visibility',
+                                context.l10n.calendarVisibility,
                                 style: context.textTheme.bodyMedium
                                     ?.copyWith(
                                   fontWeight: FontWeight.w600,
@@ -373,8 +373,8 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                               ),
                               Text(
                                 _isPublic
-                                    ? 'Public: friends can see your calendar'
-                                    : 'Private: only you see your calendar',
+                                    ? context.l10n.privacyPublic
+                                    : context.l10n.privacyPrivate,
                                 style: context.textTheme.bodySmall,
                               ),
                             ],
@@ -412,7 +412,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Save Changes'),
+                        : Text(context.l10n.saveChanges),
                   ),
                   const SizedBox(height: AppSpacing.spacing16),
                 ],

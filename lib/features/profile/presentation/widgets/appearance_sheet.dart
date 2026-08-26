@@ -40,7 +40,7 @@ class AppearanceSheet extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.spacing24),
-                Text('Appearance', style: context.textTheme.titleLarge),
+                Text(context.l10n.appearance, style: context.textTheme.titleLarge),
                 const SizedBox(height: AppSpacing.spacing20),
                 ...ThemeMode.values.map((mode) => _ThemeOption(
                       mode: mode,
@@ -70,14 +70,14 @@ class _ThemeOption extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  String get _label {
+  String _label(BuildContext context) {
     switch (mode) {
       case ThemeMode.system:
-        return 'System default';
+        return context.l10n.systemDefault;
       case ThemeMode.light:
-        return 'Light';
+        return context.l10n.light;
       case ThemeMode.dark:
-        return 'Dark';
+        return context.l10n.dark;
     }
   }
 
@@ -117,7 +117,7 @@ class _ThemeOption extends StatelessWidget {
             const SizedBox(width: AppSpacing.spacing12),
             Expanded(
               child: Text(
-                _label,
+                _label(context),
                 style: context.textTheme.bodyMedium?.copyWith(
                   fontWeight:
                       isSelected ? FontWeight.w600 : FontWeight.w400,

@@ -137,7 +137,9 @@ class _LoginPageState extends State<LoginPage>
                             );
                           },
                           child: Text(
-                            _isSignUp ? 'Create account' : 'Welcome back',
+                            _isSignUp
+                                ? context.l10n.createAccount
+                                : context.l10n.loginTitle,
                             key: ValueKey('title_$_isSignUp'),
                             style: context.textTheme.headlineLarge,
                             textAlign: TextAlign.center,
@@ -148,8 +150,8 @@ class _LoginPageState extends State<LoginPage>
 
                         Text(
                           _isSignUp
-                              ? 'Start your productive journey'
-                              : 'Sign in to continue your journey',
+                              ? context.l10n.startYourJourney
+                              : context.l10n.startSignInPrompt,
                           style: context.textTheme.bodyLarge?.copyWith(
                             color: colors.textSecondary,
                           ),
@@ -198,8 +200,8 @@ class _LoginPageState extends State<LoginPage>
                           children: [
                             Text(
                               _isSignUp
-                                  ? 'Already have an account? '
-                                  : "Don't have an account? ",
+                                  ? context.l10n.alreadyHaveAnAccount
+                                  : context.l10n.dontHaveAnAccount,
                               style: context.textTheme.bodyMedium?.copyWith(
                                 color: colors.textSecondary,
                               ),
@@ -214,7 +216,9 @@ class _LoginPageState extends State<LoginPage>
                                 });
                               },
                               child: Text(
-                                _isSignUp ? 'Sign In' : 'Sign Up',
+                                _isSignUp
+                                ? context.l10n.signIn
+                                : context.l10n.signUp,
                                 style: context.textTheme.bodyMedium?.copyWith(
                                   color: colors.accent,
                                   fontWeight: FontWeight.w700,
@@ -245,16 +249,16 @@ class _LoginPageState extends State<LoginPage>
         if (_isSignUp) ...[
           _ModernTextField(
             controller: _nameController,
-            label: 'Display Name',
-            hint: 'Your name',
+            label: context.l10n.displayName,
+            hint: context.l10n.displayNameHint,
             icon: Icons.person_outline,
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: AppSpacing.spacing16),
           _ModernTextField(
             controller: _usernameController,
-            label: 'Username',
-            hint: 'Unique handle',
+            label: context.l10n.username,
+            hint: context.l10n.usernameHint,
             icon: Icons.alternate_email,
             textInputAction: TextInputAction.next,
             autocorrect: false,
@@ -263,8 +267,8 @@ class _LoginPageState extends State<LoginPage>
         ],
         _ModernTextField(
           controller: _emailController,
-          label: 'Email',
-          hint: 'you@example.com',
+          label: context.l10n.email,
+          hint: context.l10n.emailHint,
           icon: Icons.mail_outline,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
@@ -272,10 +276,10 @@ class _LoginPageState extends State<LoginPage>
         const SizedBox(height: AppSpacing.spacing16),
         _ModernTextField(
           controller: _passwordController,
-          label: 'Password',
+          label: context.l10n.password,
           hint: _isSignUp
-              ? 'At least 6 characters'
-              : 'Enter your password',
+              ? context.l10n.passwordHintSignUp
+              : context.l10n.passwordHintSignIn,
           icon: Icons.lock_outline,
           obscureText: !_isPasswordVisible,
           textInputAction: TextInputAction.done,
@@ -300,13 +304,13 @@ class _LoginPageState extends State<LoginPage>
             child: GestureDetector(
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Password reset coming soon'),
+                  SnackBar(
+                    content: Text(context.l10n.passwordResetComingSoon),
                   ),
                 );
               },
               child: Text(
-                'Forgot password?',
+                context.l10n.forgotPassword,
                 style: context.textTheme.bodySmall?.copyWith(
                   color: colors.accent,
                   fontWeight: FontWeight.w600,
@@ -458,7 +462,9 @@ class _SubmitButton extends StatelessWidget {
                       ),
                     )
                   : Text(
-                      isSignUp ? 'Create Account' : 'Sign In',
+                      isSignUp
+                          ? context.l10n.createAccountButton
+                          : context.l10n.signIn,
                       style: context.textTheme.bodyLarge?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
@@ -488,7 +494,7 @@ class _GoogleButton extends StatelessWidget {
         width: 24,
         height: 24,
       ),
-      label: const Text('Continue with Google'),
+      label: Text(context.l10n.continueWithGoogle),
       style: OutlinedButton.styleFrom(
         foregroundColor: colors.textPrimary,
         backgroundColor: colors.surfaceElevated,

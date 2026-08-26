@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/extensions/context_extensions.dart';
+
 class ShellScaffold extends StatelessWidget {
   const ShellScaffold({
     required this.navigationShell,
@@ -17,26 +19,26 @@ class ShellScaffold extends StatelessWidget {
         currentIndex: navigationShell.currentIndex,
         onTap: navigationShell.goBranch,
         type: BottomNavigationBarType.fixed,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.check_circle_outline),
-            activeIcon: Icon(Icons.check_circle),
-            label: 'Tasks',
+            icon: const Icon(Icons.check_circle_outline),
+            activeIcon: const Icon(Icons.check_circle),
+            label: context.l10n.tasks,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
-            activeIcon: Icon(Icons.calendar_today),
-            label: 'Calendar',
+            icon: const Icon(Icons.calendar_today_outlined),
+            activeIcon: const Icon(Icons.calendar_today),
+            label: context.l10n.calendar,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.people_outline),
-            activeIcon: Icon(Icons.people),
-            label: 'Social',
+            icon: const Icon(Icons.people_outline),
+            activeIcon: const Icon(Icons.people),
+            label: context.l10n.social,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
+            icon: const Icon(Icons.person_outline),
+            activeIcon: const Icon(Icons.person),
+            label: context.l10n.profile,
           ),
         ],
       ),

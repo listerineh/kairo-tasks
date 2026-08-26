@@ -68,12 +68,12 @@ class _ProfileColorSheetState extends State<ProfileColorSheet> {
               ),
               const SizedBox(height: AppSpacing.spacing24),
               Text(
-                'My task color',
+                context.l10n.myTaskColor,
                 style: context.textTheme.titleLarge,
               ),
               const SizedBox(height: AppSpacing.spacing8),
               Text(
-                'This color will be used for your tasks in the calendar',
+                context.l10n.colorUsedForCalendar,
                 style: context.textTheme.bodyMedium?.copyWith(
                   color: colors.textSecondary,
                 ),
@@ -110,7 +110,7 @@ class _ProfileColorSheetState extends State<ProfileColorSheet> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(_selectedColor),
-                  child: const Text('Save Color'),
+                  child: Text(context.l10n.saveColor),
                 ),
               ),
               const SizedBox(height: AppSpacing.spacing8),
@@ -118,7 +118,7 @@ class _ProfileColorSheetState extends State<ProfileColorSheet> {
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(context.l10n.cancel),
                 ),
               ),
               const SizedBox(height: AppSpacing.spacing16),

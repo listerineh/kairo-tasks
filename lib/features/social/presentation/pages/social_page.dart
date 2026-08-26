@@ -185,13 +185,14 @@ class _SocialPageState extends State<SocialPage>
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return;
 
+    final l10n = context.l10n;
     try {
       await Supabase.instance.client.from('friendships').insert({
         'requester_id': userId,
         'addressee_id': addresseeId,
         'status': 'pending',
       });
-      _showSuccess('Friend request sent');
+      _showSuccess(l10n.friendRequestSent);
       _sentRequestIds.add(addresseeId);
       await _searchUsers(_searchController.text.trim());
       await _loadSocialData();
@@ -201,6 +202,7 @@ class _SocialPageState extends State<SocialPage>
   }
 
   Future<void> _respondRequest(String requestId, String status) async {
+    final l10n = context.l10n;
     try {
       await Supabase.instance.client
           .from('friendships')
@@ -208,7 +210,7 @@ class _SocialPageState extends State<SocialPage>
           .eq('id', requestId);
 
       _showSuccess(
-        status == 'accepted' ? 'Friend request accepted' : 'Request declined',
+        status == 'accepted' ? l10n.friendRequestAccepted : l10n.requestDeclined,
       );
       await _loadSocialData();
       await _searchUsers(_searchController.text.trim());
@@ -218,12 +220,13 @@ class _SocialPageState extends State<SocialPage>
   }
 
   Future<void> _removeFriend(String friendshipId) async {
+    final l10n = context.l10n;
     try {
       await Supabase.instance.client
           .from('friendships')
           .delete()
           .eq('id', friendshipId);
-      _showSuccess('Friend removed');
+      _showSuccess(l10n.friendRemoved);
       await _loadSocialData();
       await _searchUsers(_searchController.text.trim());
     } catch (e) {
@@ -252,6 +255,7 @@ class _SocialPageState extends State<SocialPage>
   }
 
   void _showSuccess(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -261,6 +265,7 @@ class _SocialPageState extends State<SocialPage>
   }
 
   void _showError(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -277,7 +282,7 @@ class _SocialPageState extends State<SocialPage>
     final displayName =
         other['display_name'] as String? ??
         other['username'] as String? ??
-        'friend';
+        context.l10n.friend;
     final username = other['username'] as String? ?? '';
     final avatarUrl = other['avatar_url'] as String?;
     final color = friend['color'] as String? ?? '#6B8FA3';
@@ -323,7 +328,7 @@ class _SocialPageState extends State<SocialPage>
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        title: const Text('Social'),
+        title: Text(context.l10n.social),
         centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
@@ -334,17 +339,17 @@ class _SocialPageState extends State<SocialPage>
           tabs: [
             _Tab(
               icon: Icons.search,
-              label: 'Search',
+              label: context.l10n.search,
               count: _searchResults.length,
             ),
             _Tab(
               icon: Icons.people,
-              label: 'Friends',
+              label: context.l10n.friends,
               count: _friends.length,
             ),
             _Tab(
               icon: Icons.mail,
-              label: 'Requests',
+              label: context.l10n.requests,
               count: _pendingRequests.length,
             ),
           ],
@@ -468,7 +473,7 @@ class _SearchTab extends StatelessWidget {
             child: TextField(
               controller: controller,
               decoration: InputDecoration(
-                hintText: 'Find someone by username...',
+                hintText: context.l10n.searchHint,
                 prefixIcon: Icon(Icons.search, color: colors.textSecondary),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.all(AppSpacing.spacing16),
@@ -477,7 +482,7 @@ class _SearchTab extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.spacing16),
           Text(
-            results.isEmpty ? 'Start typing to find people' : 'Search results',
+            results.isEmpty ? context.l10n.searchEmpty : context.l10n.searchResults,
             style: context.textTheme.bodyMedium?.copyWith(
               color: colors.textSecondary,
             ),
@@ -499,18 +504,18 @@ class _SearchTab extends StatelessWidget {
                         trailing: isFriend
                             ? _StatusChip(
                                 icon: Icons.check,
-                                label: 'Friends',
+                                label: context.l10n.friends,
                                 color: colors.accent,
                               )
                             : isRequestSent
                                 ? _StatusChip(
                                     icon: Icons.hourglass_empty,
-                                    label: 'Pending',
+                                    label: context.l10n.pending,
                                     color: colors.textMuted,
                                   )
                                 : _IconActionButton(
                                     icon: Icons.person_add,
-                                    tooltip: 'Send friend request',
+                                    tooltip: context.l10n.sendFriendRequest,
                                     onPressed: () => onAdd(user['id'] as String),
                                   ),
                       );
@@ -541,8 +546,8 @@ class _FriendsTab extends StatelessWidget {
       child: friends.isEmpty
           ? _EmptyState(
               icon: Icons.people_outline,
-              title: 'No friends yet',
-              subtitle: 'Search by username and connect with others',
+              title: context.l10n.noFriendsTitle,
+              subtitle: context.l10n.noFriendsSubtitle,
               colors: colors,
             )
           : ListView.builder(
@@ -580,8 +585,8 @@ class _RequestsTab extends StatelessWidget {
       child: requests.isEmpty
           ? _EmptyState(
               icon: Icons.mail_outline,
-              title: 'No pending requests',
-              subtitle: 'When someone adds you, it will show here',
+              title: context.l10n.noPendingRequestsTitle,
+              subtitle: context.l10n.noPendingRequestsSubtitle,
               colors: colors,
             )
           : ListView.builder(
@@ -863,7 +868,7 @@ class _FriendDetailSheet extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.spacing24),
               Text(
-                'Friend color',
+                context.l10n.friendColor,
                 style: context.textTheme.labelLarge,
               ),
               const SizedBox(height: AppSpacing.spacing12),
@@ -904,7 +909,7 @@ class _FriendDetailSheet extends StatelessWidget {
                     onCreateTask();
                   },
                   icon: const Icon(Icons.add_task),
-                  label: const Text('Create task together'),
+                  label: Text(context.l10n.createTaskTogether),
                 ),
               ),
               const SizedBox(height: AppSpacing.spacing12),
@@ -913,7 +918,7 @@ class _FriendDetailSheet extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: () => Navigator.of(context).pop(true),
                   icon: const Icon(Icons.delete),
-                  label: const Text('Remove friend'),
+                  label: Text(context.l10n.removeFriend),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: colors.urgent,
                     side: BorderSide(color: colors.urgent),
@@ -992,7 +997,7 @@ class _EmptySearchState extends StatelessWidget {
           Icon(Icons.search, size: 48, color: colors.textMuted),
           const SizedBox(height: AppSpacing.spacing12),
           Text(
-            'Type a username to discover people',
+            context.l10n.searchPrompt,
             style: context.textTheme.bodyLarge?.copyWith(
               color: colors.textSecondary,
             ),

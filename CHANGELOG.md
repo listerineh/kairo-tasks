@@ -10,6 +10,19 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.04.00 - Internationalization (2026-08-25)
+
+### Added in V 01.04.00
+
+- Full English/Spanish internationalization using ARB files and `flutter_localizations`
+- Default locale is Spanish
+- Supported locales: `es` and `en`
+- App follows the device preferred language and falls back to Spanish
+- New `lib/l10n/app_es.arb` and `lib/l10n/app_en.arb`
+- New `context.l10n` extension for easy access to translated strings
+
+---
+
 ## V 01.03.33 - Priority dot padding in calendar (2026-08-25)
 
 ### Fixed in V 01.03.33

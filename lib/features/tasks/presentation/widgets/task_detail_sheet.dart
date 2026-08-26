@@ -87,7 +87,7 @@ class TaskDetailSheet extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: onEdit,
-                child: const Text('Edit Task'),
+                child: Text(context.l10n.editTask),
               ),
             ),
           ],
@@ -186,7 +186,7 @@ class _DateSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'When',
+          context.l10n.when,
           style: context.textTheme.bodyMedium?.copyWith(
             color: colors.textSecondary,
           ),
@@ -195,14 +195,14 @@ class _DateSection extends StatelessWidget {
         if (task.startDate != null)
           _DateRow(
             icon: Icons.play_arrow,
-            label: 'Starts',
+            label: context.l10n.starts,
             value: _formatDateTime(task.startDate!),
             colors: colors,
           ),
         if (task.dueDate != null)
           _DateRow(
             icon: Icons.flag,
-            label: 'Due',
+            label: context.l10n.due,
             value: _formatDateTime(task.dueDate!),
             colors: colors,
           ),
@@ -323,7 +323,7 @@ class _SharedRow extends StatelessWidget {
                 Text(
                   displayName.isNotEmpty
                       ? displayName
-                      : (username.isNotEmpty ? '@$username' : 'Shared'),
+                      : (username.isNotEmpty ? '@$username' : context.l10n.shared),
                   style: context.textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),

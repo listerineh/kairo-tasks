@@ -115,7 +115,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
             const SizedBox(height: AppSpacing.spacing24),
 
             // Title
-            Text('New Task', style: context.textTheme.titleLarge),
+            Text(context.l10n.newTask, style: context.textTheme.titleLarge),
             const SizedBox(height: AppSpacing.spacing20),
 
             // Task title input
@@ -123,9 +123,9 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
               controller: _titleController,
               autofocus: true,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                hintText: 'What needs to be done?',
-                labelText: 'Title',
+              decoration: InputDecoration(
+                hintText: context.l10n.titleHint,
+                labelText: context.l10n.title,
               ),
             ),
             const SizedBox(height: AppSpacing.spacing16),
@@ -136,15 +136,15 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
               textCapitalization: TextCapitalization.sentences,
               maxLines: 3,
               minLines: 1,
-              decoration: const InputDecoration(
-                hintText: 'Add details (optional)',
-                labelText: 'Description',
+              decoration: InputDecoration(
+                hintText: context.l10n.descriptionHint,
+                labelText: context.l10n.description,
               ),
             ),
             const SizedBox(height: AppSpacing.spacing20),
 
             // Priority selector
-            Text('Priority', style: context.textTheme.labelLarge),
+            Text(context.l10n.priority, style: context.textTheme.labelLarge),
             const SizedBox(height: AppSpacing.spacing8),
             Row(
               children: TaskPriority.values.map((priority) {
@@ -190,7 +190,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                       child: Text(
                         _startDate != null
                             ? 'Start: ${_formatDateTime(_startDate!)}'
-                            : 'Set start date & time (optional)',
+                            : context.l10n.setStartDate,
                         style: context.textTheme.bodyMedium,
                       ),
                     ),
@@ -232,7 +232,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                       child: Text(
                         _dueDate != null
                             ? 'End: ${_formatDateTime(_dueDate!)}'
-                            : 'Set end date & time (optional)',
+                            : context.l10n.setEndDate,
                         style: context.textTheme.bodyMedium,
                       ),
                     ),
@@ -253,7 +253,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
 
             // Share with friends
             if (_friends.isNotEmpty) ...[
-              Text('Share with', style: context.textTheme.labelLarge),
+              Text(context.l10n.shareWith, style: context.textTheme.labelLarge),
               const SizedBox(height: AppSpacing.spacing8),
               Wrap(
                 spacing: AppSpacing.spacing8,
@@ -296,7 +296,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                     label: Text(
                       displayName.isNotEmpty
                           ? displayName
-                          : (username.isNotEmpty ? '@$username' : 'Friend'),
+                          : (username.isNotEmpty ? '@$username' : context.l10n.friend),
                     ),
                     onSelected: id == null
                         ? null
@@ -319,7 +319,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
             // Create button
             ElevatedButton(
               onPressed: _createTask,
-              child: const Text('Create Task'),
+              child: Text(context.l10n.createTask),
             ),
             const SizedBox(height: AppSpacing.spacing16),
           ],
@@ -447,7 +447,7 @@ class _PriorityOption extends StatelessWidget {
         ),
         child: Center(
           child: Text(
-            _label,
+            _label(context),
             style: context.textTheme.labelMedium?.copyWith(
               color: isSelected ? priorityColor : colors.textSecondary,
               fontWeight:
@@ -459,16 +459,16 @@ class _PriorityOption extends StatelessWidget {
     );
   }
 
-  String get _label {
+  String _label(BuildContext context) {
     switch (priority) {
       case TaskPriority.urgent:
-        return 'Urgent';
+        return context.l10n.urgent;
       case TaskPriority.high:
-        return 'High';
+        return context.l10n.high;
       case TaskPriority.medium:
-        return 'Medium';
+        return context.l10n.medium;
       case TaskPriority.low:
-        return 'Low';
+        return context.l10n.low;
     }
   }
 

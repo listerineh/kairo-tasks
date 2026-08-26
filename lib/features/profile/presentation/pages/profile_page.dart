@@ -57,7 +57,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final metadata = user?.userMetadata;
 
     final fallbackEmail =
-        user?.email != null ? user!.email!.split('@').first : 'User';
+        user?.email != null ? user!.email!.split('@').first : context.l10n.user;
     final displayName = _profile?['display_name'] as String? ??
         metadata?['display_name'] as String? ??
         metadata?['full_name'] as String? ??
@@ -89,7 +89,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 height: 28,
               ),
               const SizedBox(width: AppSpacing.spacing8),
-              const Text('KairoTasks'),
+              Text(context.l10n.kairoTasks),
             ],
           ),
           centerTitle: true,
@@ -148,7 +148,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       // Member since
                       if (createdAt != null)
                         Text(
-                          'Member since ${_formatDate(createdAt)}',
+                          context.l10n.memberSince(_formatDate(createdAt)),
                           style: context.textTheme.bodySmall?.copyWith(
                             color: colors.textMuted,
                           ),
@@ -156,18 +156,18 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(height: AppSpacing.spacing32),
 
                       // Settings section
-                      const _SectionHeader(title: 'Account'),
+                      _SectionHeader(title: context.l10n.account),
                       const SizedBox(height: AppSpacing.spacing12),
 
                       _SettingsTile(
                         icon: Icons.person_outline,
-                        title: 'Edit Profile',
+                        title: context.l10n.editProfile,
                         onTap: () => _showEditProfileSheet(context),
                       ),
                       _SettingsTile(
                         icon: Icons.color_lens_outlined,
-                        title: 'My task color',
-                        subtitle: 'Color used for your calendar tasks',
+                        title: context.l10n.myTaskColor,
+                        subtitle: context.l10n.colorUsedForCalendar,
                         trailing: Container(
                           width: 24,
                           height: 24,
@@ -181,18 +181,18 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       _SettingsTile(
                         icon: Icons.palette_outlined,
-                        title: 'Appearance',
-                        subtitle: 'Theme, colors',
+                        title: context.l10n.appearance,
+                        subtitle: context.l10n.appearanceSubtitle,
                         onTap: () => _showAppearanceSheet(context),
                       ),
                       _SettingsTile(
                         icon: Icons.notifications_outlined,
-                        title: 'Notifications',
+                        title: context.l10n.notifications,
                         onTap: () => _showNotificationsSheet(context),
                       ),
 
                       const SizedBox(height: AppSpacing.spacing24),
-                      const _SectionHeader(title: 'About'),
+                      _SectionHeader(title: context.l10n.about),
                       const SizedBox(height: AppSpacing.spacing12),
 
                       FutureBuilder<PackageInfo>(
@@ -202,7 +202,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               snapshot.hasData ? snapshot.data!.version : '...';
                           return _SettingsTile(
                             icon: Icons.info_outline,
-                            title: 'Version',
+                            title: context.l10n.version,
                             subtitle: version,
                             onTap: null,
                           );
@@ -210,16 +210,16 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       _SettingsTile(
                         icon: Icons.code,
-                        title: 'Open Source',
-                        subtitle: 'View on GitHub',
+                        title: context.l10n.openSource,
+                        subtitle: context.l10n.openSourceSubtitle,
                         onTap: () => _openUrl(
                           'https://github.com/listerineh/kairo-tasks',
                         ),
                       ),
                       _SettingsTile(
                         icon: Icons.language,
-                        title: 'Developed by Listerineh',
-                        subtitle: 'listerineh.dev',
+                        title: context.l10n.developedBy,
+                        subtitle: context.l10n.developedBySubtitle,
                         onTap: () => _openUrl('https://listerineh.dev'),
                       ),
 
@@ -235,7 +235,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 .add(const AuthSignOutRequested());
                           },
                           icon: const Icon(Icons.logout),
-                          label: const Text('Sign Out'),
+                          label: Text(context.l10n.signOut),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: colors.urgent,
                             side: BorderSide(color: colors.urgent),

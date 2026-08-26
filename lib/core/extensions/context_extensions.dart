@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme/app_colors.dart';
+import '../../generated/app_localizations.dart';
 
 extension BuildContextX on BuildContext {
   ThemeData get theme => Theme.of(this);
@@ -12,4 +13,6 @@ extension BuildContextX on BuildContext {
 
   AppColorScheme get appColors =>
       isDarkMode ? AppColors.dark : AppColors.light;
+
+  AppLocalizations get l10n => AppLocalizations.of(this)!;
 }

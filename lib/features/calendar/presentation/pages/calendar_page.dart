@@ -113,21 +113,21 @@ class _CalendarPageState extends State<CalendarPage> {
                   const Spacer(),
                   // View type chips
                   _ViewChip(
-                    label: 'D',
+                    label: context.l10n.dayInitial,
                     isSelected: _viewType == CalendarViewType.day,
                     onTap: () =>
                         setState(() => _viewType = CalendarViewType.day),
                   ),
                   const SizedBox(width: 6),
                   _ViewChip(
-                    label: 'W',
+                    label: context.l10n.weekInitial,
                     isSelected: _viewType == CalendarViewType.week,
                     onTap: () =>
                         setState(() => _viewType = CalendarViewType.week),
                   ),
                   const SizedBox(width: 6),
                   _ViewChip(
-                    label: 'M',
+                    label: context.l10n.monthInitial,
                     isSelected: _viewType == CalendarViewType.month,
                     onTap: () =>
                         setState(() => _viewType = CalendarViewType.month),
@@ -206,7 +206,7 @@ class _CalendarPageState extends State<CalendarPage> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        'Today',
+                        context.l10n.today,
                         style: context.textTheme.labelMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -490,7 +490,7 @@ class _CalendarPageState extends State<CalendarPage> {
     return TaskEntity(
       id: json['id'] as String,
       ownerId: json['owner_id'] as String,
-      title: isPrivate ? 'Busy' : json['title'] as String,
+      title: isPrivate ? context.l10n.busy : json['title'] as String,
       description: isPrivate ? null : json['description'] as String?,
       priority: _parsePriority(json['priority'] as String? ?? 'medium'),
       status: _parseStatus(json['status'] as String? ?? 'pending'),

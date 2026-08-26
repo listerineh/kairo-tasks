@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:kairotasks/generated/app_localizations.dart';
 
 import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/tasks/presentation/bloc/tasks_bloc.dart';
@@ -51,6 +53,19 @@ class _KairoTasksAppState extends State<KairoTasksApp> {
         darkTheme: AppTheme.dark,
         themeMode: ThemeService.instance.themeMode.value,
         routerConfig: AppRouter.router,
+        localizationsDelegates: AppLocalizations.localizationsDelegates +
+            [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+        supportedLocales: const [Locale('es'), Locale('en')],
+        localeResolutionCallback: (locale, supportedLocales) {
+          for (final l in supportedLocales) {
+            if (l.languageCode == locale?.languageCode) return l;
+          }
+          return const Locale('es');
+        },
       ),
     );
   }
