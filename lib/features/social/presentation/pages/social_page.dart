@@ -28,6 +28,7 @@ class _SocialPageState extends State<SocialPage>
   List<Map<String, dynamic>> _pendingRequests = [];
   Set<String> _sentRequestIds = {};
   Set<String> _friendIds = {};
+  RealtimeChannel? _realtimeChannel;
 
   @override
   void initState() {
@@ -35,10 +36,31 @@ class _SocialPageState extends State<SocialPage>
     _tabController = TabController(length: 3, vsync: this);
     _loadSocialData();
     _searchController.addListener(_onSearchChanged);
+
+    _realtimeChannel = Supabase.instance.client
+        .channel('friendships_updates')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'friendships',
+          callback: (payload) async {
+            if (!mounted) return;
+            await _loadSocialData();
+            final query = _searchController.text.trim();
+            if (query.isNotEmpty) {
+              await _searchUsers(query);
+            }
+          },
+        )
+        .subscribe();
   }
 
   @override
   void dispose() {
+    unawaited(_realtimeChannel?.unsubscribe().then((_) {}) ?? Future<void>.value());
+    if (_realtimeChannel != null) {
+      unawaited(Supabase.instance.client.removeChannel(_realtimeChannel!).then((_) {}));
+    }
     _tabController.dispose();
     _debounce?.cancel();
     _searchController.dispose();
@@ -178,7 +200,9 @@ class _SocialPageState extends State<SocialPage>
         }).toList();
       });
     } catch (e) {
+      debugPrint(e.toString());
       setState(() => _searchResults = []);
+      _showError('Could not search users: $e');
     }
   }
 
@@ -198,7 +222,8 @@ class _SocialPageState extends State<SocialPage>
       await _searchUsers(_searchController.text.trim());
       await _loadSocialData();
     } catch (e) {
-      _showError('Could not send request');
+      debugPrint(e.toString());
+      _showError('Could not send request: $e');
     }
   }
 
@@ -216,7 +241,8 @@ class _SocialPageState extends State<SocialPage>
       await _loadSocialData();
       await _searchUsers(_searchController.text.trim());
     } catch (e) {
-      _showError('Could not respond to request');
+      debugPrint(e.toString());
+      _showError('Could not respond to request: $e');
     }
   }
 
@@ -231,7 +257,8 @@ class _SocialPageState extends State<SocialPage>
       await _loadSocialData();
       await _searchUsers(_searchController.text.trim());
     } catch (e) {
-      _showError('Could not remove friend');
+      debugPrint(e.toString());
+      _showError('Could not remove friend: $e');
     }
   }
 
@@ -251,7 +278,8 @@ class _SocialPageState extends State<SocialPage>
       _showSuccess('Color saved');
       await _loadSocialData();
     } catch (e) {
-      _showError('Could not save color');
+      debugPrint(e.toString());
+      _showError('Could not save color: $e');
     }
   }
 

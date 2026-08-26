@@ -10,6 +10,20 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.11.02 - Social realtime and FCM guard (2026-08-26)
+
+### Added in V 01.11.02
+
+- Supabase Realtime listener in `SocialPage` for `public.friendships` so changes (delete, accept, new request) are reflected immediately
+- `fcm_send` now guards against `auth.jwt()` being null to avoid `pg_net` failures on service_role/admin calls
+- Better error messages in `_sendRequest`, `_removeFriend`, `_respondRequest` to include the actual exception
+
+### Database
+
+- New migration `20260826000017_guard_fcm_jwt.sql` updates `fcm_send` to bail out when `auth.jwt()` or the internal key is missing
+
+---
+
 ## V 01.11.01 - Fix social pull-to-refresh on empty states (2026-08-26)
 
 ### Fixed in V 01.11.01
