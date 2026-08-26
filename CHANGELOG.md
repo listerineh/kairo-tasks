@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.03 - Fluid tab navigation (2026-08-25)
+
+### Changed in V 01.03.03
+
+- Migrated from `ShellRoute` to `StatefulShellRoute.indexedStack`
+- Tabs are now kept alive, eliminating rebuilds and data reloads
+- Switching between Tasks, Calendar, Social, and Profile is instant
+- Tab state and scroll positions are preserved
+
+---
+
 ## V 01.03.02 - Social keyboard scroll fix (2026-08-25)
 
 ### Fixed in V 01.03.02
