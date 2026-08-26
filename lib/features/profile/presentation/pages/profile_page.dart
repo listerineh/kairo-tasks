@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
 import '../../../../app/theme/app_spacing.dart';
@@ -115,11 +116,19 @@ class ProfilePage extends StatelessWidget {
                 const _SectionHeader(title: 'About'),
                 const SizedBox(height: AppSpacing.spacing12),
 
-                const _SettingsTile(
-                  icon: Icons.info_outline,
-                  title: 'Version',
-                  subtitle: '1.1.6',
-                  onTap: null,
+                FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snapshot) {
+                    final version = snapshot.hasData
+                        ? snapshot.data!.version
+                        : '...';
+                    return _SettingsTile(
+                      icon: Icons.info_outline,
+                      title: 'Version',
+                      subtitle: version,
+                      onTap: null,
+                    );
+                  },
                 ),
                 _SettingsTile(
                   icon: Icons.code,

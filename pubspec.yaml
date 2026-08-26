@@ -1,7 +1,7 @@
 name: kairotasks
 description: "Collaborative productivity app that elevates task management with real-time social features, calendar views, and accessibility-first design."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.2.2+22
 
 environment:
   sdk: ^3.13.1
@@ -42,6 +42,7 @@ dependencies:
   # flutter_local_notifications - will add when implementing scheduled reminders
 
   # Utils
+  package_info_plus: ^8.0.0
   intl: ^0.20.2
   dartz: ^0.10.1
   connectivity_plus: ^6.1.2
