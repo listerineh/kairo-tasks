@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
@@ -20,12 +21,43 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
   TaskPriority _priority = TaskPriority.medium;
   DateTime? _startDate;
   DateTime? _dueDate;
+  String? _sharedWith;
+  List<Map<String, dynamic>> _friends = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFriends();
+  }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadFriends() async {
+    try {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final friends = await Supabase.instance.client
+          .from('friendships')
+          .select('''
+            id,
+            requester_id,
+            addressee_id,
+            requester:profiles!requester_id(username, display_name, avatar_url),
+            addressee:profiles!addressee_id(username, display_name, avatar_url)
+          ''')
+          .or('requester_id.eq.$userId,addressee_id.eq.$userId')
+          .eq('status', 'accepted');
+
+      setState(() => _friends = friends);
+    } catch (e) {
+      // ignore friend load errors
+    }
   }
 
   @override
@@ -195,6 +227,67 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                 ),
               ),
             ),
+            const SizedBox(height: AppSpacing.spacing20),
+
+            // Share with friend
+            if (_friends.isNotEmpty) ...[
+              Text('Share with', style: context.textTheme.labelLarge),
+              const SizedBox(height: AppSpacing.spacing8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
+                decoration: BoxDecoration(
+                  color: colors.surfaceSubtle,
+                  borderRadius:
+                      BorderRadius.circular(AppSpacing.radiusMedium),
+                  border: Border.all(color: colors.border),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String?>(
+                    isExpanded: true,
+                    value: _sharedWith,
+                    hint: Text(
+                      'Just me',
+                      style: context.textTheme.bodyMedium,
+                    ),
+                    icon: Icon(Icons.people, color: colors.textSecondary),
+                    items: _friends.map((friend) {
+                      final isRequester =
+                          friend['requester_id'] ==
+                              Supabase.instance.client.auth.currentUser?.id;
+                      final profile = isRequester
+                          ? friend['addressee'] as Map<String, dynamic>?
+                          : friend['requester'] as Map<String, dynamic>?;
+                      final id = isRequester
+                          ? friend['addressee_id'] as String?
+                          : friend['requester_id'] as String?;
+                      final displayName =
+                          profile?['display_name'] as String? ?? '';
+                      final username =
+                          profile?['username'] as String? ?? '';
+
+                      return DropdownMenuItem<String?>(
+                        value: id,
+                        child: Text(
+                          '$displayName (@$username)',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }).toList()
+                      ..insert(
+                        0,
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('Just me'),
+                        ),
+                      ),
+                    onChanged: (value) {
+                      setState(() => _sharedWith = value);
+                    },
+                  ),
+                ),
+              ),
+            ],
+
             const SizedBox(height: AppSpacing.spacing24),
 
             // Create button
@@ -288,6 +381,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
             priority: _priority,
             startDate: _startDate,
             dueDate: _dueDate,
+            sharedWith: _sharedWith,
           ),
         );
 

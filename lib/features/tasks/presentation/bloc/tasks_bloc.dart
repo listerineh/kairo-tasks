@@ -33,6 +33,7 @@ class TaskCreateRequested extends TasksEvent {
     this.priority = TaskPriority.medium,
     this.startDate,
     this.dueDate,
+    this.sharedWith,
   });
 
   final String title;
@@ -40,9 +41,11 @@ class TaskCreateRequested extends TasksEvent {
   final TaskPriority priority;
   final DateTime? startDate;
   final DateTime? dueDate;
+  final String? sharedWith;
 
   @override
-  List<Object?> get props => [title, description, priority, startDate, dueDate];
+  List<Object?> get props =>
+      [title, description, priority, startDate, dueDate, sharedWith];
 }
 
 class TaskStatusToggled extends TasksEvent {
@@ -276,17 +279,31 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     Emitter<TasksState> emit,
   ) async {
     try {
-      await _client.from('tasks').insert({
-        'owner_id': _userId,
-        'title': event.title,
-        if (event.description != null) 'description': event.description,
-        'priority': event.priority.name,
-        'status': 'pending',
-        if (event.startDate != null)
-          'start_date': event.startDate!.toUtc().toIso8601String(),
-        if (event.dueDate != null)
-          'due_date': event.dueDate!.toUtc().toIso8601String(),
-      });
+      final result = await _client
+          .from('tasks')
+          .insert({
+            'owner_id': _userId,
+            'title': event.title,
+            if (event.description != null) 'description': event.description,
+            'priority': event.priority.name,
+            'status': 'pending',
+            if (event.startDate != null)
+              'start_date': event.startDate!.toUtc().toIso8601String(),
+            if (event.dueDate != null)
+              'due_date': event.dueDate!.toUtc().toIso8601String(),
+          })
+          .select('id')
+          .single();
+
+      final taskId = result['id'] as String;
+
+      if (event.sharedWith != null && event.sharedWith != _userId) {
+        await _client.from('shared_tasks').insert({
+          'task_id': taskId,
+          'shared_by_id': _userId,
+          'shared_with_id': event.sharedWith,
+        });
+      }
       // Realtime stream will update the list automatically
     } catch (e) {
       emit(state.copyWith(errorMessage: 'Failed to create task: $e'));
