@@ -153,6 +153,14 @@ See [CHANGELOG.md](CHANGELOG.md) for version history. Format: `V xx.yy.zz`
 - yy = new important feature
 - zz = minor change (every individual change)
 
+### Version Source of Truth
+
+The latest `CHANGELOG.md` entry is the single source of truth for the current app version. After every meaningful change:
+
+1. Add or update a `V xx.yy.zz` entry at the top of `CHANGELOG.md`.
+2. Use the latest changelog version when naming APKs, referencing releases, or communicating the current version.
+3. Keep `CHANGELOG.md` in sync with shipped features, fixes, and migrations.
+
 ## Contributing
 
 See [README.md](README.md) for contribution guidelines.
