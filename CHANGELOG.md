@@ -10,6 +10,16 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.02.11 - Tab transitions (2026-08-25)
+
+### Added in V 01.02.11
+
+- Smooth fade transition when switching between bottom tabs
+- `CustomTransitionPage` with `Curves.easeInOut` for Tasks, Calendar, Social, and Profile routes
+- Replaced `NoTransitionPage` with animated page transitions
+
+---
+
 ## V 01.02.10 - Unique usernames (2026-08-25)
 
 ### Added in V 01.02.10
