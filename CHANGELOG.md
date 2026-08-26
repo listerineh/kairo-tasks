@@ -10,6 +10,18 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.30 - Calendar colors realtime and priority dot position (2026-08-25)
+
+### Fixed in V 01.03.30
+
+- Fixed `_coloredTasks` so own/friend colors are actually applied to all tasks
+- `CalendarPage` now subscribes to realtime changes on `profiles` and `friendships`
+  - Color changes update the calendar immediately without leaving the tab
+- Day and Week calendar blocks now use `profile.color` for background/border
+- Priority dot is now a small circle in the top-left corner of the task block
+
+---
+
 ## V 01.03.29 - Calendar colors and private friend "Busy" mode (2026-08-25)
 
 ### Fixed in V 01.03.29

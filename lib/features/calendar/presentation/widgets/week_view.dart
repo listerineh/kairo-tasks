@@ -282,24 +282,15 @@ class _DayColumn extends StatelessWidget {
                 left: BorderSide(color: taskColor, width: 3),
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+            child: Stack(
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      margin: const EdgeInsets.only(top: 3, right: 4),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: priorityColor,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
+                Padding(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
                         task.title,
                         style: context.textTheme.labelSmall?.copyWith(
                           color: isCompleted
@@ -313,17 +304,29 @@ class _DayColumn extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                      if (height > 36 && task.startDate != null)
+                        Text(
+                          '${_formatTime(startTime)} – ${_formatTime(task.dueDate!)}',
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colors.textMuted,
+                            fontSize: 9,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-                if (height > 36 && task.startDate != null)
-                  Text(
-                    '${_formatTime(startTime)} – ${_formatTime(task.dueDate!)}',
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: colors.textMuted,
-                      fontSize: 9,
+                Positioned(
+                  top: 4,
+                  left: 6,
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: priorityColor,
                     ),
                   ),
+                ),
               ],
             ),
           ),

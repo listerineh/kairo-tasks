@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -28,6 +30,9 @@ class _CalendarPageState extends State<CalendarPage> {
   final Map<String, String> _friendColors = {};
   DateTime _lastColorLoad = DateTime(2000);
   bool _isLoadingColors = false;
+  StreamSubscription<dynamic>? _profileSub;
+  StreamSubscription<dynamic>? _friendshipAsRequesterSub;
+  StreamSubscription<dynamic>? _friendshipAsAddresseeSub;
 
   static const _dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   static const _monthNames = [
@@ -38,7 +43,16 @@ class _CalendarPageState extends State<CalendarPage> {
   @override
   void initState() {
     super.initState();
+    _listenForColorChanges();
     _loadCalendarFriends();
+  }
+
+  @override
+  void dispose() {
+    _profileSub?.cancel();
+    _friendshipAsRequesterSub?.cancel();
+    _friendshipAsAddresseeSub?.cancel();
+    super.dispose();
   }
 
   @override
@@ -367,11 +381,37 @@ class _CalendarPageState extends State<CalendarPage> {
       final hex = task.ownerId == currentUserId
           ? _ownColor
           : (_friendColors[task.ownerId] ?? '#6B8FA3');
-      if (hex == task.color || (task.color == null && hex == _ownColor)) {
+      if (hex == task.color) {
         return task;
       }
       return task.copyWith(color: hex);
     }).toList();
+  }
+
+  void _listenForColorChanges() {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    _profileSub?.cancel();
+    _profileSub = Supabase.instance.client
+        .from('profiles')
+        .stream(primaryKey: ['id'])
+        .eq('id', userId)
+        .listen((_) => _loadCalendarFriends());
+
+    _friendshipAsRequesterSub?.cancel();
+    _friendshipAsRequesterSub = Supabase.instance.client
+        .from('friendships')
+        .stream(primaryKey: ['requester_id', 'addressee_id'])
+        .eq('requester_id', userId)
+        .listen((_) => _loadCalendarFriends());
+
+    _friendshipAsAddresseeSub?.cancel();
+    _friendshipAsAddresseeSub = Supabase.instance.client
+        .from('friendships')
+        .stream(primaryKey: ['requester_id', 'addressee_id'])
+        .eq('addressee_id', userId)
+        .listen((_) => _loadCalendarFriends());
   }
 
   void _maybeReloadColors() {

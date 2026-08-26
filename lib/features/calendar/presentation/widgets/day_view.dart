@@ -192,24 +192,15 @@ class DayView extends StatelessWidget {
               left: BorderSide(color: taskColor, width: 4),
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+          child: Stack(
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    margin: const EdgeInsets.only(top: 4, right: 6),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: priorityColor,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
+              Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
                       task.title,
                       style: context.textTheme.labelMedium?.copyWith(
                         color: isCompleted
@@ -222,33 +213,45 @@ class DayView extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                    if (blockHeight > 40) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${_formatTime(startTime)} – ${_formatTime(dueDate)}',
+                        style: context.textTheme.labelSmall?.copyWith(
+                          color: colors.textMuted,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                    if (blockHeight > 60 && task.description != null) ...[
+                      const SizedBox(height: 2),
+                      Flexible(
+                        child: Text(
+                          task.description!,
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colors.textMuted,
+                            fontSize: 10,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-              if (blockHeight > 40) ...[
-                const SizedBox(height: 2),
-                Text(
-                  '${_formatTime(startTime)} – ${_formatTime(dueDate)}',
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: colors.textMuted,
-                    fontSize: 11,
+              Positioned(
+                top: 6,
+                left: 10,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: priorityColor,
                   ),
                 ),
-              ],
-              if (blockHeight > 60 && task.description != null) ...[
-                const SizedBox(height: 2),
-                Flexible(
-                  child: Text(
-                    task.description!,
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: colors.textMuted,
-                      fontSize: 10,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+              ),
             ],
           ),
         ),
