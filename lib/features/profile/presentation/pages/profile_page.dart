@@ -11,8 +11,41 @@ import '../widgets/appearance_sheet.dart';
 import '../widgets/edit_profile_sheet.dart';
 import '../widgets/notifications_sheet.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  Map<String, dynamic>? _profile;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final response = await Supabase.instance.client
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .single();
+      setState(() {
+        _profile = response;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,14 +53,18 @@ class ProfilePage extends StatelessWidget {
     final user = Supabase.instance.client.auth.currentUser;
     final metadata = user?.userMetadata;
 
-    final displayName =
+    final fallbackEmail =
+        user?.email != null ? user!.email!.split('@').first : 'User';
+    final displayName = _profile?['display_name'] as String? ??
         metadata?['display_name'] as String? ??
         metadata?['full_name'] as String? ??
         metadata?['name'] as String? ??
-        user?.email?.split('@').first ??
-        'User';
+        fallbackEmail;
+    final username =
+        _profile?['username'] as String? ?? displayName;
     final email = user?.email ?? '';
-    final avatarUrl = metadata?['avatar_url'] as String? ??
+    final avatarUrl = _profile?['avatar_url'] as String? ??
+        metadata?['avatar_url'] as String? ??
         metadata?['picture'] as String?;
     final createdAt = user?.createdAt;
 
@@ -39,126 +76,136 @@ class ProfilePage extends StatelessWidget {
       },
       child: Scaffold(
         body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.spacing24),
-            child: Column(
-              children: [
-                const SizedBox(height: AppSpacing.spacing24),
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppSpacing.spacing24),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: AppSpacing.spacing24),
 
-                // Avatar
-                CircleAvatar(
-                  radius: 48,
-                  backgroundColor: colors.accentSoft,
-                  backgroundImage:
-                      avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                  child: avatarUrl == null
-                      ? Text(
-                          displayName[0].toUpperCase(),
-                          style: context.textTheme.displaySmall?.copyWith(
-                            color: colors.accent,
+                      // Avatar
+                      CircleAvatar(
+                        radius: 48,
+                        backgroundColor: colors.accentSoft,
+                        backgroundImage:
+                            avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                        child: avatarUrl == null
+                            ? Text(
+                                displayName[0].toUpperCase(),
+                                style: context.textTheme.displaySmall
+                                    ?.copyWith(
+                                  color: colors.accent,
+                                ),
+                              )
+                            : null,
+                      ),
+                      const SizedBox(height: AppSpacing.spacing16),
+
+                      // Name
+                      Text(
+                        displayName,
+                        style: context.textTheme.headlineMedium,
+                      ),
+                      const SizedBox(height: AppSpacing.spacing4),
+
+                      // Username
+                      Text(
+                        '@$username',
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.spacing8),
+
+                      // Email
+                      Text(
+                        email,
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: colors.textMuted,
+                        ),
+                      ),
+
+                      // Member since
+                      if (createdAt != null)
+                        Text(
+                          'Member since ${_formatDate(createdAt)}',
+                          style: context.textTheme.bodySmall?.copyWith(
+                            color: colors.textMuted,
                           ),
-                        )
-                      : null,
-                ),
-                const SizedBox(height: AppSpacing.spacing16),
+                        ),
+                      const SizedBox(height: AppSpacing.spacing32),
 
-                // Name
-                Text(
-                  displayName,
-                  style: context.textTheme.headlineMedium,
-                ),
-                const SizedBox(height: AppSpacing.spacing4),
+                      // Settings section
+                      const _SectionHeader(title: 'Account'),
+                      const SizedBox(height: AppSpacing.spacing12),
 
-                // Email
-                Text(
-                  email,
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    color: colors.textSecondary,
+                      _SettingsTile(
+                        icon: Icons.person_outline,
+                        title: 'Edit Profile',
+                        onTap: () => _showEditProfileSheet(context),
+                      ),
+                      _SettingsTile(
+                        icon: Icons.palette_outlined,
+                        title: 'Appearance',
+                        subtitle: 'Theme, colors',
+                        onTap: () => _showAppearanceSheet(context),
+                      ),
+                      _SettingsTile(
+                        icon: Icons.notifications_outlined,
+                        title: 'Notifications',
+                        onTap: () => _showNotificationsSheet(context),
+                      ),
+
+                      const SizedBox(height: AppSpacing.spacing24),
+                      const _SectionHeader(title: 'About'),
+                      const SizedBox(height: AppSpacing.spacing12),
+
+                      FutureBuilder<PackageInfo>(
+                        future: PackageInfo.fromPlatform(),
+                        builder: (context, snapshot) {
+                          final version =
+                              snapshot.hasData ? snapshot.data!.version : '...';
+                          return _SettingsTile(
+                            icon: Icons.info_outline,
+                            title: 'Version',
+                            subtitle: version,
+                            onTap: null,
+                          );
+                        },
+                      ),
+                      _SettingsTile(
+                        icon: Icons.code,
+                        title: 'Open Source',
+                        subtitle: 'View on GitHub',
+                        onTap: () {
+                          // TODO: Open GitHub repo
+                        },
+                      ),
+
+                      const SizedBox(height: AppSpacing.spacing32),
+
+                      // Sign out button
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            context
+                                .read<AuthBloc>()
+                                .add(const AuthSignOutRequested());
+                          },
+                          icon: const Icon(Icons.logout),
+                          label: const Text('Sign Out'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: colors.urgent,
+                            side: BorderSide(color: colors.urgent),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.spacing48),
+                    ],
                   ),
                 ),
-                const SizedBox(height: AppSpacing.spacing8),
-
-                // Member since
-                if (createdAt != null)
-                  Text(
-                    'Member since ${_formatDate(createdAt)}',
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: colors.textMuted,
-                    ),
-                  ),
-                const SizedBox(height: AppSpacing.spacing32),
-
-                // Settings section
-                const _SectionHeader(title: 'Account'),
-                const SizedBox(height: AppSpacing.spacing12),
-
-                _SettingsTile(
-                  icon: Icons.person_outline,
-                  title: 'Edit Profile',
-                  onTap: () => _showEditProfileSheet(context),
-                ),
-                _SettingsTile(
-                  icon: Icons.palette_outlined,
-                  title: 'Appearance',
-                  subtitle: 'Theme, colors',
-                  onTap: () => _showAppearanceSheet(context),
-                ),
-                _SettingsTile(
-                  icon: Icons.notifications_outlined,
-                  title: 'Notifications',
-                  onTap: () => _showNotificationsSheet(context),
-                ),
-
-                const SizedBox(height: AppSpacing.spacing24),
-                const _SectionHeader(title: 'About'),
-                const SizedBox(height: AppSpacing.spacing12),
-
-                FutureBuilder<PackageInfo>(
-                  future: PackageInfo.fromPlatform(),
-                  builder: (context, snapshot) {
-                    final version = snapshot.hasData
-                        ? snapshot.data!.version
-                        : '...';
-                    return _SettingsTile(
-                      icon: Icons.info_outline,
-                      title: 'Version',
-                      subtitle: version,
-                      onTap: null,
-                    );
-                  },
-                ),
-                _SettingsTile(
-                  icon: Icons.code,
-                  title: 'Open Source',
-                  subtitle: 'View on GitHub',
-                  onTap: () {
-                    // TODO: Open GitHub repo
-                  },
-                ),
-
-                const SizedBox(height: AppSpacing.spacing32),
-
-                // Sign out button
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      context
-                          .read<AuthBloc>()
-                          .add(const AuthSignOutRequested());
-                    },
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Sign Out'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: colors.urgent,
-                      side: BorderSide(color: colors.urgent),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.spacing48),
-              ],
-            ),
-          ),
         ),
       ),
     );
@@ -180,7 +227,7 @@ class ProfilePage extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const EditProfileSheet(),
-    );
+    ).then((_) => _loadProfile());
   }
 
   void _showAppearanceSheet(BuildContext context) {
@@ -191,7 +238,6 @@ class ProfilePage extends StatelessWidget {
       builder: (_) => AppearanceSheet(
         currentMode: ThemeMode.system,
         onChanged: (mode) {
-          // Theme changes require app-level rebuild; kept as placeholder
           Navigator.of(context).pop();
         },
       ),
