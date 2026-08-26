@@ -10,6 +10,19 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.00 - Social v1 (2026-08-25)
+
+### Added in V 01.03.00
+
+- New `SocialPage` with user search by username
+- Send friend requests from search results
+- View and accept/decline pending friend requests
+- View accepted friends list
+- Wired `/social` route into bottom navigation
+- Reused existing `friendships` schema with symmetric relationship rows
+
+---
+
 ## V 01.02.12 - Modern login and sign-up (2026-08-25)
 
 ### Added in V 01.02.12
