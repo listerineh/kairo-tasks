@@ -10,6 +10,15 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.31 - Enable Supabase realtime for own color changes (2026-08-25)
+
+### Fixed in V 01.03.31
+
+- Added `supabase_realtime` publication for `profiles` and `friendships`
+- Own color changes now propagate to the calendar in real time
+
+---
+
 ## V 01.03.30 - Calendar colors realtime and priority dot position (2026-08-25)
 
 ### Fixed in V 01.03.30
