@@ -10,6 +10,16 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.06.03 - Fix friend calendar UUID/name operator error (2026-08-26)
+
+### Fixed in V 01.06.03
+
+- Renamed local variable in `get_public_friend_tasks` from `current_user` to `viewer_id`
+- Fixed `operator does not exist: uuid = name` error in the friend calendar RPC
+- Friend tasks now load correctly in day/week/month calendar views
+
+---
+
 ## V 01.06.02 - Friend calendar shared/private fix (2026-08-26)
 
 ### Fixed in V 01.06.02
