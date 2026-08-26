@@ -10,6 +10,18 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.02.09 - App logo B (2026-08-25)
+
+### Added in V 01.02.09
+
+- Selected `logo_b_kairos_hourglass.svg` as the official app icon
+- Added `assets/icons/app_icon.svg` and `assets/icons/app_icon_1024.png`
+- Displayed the logo on the login page
+- Generated iOS and Android launcher icons with `flutter_launcher_icons`
+- Added `flutter_launcher_icons.yaml` config
+
+---
+
 ## V 01.02.08 - Open GitHub from profile (2026-08-25)
 
 ### Added in V 01.02.08
