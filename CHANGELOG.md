@@ -10,6 +10,15 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.02.08 - Open GitHub from profile (2026-08-25)
+
+### Added in V 01.02.08
+
+- `url_launcher` dependency
+- Profile "Open Source" tile now opens the GitHub repository in the browser
+
+---
+
 ## V 01.02.07 - Theme persistence (2026-08-25)
 
 ### Added in V 01.02.07
