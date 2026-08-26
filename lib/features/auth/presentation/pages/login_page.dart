@@ -17,6 +17,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isSignUp = false;
 
@@ -25,6 +26,7 @@ class _LoginPageState extends State<LoginPage> {
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
+    _usernameController.dispose();
     super.dispose();
   }
 
@@ -76,6 +78,17 @@ class _LoginPageState extends State<LoginPage> {
                       labelText: 'Display Name',
                       hintText: 'Your name',
                       prefixIcon: Icon(Icons.person_outline),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.spacing16),
+                  TextField(
+                    controller: _usernameController,
+                    textInputAction: TextInputAction.next,
+                    autocorrect: false,
+                    decoration: const InputDecoration(
+                      labelText: 'Username',
+                      hintText: 'Unique handle',
+                      prefixIcon: Icon(Icons.alternate_email),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.spacing16),
@@ -211,11 +224,15 @@ class _LoginPageState extends State<LoginPage> {
 
     if (_isSignUp) {
       final name = _nameController.text.trim();
+      final username = _usernameController.text.trim().toLowerCase();
       context.read<AuthBloc>().add(
             AuthSignUpRequested(
               email: email,
               password: password,
               displayName: name.isNotEmpty ? name : email.split('@').first,
+              username: username.isNotEmpty
+                  ? username
+                  : email.split('@').first,
             ),
           );
     } else {

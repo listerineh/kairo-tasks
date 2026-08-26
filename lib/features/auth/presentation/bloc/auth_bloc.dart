@@ -34,13 +34,15 @@ class AuthSignUpRequested extends AuthEvent {
     required this.email,
     required this.password,
     required this.displayName,
+    this.username,
   });
   final String email;
   final String password;
   final String displayName;
+  final String? username;
 
   @override
-  List<Object?> get props => [email, password, displayName];
+  List<Object?> get props => [email, password, displayName, username];
 }
 
 class AuthGoogleSignInRequested extends AuthEvent {
@@ -152,7 +154,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
         data: {
           'display_name': event.displayName,
-          'username': event.email.split('@').first,
+          'username': event.username ?? event.email.split('@').first,
         },
       );
       if (response.user != null && response.session != null) {
