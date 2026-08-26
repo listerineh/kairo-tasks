@@ -22,6 +22,12 @@ class _CalendarPageState extends State<CalendarPage> {
   CalendarViewType _viewType = CalendarViewType.week;
   DateTime _selectedDate = DateTime.now();
 
+  static const _dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  static const _monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -30,110 +36,74 @@ class _CalendarPageState extends State<CalendarPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+            // Top bar: month name + view toggle
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.spacing24,
                 AppSpacing.spacing16,
-                AppSpacing.spacing24,
                 AppSpacing.spacing8,
+                AppSpacing.spacing16,
+                0,
               ),
               child: Row(
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _headerTitle(),
-                          style: context.textTheme.headlineSmall,
-                        ),
-                        const SizedBox(height: AppSpacing.spacing4),
-                        GestureDetector(
-                          onTap: _goToToday,
-                          child: Text(
-                            'Today',
-                            style: context.textTheme.labelMedium?.copyWith(
-                              color: colors.accent,
-                            ),
-                          ),
-                        ),
-                      ],
+                  // Back arrow + month/year
+                  GestureDetector(
+                    onTap: _goBack,
+                    child: Icon(
+                      Icons.chevron_left,
+                      color: colors.textSecondary,
+                      size: 24,
                     ),
                   ),
-                  // Navigation arrows
-                  IconButton(
-                    onPressed: _goBack,
-                    icon: const Icon(Icons.chevron_left),
-                    iconSize: 28,
+                  const SizedBox(width: AppSpacing.spacing4),
+                  GestureDetector(
+                    onTap: () => setState(
+                      () => _viewType = CalendarViewType.month,
+                    ),
+                    child: Text(
+                      _headerTitle(),
+                      style: context.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                  IconButton(
-                    onPressed: _goForward,
-                    icon: const Icon(Icons.chevron_right),
-                    iconSize: 28,
+                  GestureDetector(
+                    onTap: _goForward,
+                    child: Icon(
+                      Icons.chevron_right,
+                      color: colors.textSecondary,
+                      size: 24,
+                    ),
+                  ),
+                  const Spacer(),
+                  // View type chips
+                  _ViewChip(
+                    label: 'D',
+                    isSelected: _viewType == CalendarViewType.day,
+                    onTap: () =>
+                        setState(() => _viewType = CalendarViewType.day),
+                  ),
+                  const SizedBox(width: 6),
+                  _ViewChip(
+                    label: 'W',
+                    isSelected: _viewType == CalendarViewType.week,
+                    onTap: () =>
+                        setState(() => _viewType = CalendarViewType.week),
+                  ),
+                  const SizedBox(width: 6),
+                  _ViewChip(
+                    label: 'M',
+                    isSelected: _viewType == CalendarViewType.month,
+                    onTap: () =>
+                        setState(() => _viewType = CalendarViewType.month),
                   ),
                 ],
               ),
             ),
 
-            // View type selector
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.spacing24,
-                vertical: AppSpacing.spacing8,
-              ),
-              child: Row(
-                children: CalendarViewType.values.map((type) {
-                  final isSelected = _viewType == type;
-                  return Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        right: type != CalendarViewType.month
-                            ? AppSpacing.spacing8
-                            : 0,
-                      ),
-                      child: GestureDetector(
-                        onTap: () => setState(() => _viewType = type),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.spacing8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? colors.accent
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.radiusSmall,
-                            ),
-                            border: Border.all(
-                              color: isSelected
-                                  ? colors.accent
-                                  : colors.border,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              type.name[0].toUpperCase() +
-                                  type.name.substring(1),
-                              style:
-                                  context.textTheme.labelMedium?.copyWith(
-                                color: isSelected
-                                    ? Colors.white
-                                    : colors.textSecondary,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
+            // Week strip header (day/week views)
+            if (_viewType != CalendarViewType.month)
+              _buildWeekStrip(context),
 
             // Calendar content
             Expanded(
@@ -150,7 +120,7 @@ class _CalendarPageState extends State<CalendarPage> {
                       );
                     case CalendarViewType.week:
                       return WeekView(
-                        startOfWeek: _startOfWeek(_selectedDate),
+                        selectedDate: _selectedDate,
                         tasks: tasks,
                         onDateTap: (date) => setState(() {
                           _selectedDate = date;
@@ -162,6 +132,7 @@ class _CalendarPageState extends State<CalendarPage> {
                       return MonthView(
                         month: _selectedDate,
                         tasks: tasks,
+                        selectedDate: _selectedDate,
                         onDateTap: (date) => setState(() {
                           _selectedDate = date;
                           _viewType = CalendarViewType.day;
@@ -171,55 +142,154 @@ class _CalendarPageState extends State<CalendarPage> {
                 },
               ),
             ),
+
+            // Bottom bar: Today button
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.spacing16,
+                vertical: AppSpacing.spacing8,
+              ),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: _goToToday,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.spacing16,
+                        vertical: AppSpacing.spacing8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceSubtle,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'Today',
+                        style: context.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (_viewType != CalendarViewType.month)
+                    Text(
+                      _nextMonthLabel(),
+                      style: context.textTheme.labelMedium?.copyWith(
+                        color: colors.textMuted,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildWeekStrip(BuildContext context) {
+    final colors = context.appColors;
+    final now = DateTime.now();
+    final weekStart = _startOfWeek(_selectedDate);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.spacing8,
+        vertical: AppSpacing.spacing4,
+      ),
+      child: Row(
+        children: List.generate(7, (i) {
+          final date = weekStart.add(Duration(days: i));
+          final isToday = _isSameDay(date, now);
+          final isSelected = _isSameDay(date, _selectedDate);
+
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedDate = date),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _dayLabels[date.weekday % 7],
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: isToday ? colors.accent : colors.textMuted,
+                      fontSize: 11,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isSelected
+                          ? (isToday ? colors.accent : colors.surfaceSubtle)
+                          : null,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${date.day}',
+                        style: context.textTheme.labelMedium?.copyWith(
+                          color: isSelected
+                              ? (isToday
+                                  ? Colors.white
+                                  : colors.textPrimary)
+                              : (isToday
+                                  ? colors.accent
+                                  : colors.textPrimary),
+                          fontWeight: isSelected || isToday
+                              ? FontWeight.w700
+                              : FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
   String _headerTitle() {
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
-    ];
     switch (_viewType) {
-      case CalendarViewType.day:
-        final now = DateTime.now();
-        if (_selectedDate.year == now.year &&
-            _selectedDate.month == now.month &&
-            _selectedDate.day == now.day) {
-          return 'Today';
-        }
-        return '${months[_selectedDate.month - 1]} ${_selectedDate.day}';
-      case CalendarViewType.week:
-        final start = _startOfWeek(_selectedDate);
-        final end = start.add(const Duration(days: 6));
-        if (start.month == end.month) {
-          return '${months[start.month - 1]} ${start.day}–${end.day}';
-        }
-        return '${months[start.month - 1].substring(0, 3)} ${start.day} – ${months[end.month - 1].substring(0, 3)} ${end.day}';
       case CalendarViewType.month:
-        return '${months[_selectedDate.month - 1]} ${_selectedDate.year}';
+        return '${_monthNames[_selectedDate.month - 1]} ${_selectedDate.year}';
+      case CalendarViewType.day:
+      case CalendarViewType.week:
+        final now = DateTime.now();
+        if (_selectedDate.year == now.year) {
+          return _monthNames[_selectedDate.month - 1];
+        }
+        return '${_monthNames[_selectedDate.month - 1]} ${_selectedDate.year}';
     }
   }
 
-  void _goToToday() {
-    setState(() => _selectedDate = DateTime.now());
+  String _nextMonthLabel() {
+    final weekStart = _startOfWeek(_selectedDate);
+    final weekEnd = weekStart.add(const Duration(days: 6));
+    if (weekStart.month != weekEnd.month) {
+      return _monthNames[weekEnd.month - 1].substring(0, 3);
+    }
+    return '';
   }
+
+  void _goToToday() => setState(() => _selectedDate = DateTime.now());
 
   void _goBack() {
     setState(() {
       switch (_viewType) {
         case CalendarViewType.day:
-          _selectedDate =
-              _selectedDate.subtract(const Duration(days: 1));
+          _selectedDate = _selectedDate.subtract(const Duration(days: 1));
         case CalendarViewType.week:
-          _selectedDate =
-              _selectedDate.subtract(const Duration(days: 7));
+          _selectedDate = _selectedDate.subtract(const Duration(days: 7));
         case CalendarViewType.month:
           _selectedDate = DateTime(
             _selectedDate.year,
             _selectedDate.month - 1,
+            1,
           );
       }
     });
@@ -236,16 +306,20 @@ class _CalendarPageState extends State<CalendarPage> {
           _selectedDate = DateTime(
             _selectedDate.year,
             _selectedDate.month + 1,
+            1,
           );
       }
     });
   }
 
   DateTime _startOfWeek(DateTime date) {
-    // Monday = 1, Sunday = 7
-    final daysFromMonday = date.weekday - 1;
-    return DateTime(date.year, date.month, date.day - daysFromMonday);
+    // Sunday = 0 based
+    final offset = date.weekday % 7;
+    return DateTime(date.year, date.month, date.day - offset);
   }
+
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   List<TaskEntity> _tasksForDate(List<TaskEntity> tasks, DateTime date) {
     final dayStart = DateTime(date.year, date.month, date.day);
@@ -254,13 +328,50 @@ class _CalendarPageState extends State<CalendarPage> {
     return tasks.where((t) {
       final start = t.startDate ?? t.dueDate ?? t.createdAt;
       final end = t.dueDate ?? start;
-
-      // Task spans this day if its range overlaps with [dayStart, dayEnd)
       return start.isBefore(dayEnd) && end.isAfter(dayStart);
     }).toList();
   }
 
   void _onTaskTap(TaskEntity task) {
     context.read<TasksBloc>().add(TaskStatusToggled(task.id));
+  }
+}
+
+class _ViewChip extends StatelessWidget {
+  const _ViewChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isSelected ? colors.accent : colors.surfaceSubtle,
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: context.textTheme.labelSmall?.copyWith(
+              color: isSelected ? Colors.white : colors.textSecondary,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

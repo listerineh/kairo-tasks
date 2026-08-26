@@ -25,118 +25,134 @@ class DayView extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final now = DateTime.now();
-    final isToday = date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
+    final isToday = _isSameDay(date, now);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(top: AppSpacing.spacing8),
-      child: SizedBox(
-        height: _hourHeight * (_endHour - _startHour),
-        child: Stack(
-          children: [
-            // Hour grid lines
-            ...List.generate(_endHour - _startHour, (i) {
-              final hour = _startHour + i;
-              return Positioned(
-                top: i * _hourHeight,
-                left: 0,
-                right: 0,
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 48,
-                      child: Text(
-                        _formatHour(hour),
-                        style: context.textTheme.labelSmall?.copyWith(
-                          color: colors.textMuted,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    Expanded(
-                      child: Divider(
-                        height: 1,
-                        color: colors.border.withValues(alpha: 0.5),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
+    // Separate all-day (no time) vs timed tasks
+    final timedTasks = tasks.where((t) => t.dueDate != null).toList();
+    final allDayTasks = tasks.where((t) => t.dueDate == null).toList();
 
-            // Current time indicator
-            if (isToday)
-              Positioned(
-                top: _timeToOffset(now),
-                left: 44,
-                right: 0,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: colors.urgent,
-                      ),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 2,
-                        color: colors.urgent,
-                      ),
-                    ),
-                  ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // All-day section
+        if (allDayTasks.isNotEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(52, 4, 8, 4),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: colors.border.withValues(alpha: 0.5),
                 ),
               ),
+            ),
+            child: Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: allDayTasks
+                  .map(
+                    (t) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _taskColor(t, colors).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        t.title,
+                        style: context.textTheme.labelSmall?.copyWith(
+                          fontSize: 11,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
 
-            // Task blocks
-            ...tasks
-                .where((t) => t.dueDate != null)
-                .map((task) => _buildTaskBlock(context, task, colors)),
-
-            // All-day / no-time tasks at the top
-            if (tasks.where((t) => t.dueDate == null).isNotEmpty)
-              Positioned(
-                top: 0,
-                left: 52,
-                right: AppSpacing.spacing8,
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.spacing8),
-                  decoration: BoxDecoration(
-                    color: colors.surfaceSubtle,
-                    borderRadius:
-                        BorderRadius.circular(AppSpacing.radiusSmall),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: tasks
-                        .where((t) => t.dueDate == null)
-                        .map(
-                          (t) => Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 2,
-                            ),
-                            child: Text(
-                              t.title,
-                              style:
-                                  context.textTheme.labelSmall?.copyWith(
-                                color: colors.textSecondary,
+        // Timeline
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(top: 4),
+            child: SizedBox(
+              height: _hourHeight * (_endHour - _startHour),
+              child: Stack(
+                children: [
+                  // Hour grid
+                  ...List.generate(_endHour - _startHour, (i) {
+                    final hour = _startHour + i;
+                    return Positioned(
+                      top: i * _hourHeight,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 48,
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Text(
+                                _formatHour(hour),
+                                style:
+                                    context.textTheme.labelSmall?.copyWith(
+                                  color: colors.textMuted,
+                                  fontSize: 11,
+                                ),
+                                textAlign: TextAlign.right,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        )
-                        .toList(),
+                          Expanded(
+                            child: Divider(
+                              height: 1,
+                              color: colors.border.withValues(alpha: 0.3),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+
+                  // Current time indicator
+                  if (isToday)
+                    Positioned(
+                      top: _timeToOffset(now),
+                      left: 44,
+                      right: 0,
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: colors.urgent,
+                            ),
+                          ),
+                          Expanded(
+                            child: Container(
+                              height: 2,
+                              color: colors.urgent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // Task blocks
+                  ...timedTasks.map(
+                    (task) => _buildTaskBlock(context, task, colors),
                   ),
-                ),
+                ],
               ),
-          ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -146,20 +162,19 @@ class DayView extends StatelessWidget {
     AppColorScheme colors,
   ) {
     final dueDate = task.dueDate!;
-    final startTime = task.startDate ?? dueDate.subtract(const Duration(hours: 1));
-    final top =
-        (startTime.hour - _startHour) * _hourHeight + startTime.minute * _hourHeight / 60;
-    // Calculate block height from duration
-    final durationMinutes = dueDate.difference(startTime).inMinutes.clamp(30, 480);
-    final blockHeight = durationMinutes * _hourHeight / 60;
-
+    final startTime =
+        task.startDate ?? dueDate.subtract(const Duration(hours: 1));
+    final top = _timeToOffset(startTime);
+    final durationMinutes =
+        dueDate.difference(startTime).inMinutes.clamp(20, 480);
+    final blockHeight = (durationMinutes * _hourHeight / 60).clamp(28.0, _hourHeight * 6);
     final taskColor = _taskColor(task, colors);
     final isCompleted = task.status == TaskStatus.completed;
 
     return Positioned(
       top: top.clamp(0, _hourHeight * (_endHour - _startHour) - blockHeight),
       left: 52,
-      right: AppSpacing.spacing8,
+      right: 8,
       height: blockHeight,
       child: GestureDetector(
         onTap: () => onTaskTap(task),
@@ -167,39 +182,56 @@ class DayView extends StatelessWidget {
           margin: const EdgeInsets.symmetric(vertical: 1),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.spacing12,
-            vertical: AppSpacing.spacing8,
+            vertical: 6,
           ),
           decoration: BoxDecoration(
             color: taskColor.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
+            borderRadius: BorderRadius.circular(6),
             border: Border(
-              left: BorderSide(color: taskColor, width: 3),
+              left: BorderSide(color: taskColor, width: 4),
             ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                task.title,
-                style: context.textTheme.labelMedium?.copyWith(
-                  color: isCompleted ? colors.textMuted : colors.textPrimary,
-                  decoration:
-                      isCompleted ? TextDecoration.lineThrough : null,
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Text(
+                  task.title,
+                  style: context.textTheme.labelMedium?.copyWith(
+                    color: isCompleted
+                        ? colors.textMuted
+                        : colors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    decoration:
+                        isCompleted ? TextDecoration.lineThrough : null,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-              if (task.description != null) ...[
+              if (blockHeight > 40) ...[
                 const SizedBox(height: 2),
                 Text(
-                  task.description!,
+                  '${_formatTime(startTime)} – ${_formatTime(dueDate)}',
                   style: context.textTheme.labelSmall?.copyWith(
                     color: colors.textMuted,
+                    fontSize: 11,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              if (blockHeight > 60 && task.description != null) ...[
+                const SizedBox(height: 2),
+                Flexible(
+                  child: Text(
+                    task.description!,
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: colors.textMuted,
+                      fontSize: 10,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ],
@@ -220,6 +252,16 @@ class DayView extends StatelessWidget {
     if (hour == 12) return '12 PM';
     return '${hour - 12} PM';
   }
+
+  String _formatTime(DateTime dt) {
+    final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   Color _taskColor(TaskEntity task, AppColorScheme colors) {
     switch (task.priority) {

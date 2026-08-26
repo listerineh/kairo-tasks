@@ -9,6 +9,19 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.02.02 - Calendar UI refresh (2026-08-25)
+
+### Changed
+- Calendar UI completely refreshed to match Google Calendar more closely
+- Day view: 24h timeline, tasks positioned at startDate, height reflects duration, current time red line, all-day chip top row
+- Week view: now shows 2 days side-by-side (selected + next day) with hour grid
+- Month view: task title previews visible inside day cells, max 3 with +N overflow
+- Calendar header: month name + chevrons + circular D/W/M view toggle chips
+- Week strip header with selected day highlighted and today accent color
+- "Today" quick-jump button in bottom bar
+
+---
+
 ## V 01.02.01 - Task start date & duration (2026-08-25)
 
 ### Added
