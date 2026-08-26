@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
@@ -178,9 +179,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         icon: Icons.code,
                         title: 'Open Source',
                         subtitle: 'View on GitHub',
-                        onTap: () {
-                          // TODO: Open GitHub repo
-                        },
+                        onTap: () => _openUrl(
+                          'https://github.com/listerineh/kairo-tasks',
+                        ),
                       ),
 
                       const SizedBox(height: AppSpacing.spacing32),
@@ -251,6 +252,13 @@ class _ProfilePageState extends State<ProfilePage> {
       backgroundColor: Colors.transparent,
       builder: (_) => const NotificationsSheet(),
     );
+  }
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 }
 
