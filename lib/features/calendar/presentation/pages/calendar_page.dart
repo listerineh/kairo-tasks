@@ -396,8 +396,8 @@ class _CalendarPageState extends State<CalendarPage> {
             ? f['addressee_id'] as String
             : f['requester_id'] as String;
         final color = isRequester
-            ? (f['requester_color'] as String? ?? '#FFCC00')
-            : (f['addressee_color'] as String? ?? '#FFCC00');
+            ? (f['requester_color'] as String? ?? '#6B8FA3')
+            : (f['addressee_color'] as String? ?? '#6B8FA3');
         friendColors[friendId] = color;
       }
 

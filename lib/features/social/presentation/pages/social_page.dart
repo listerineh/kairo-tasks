@@ -124,8 +124,8 @@ class _SocialPageState extends State<SocialPage>
               ? f['addressee_id'] as String
               : f['requester_id'] as String;
           final color = isRequester
-              ? (f['requester_color'] as String? ?? '#FFCC00')
-              : (f['addressee_color'] as String? ?? '#FFCC00');
+              ? (f['requester_color'] as String? ?? '#6B8FA3')
+              : (f['addressee_color'] as String? ?? '#6B8FA3');
           return {
             ...f,
             'profile': profileMap[otherId] ?? <String, dynamic>{},
@@ -324,16 +324,16 @@ class _SocialPageState extends State<SocialPage>
   }
 
   List<String> get _colorPalette => const [
-        '#FFCC00',
-        '#FF9500',
-        '#FF3B30',
-        '#FF2D55',
-        '#AF52DE',
-        '#5856D6',
-        '#007AFF',
-        '#34C759',
-        '#5AC8FA',
-        '#00C7BE',
+        '#4A6741',
+        '#5A7C51',
+        '#6B8C7A',
+        '#6B8FA3',
+        '#7A7A8C',
+        '#8C7B6B',
+        '#9B7A5B',
+        '#A36B6B',
+        '#8E6B9B',
+        '#6B5B8C',
       ];
 
   void _showSuccess(String message) {
@@ -610,7 +610,7 @@ class _FriendsTab extends StatelessWidget {
                     other?['display_name'] as String? ??
                     other?['username'] as String? ??
                     'friend';
-                final color = friend['color'] as String? ?? '#FFCC00';
+                final color = friend['color'] as String? ?? '#6B8FA3';
                 final friendshipId = friend['friendship_id'] as String?;
                 final isRequester = friend['is_requester'] as bool? ?? false;
 

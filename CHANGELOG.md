@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.24 - Muted color palette for friends and profile (2026-08-25)
+
+### Fixed in V 01.03.24
+
+- Replaced bright iOS-style color palette with muted, desaturated tones
+- Default friend color changed from yellow to muted slate `#6B8FA3`
+- Better readability for text over calendar task backgrounds
+- Updated SQL defaults and docs
+
+---
+
 ## V 01.03.23 - Default profile color matches app green (2026-08-25)
 
 ### Fixed in V 01.03.23

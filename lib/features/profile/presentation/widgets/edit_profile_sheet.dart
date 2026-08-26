@@ -491,15 +491,15 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
   }
 
   static const _colorPalette = [
-    '#0A84FF',
-    '#007AFF',
-    '#5856D6',
-    '#AF52DE',
-    '#FF2D55',
-    '#FF3B30',
-    '#FF9500',
-    '#FFCC00',
-    '#34C759',
-    '#00C7BE',
+    '#4A6741',
+    '#5A7C51',
+    '#6B8C7A',
+    '#6B8FA3',
+    '#7A7A8C',
+    '#8C7B6B',
+    '#9B7A5B',
+    '#A36B6B',
+    '#8E6B9B',
+    '#6B5B8C',
   ];
 }

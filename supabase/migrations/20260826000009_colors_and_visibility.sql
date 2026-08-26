@@ -6,10 +6,10 @@ ALTER TABLE public.profiles
 
 -- Each user can assign a color to a friendship from their side
 ALTER TABLE public.friendships
-  ADD COLUMN IF NOT EXISTS requester_color TEXT DEFAULT '#FFCC00';
+  ADD COLUMN IF NOT EXISTS requester_color TEXT DEFAULT '#6B8FA3';
 
 ALTER TABLE public.friendships
-  ADD COLUMN IF NOT EXISTS addressee_color TEXT DEFAULT '#FFCC00';
+  ADD COLUMN IF NOT EXISTS addressee_color TEXT DEFAULT '#6B8FA3';
 
 -- Update tasks SELECT policy to also show public-calendar friend tasks
 DROP POLICY IF EXISTS "Users can view own tasks" ON public.tasks;

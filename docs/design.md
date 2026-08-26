@@ -79,7 +79,7 @@ Never use priority colors for backgrounds or large areas.
 ### Calendar Color Coding
 Calendar events are colored by their owner to help distinguish whose task is whose:
 - **Own tasks**: use the current user's `profiles.color` (default: app `accent` green `#4A6741`)
-- **Friend public tasks**: use the `friendships.*_color` assigned by the current user (default warm yellow `#FFCC00`)
+- **Friend public tasks**: use the `friendships.*_color` assigned by the current user (default muted slate `#6B8FA3`)
 - **Priority color**: used only as a fallback when no owner color is set
 
 ### Social Color Indicators
