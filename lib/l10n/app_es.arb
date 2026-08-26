@@ -139,6 +139,11 @@
   "totalTasks": "Tareas totales",
   "upcomingChart": "Próximas",
   "urgentHigh": "Urgente/Alta",
+  "todayTasks": "Tareas de hoy",
+  "completedToday": "Completadas hoy",
+  "planYourDay": "Planifica tu día",
+  "thisWeek": "Esta semana",
+  "sharedWithYou": "Compartido contigo",
   "viewAllTasks": "Ver todas las tareas",
   "iOSRemoteNotAvailable": "Las notificaciones push remotas no están disponibles en iOS sin una cuenta de desarrollador de Apple de pago."
 }

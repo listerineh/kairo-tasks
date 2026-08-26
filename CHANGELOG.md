@@ -10,6 +10,19 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.06.01 - Dashboard Today/Upcoming redesign (2026-08-26)
+
+### Changed in V 01.06.01
+
+- Redesigned `DashboardPage` as a professional "Today" home
+- Removed `fl_chart` and all charts/cards
+- Added micro stats: today, overdue, completed today
+- Added sections: Today, This week, Urgent & High, Shared with you
+- Added `FloatingActionButton` to go to Tasks
+- Removed `fl_chart` dependency
+
+---
+
 ## V 01.06.00 - Push notifications foundation (2026-08-26)
 
 ### Added in V 01.06.00
