@@ -388,7 +388,7 @@ class _CalendarPageState extends State<CalendarPage> {
       final friendshipRows = friendships.cast<Map<String, dynamic>>();
       final friendTaskRows = friendTasks.cast<Map<String, dynamic>>();
 
-      final ownColor = profileData['color'] as String? ?? '#0A84FF';
+      final ownColor = profileData['color'] as String? ?? '#4A6741';
       final friendColors = <String, String>{};
       for (final f in friendshipRows) {
         final isRequester = f['requester_id'] == userId;

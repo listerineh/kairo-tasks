@@ -10,6 +10,15 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.23 - Default profile color matches app green (2026-08-25)
+
+### Fixed in V 01.03.23
+
+- Default `profiles.color` changed from blue to the app's green (`#4A6741`)
+- App fallback for own task color also uses `#4A6741`
+
+---
+
 ## V 01.03.22 - Friend public calendar, task colors and friend colors (2026-08-25)
 
 ### Added in V 01.03.22

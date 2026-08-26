@@ -2,7 +2,7 @@
 
 -- Each user can pick a personal color for their own tasks
 ALTER TABLE public.profiles
-  ADD COLUMN IF NOT EXISTS color TEXT DEFAULT '#0A84FF';
+  ADD COLUMN IF NOT EXISTS color TEXT DEFAULT '#4A6741';
 
 -- Each user can assign a color to a friendship from their side
 ALTER TABLE public.friendships

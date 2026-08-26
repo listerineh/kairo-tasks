@@ -23,7 +23,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
   String? _error;
   String? _avatarUrl;
   File? _selectedImage;
-  String _color = '#0A84FF';
+  String _color = '#4A6741';
 
   @override
   void initState() {
@@ -76,7 +76,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
             (response['avatar_url'] as String?) ?? metadataAvatar;
         _isPublic =
             (response['calendar_visibility'] as String?) == 'public';
-        _color = (response['color'] as String?) ?? '#0A84FF';
+        _color = (response['color'] as String?) ?? '#4A6741';
         _isLoading = false;
       });
     } catch (e) {
