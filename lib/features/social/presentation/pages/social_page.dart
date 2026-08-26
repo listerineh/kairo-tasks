@@ -63,7 +63,8 @@ class _SocialPageState extends State<SocialPage>
       final [friendshipsRaw, pendingRaw] = await Future.wait([
         Supabase.instance.client
             .from('friendships')
-            .select('id, status, requester_id, addressee_id, created_at')
+            .select(
+                'id, status, requester_id, addressee_id, requester_color, addressee_color, created_at')
             .or('requester_id.eq.$userId,addressee_id.eq.$userId')
             .eq('status', 'accepted'),
         Supabase.instance.client
@@ -118,12 +119,19 @@ class _SocialPageState extends State<SocialPage>
             .map((p) => p['addressee_id'] as String)
             .toSet();
         _friends = friendships.map((f) {
-          final otherId = f['requester_id'] == userId
+          final isRequester = f['requester_id'] == userId;
+          final otherId = isRequester
               ? f['addressee_id'] as String
               : f['requester_id'] as String;
+          final color = isRequester
+              ? (f['requester_color'] as String? ?? '#FFCC00')
+              : (f['addressee_color'] as String? ?? '#FFCC00');
           return {
             ...f,
             'profile': profileMap[otherId] ?? <String, dynamic>{},
+            'color': color,
+            'is_requester': isRequester,
+            'friendship_id': f['id'] as String,
           };
         }).toList();
         _pendingRequests = receivedPending.map((p) {
@@ -209,6 +217,125 @@ class _SocialPageState extends State<SocialPage>
     }
   }
 
+  Future<void> _removeFriend(String friendshipId) async {
+    try {
+      await Supabase.instance.client
+          .from('friendships')
+          .delete()
+          .eq('id', friendshipId);
+      _showSuccess('Friend removed');
+      await _loadSocialData();
+      await _searchUsers(_searchController.text.trim());
+    } catch (e) {
+      _showError('Could not remove friend');
+    }
+  }
+
+  Future<void> _updateFriendColor(
+    String friendshipId,
+    String color, {
+    required bool isRequester,
+  }) async {
+    try {
+      await Supabase.instance.client
+          .from('friendships')
+          .update({
+            if (isRequester) 'requester_color': color,
+            if (!isRequester) 'addressee_color': color,
+          })
+          .eq('id', friendshipId);
+      _showSuccess('Color saved');
+      await _loadSocialData();
+    } catch (e) {
+      _showError('Could not save color');
+    }
+  }
+
+  Future<void> _showColorPicker(
+    String friendshipId,
+    String currentColor, {
+    required bool isRequester,
+  }) async {
+    final colors = context.appColors;
+    final palette = _colorPalette;
+
+    final newColor = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.spacing24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Pick a color', style: context.textTheme.titleLarge),
+              const SizedBox(height: AppSpacing.spacing16),
+              Wrap(
+                spacing: AppSpacing.spacing12,
+                runSpacing: AppSpacing.spacing12,
+                children: palette.map((hex) {
+                  final selected = hex == currentColor;
+                  return GestureDetector(
+                    onTap: () => Navigator.pop(context, hex),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: _hexColor(hex),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: selected ? colors.textPrimary : Colors.transparent,
+                          width: 3,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: AppSpacing.spacing24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (newColor != null && newColor != currentColor) {
+      await _updateFriendColor(
+        friendshipId,
+        newColor,
+        isRequester: isRequester,
+      );
+    }
+  }
+
+  Color _hexColor(String hex) {
+    try {
+      return Color(int.parse(hex.replaceFirst('#', '0xFF')));
+    } catch (_) {
+      return Colors.grey;
+    }
+  }
+
+  List<String> get _colorPalette => const [
+        '#FFCC00',
+        '#FF9500',
+        '#FF3B30',
+        '#FF2D55',
+        '#AF52DE',
+        '#5856D6',
+        '#007AFF',
+        '#34C759',
+        '#5AC8FA',
+        '#00C7BE',
+      ];
+
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -284,6 +411,8 @@ class _SocialPageState extends State<SocialPage>
                   friends: _friends,
                   colors: colors,
                   onCreateTask: _showCreateTaskWithFriend,
+                  onColor: _showColorPicker,
+                  onRemove: _removeFriend,
                 ),
                 _RequestsTab(
                   requests: _pendingRequests,
@@ -448,11 +577,17 @@ class _FriendsTab extends StatelessWidget {
     required this.friends,
     required this.colors,
     required this.onCreateTask,
+    required this.onColor,
+    required this.onRemove,
   });
 
   final List<Map<String, dynamic>> friends;
   final AppColorScheme colors;
   final void Function(String?) onCreateTask;
+  final void Function(String friendshipId, String currentColor,
+          {required bool isRequester})
+      onColor;
+  final void Function(String friendshipId) onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -475,13 +610,65 @@ class _FriendsTab extends StatelessWidget {
                     other?['display_name'] as String? ??
                     other?['username'] as String? ??
                     'friend';
+                final color = friend['color'] as String? ?? '#FFCC00';
+                final friendshipId = friend['friendship_id'] as String?;
+                final isRequester = friend['is_requester'] as bool? ?? false;
 
                 return _UserListTile(
                   profile: other ?? {},
-                  trailing: _IconActionButton(
-                    icon: Icons.add_task,
-                    tooltip: 'Create task with $displayName',
-                    onPressed: () => onCreateTask(friendId),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _ColorCircle(
+                        color: color,
+                        onTap: () => onColor(
+                          friendshipId ?? '',
+                          color,
+                          isRequester: isRequester,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.spacing8),
+                      _IconActionButton(
+                        icon: Icons.add_task,
+                        tooltip: 'Create task with $displayName',
+                        onPressed: () => onCreateTask(friendId),
+                      ),
+                      _IconActionButton(
+                        icon: Icons.more_vert,
+                        tooltip: 'Options',
+                        onPressed: () async {
+                          final action = await showModalBottomSheet<String>(
+                            context: context,
+                            builder: (context) => SafeArea(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ListTile(
+                                    leading: Icon(Icons.palette, color: colors.textPrimary),
+                                    title: Text('Set color', style: TextStyle(color: colors.textPrimary)),
+                                    onTap: () => Navigator.pop(context, 'color'),
+                                  ),
+                                  ListTile(
+                                    leading: Icon(Icons.delete, color: colors.urgent),
+                                    title: Text('Remove friend', style: TextStyle(color: colors.urgent)),
+                                    onTap: () => Navigator.pop(context, 'remove'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                          if (action == 'color') {
+                            onColor(
+                              friendshipId ?? '',
+                              color,
+                              isRequester: isRequester,
+                            );
+                          } else if (action == 'remove') {
+                            onRemove(friendshipId ?? '');
+                          }
+                        },
+                      ),
+                    ],
                   ),
                 );
               },
@@ -690,6 +877,45 @@ class _IconActionButton extends StatelessWidget {
     }
 
     return button;
+  }
+}
+
+class _ColorCircle extends StatelessWidget {
+  const _ColorCircle({
+    required this.color,
+    required this.onTap,
+  });
+
+  final String color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hexColor = tryParseColor(color) ?? Colors.grey;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: hexColor,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: context.appColors.border,
+            width: 1,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color? tryParseColor(String hex) {
+    try {
+      return Color(int.parse(hex.replaceFirst('#', '0xFF')));
+    } catch (_) {
+      return null;
+    }
   }
 }
 

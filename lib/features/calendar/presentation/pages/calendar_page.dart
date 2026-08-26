@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
@@ -22,12 +23,21 @@ class CalendarPage extends StatefulWidget {
 class _CalendarPageState extends State<CalendarPage> {
   CalendarViewType _viewType = CalendarViewType.week;
   DateTime _selectedDate = DateTime.now();
+  List<TaskEntity> _friendTasks = [];
+  String? _ownColor;
+  final Map<String, String> _friendColors = {};
 
   static const _dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   static const _monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCalendarFriends();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -116,7 +126,10 @@ class _CalendarPageState extends State<CalendarPage> {
             Expanded(
               child: BlocBuilder<TasksBloc, TasksState>(
                 builder: (context, state) {
-                  final tasks = state.tasks;
+                  final tasks = [
+                    ..._coloredTasks(state.tasks),
+                    ..._friendTasks,
+                  ];
 
                   switch (_viewType) {
                     case CalendarViewType.day:
@@ -339,7 +352,122 @@ class _CalendarPageState extends State<CalendarPage> {
     }).toList();
   }
 
+  List<TaskEntity> _coloredTasks(List<TaskEntity> tasks) {
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    return tasks.map((task) {
+      final hex = task.ownerId == currentUserId
+          ? _ownColor
+          : _friendColors[task.ownerId];
+      return hex == null || hex == task.color
+          ? task
+          : task.copyWith(color: hex);
+    }).toList();
+  }
+
+  Future<void> _loadCalendarFriends() async {
+    try {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final profileData = await Supabase.instance.client
+          .from('profiles')
+          .select('color')
+          .eq('id', userId)
+          .single();
+
+      final friendships = await Supabase.instance.client
+          .from('friendships')
+          .select(
+              'requester_id, addressee_id, requester_color, addressee_color')
+          .or('requester_id.eq.$userId,addressee_id.eq.$userId')
+          .eq('status', 'accepted');
+
+      final friendTasks = await Supabase.instance.client
+          .rpc<List<dynamic>>('get_public_friend_tasks');
+
+      final friendshipRows = friendships.cast<Map<String, dynamic>>();
+      final friendTaskRows = friendTasks.cast<Map<String, dynamic>>();
+
+      final ownColor = profileData['color'] as String? ?? '#0A84FF';
+      final friendColors = <String, String>{};
+      for (final f in friendshipRows) {
+        final isRequester = f['requester_id'] == userId;
+        final friendId = isRequester
+            ? f['addressee_id'] as String
+            : f['requester_id'] as String;
+        final color = isRequester
+            ? (f['requester_color'] as String? ?? '#FFCC00')
+            : (f['addressee_color'] as String? ?? '#FFCC00');
+        friendColors[friendId] = color;
+      }
+
+      final parsedFriendTasks = friendTaskRows
+          .map((json) =>
+              _taskFromJson(json, friendColors[json['owner_id'] as String?]))
+          .toList();
+
+      setState(() {
+        _ownColor = ownColor;
+        _friendColors
+          ..clear()
+          ..addAll(friendColors);
+        _friendTasks = parsedFriendTasks;
+      });
+    } catch (_) {
+      // friend calendar tasks are optional
+    }
+  }
+
+  TaskEntity _taskFromJson(Map<String, dynamic> json, String? color) {
+    return TaskEntity(
+      id: json['id'] as String,
+      ownerId: json['owner_id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String?,
+      priority: _parsePriority(json['priority'] as String? ?? 'medium'),
+      status: _parseStatus(json['status'] as String? ?? 'pending'),
+      startDate: json['start_date'] != null
+          ? DateTime.parse(json['start_date'] as String).toLocal()
+          : null,
+      dueDate: json['due_date'] != null
+          ? DateTime.parse(json['due_date'] as String).toLocal()
+          : null,
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String).toLocal()
+          : null,
+      color: color,
+    );
+  }
+
+  TaskPriority _parsePriority(String value) {
+    switch (value) {
+      case 'urgent':
+        return TaskPriority.urgent;
+      case 'high':
+        return TaskPriority.high;
+      case 'low':
+        return TaskPriority.low;
+      default:
+        return TaskPriority.medium;
+    }
+  }
+
+  TaskStatus _parseStatus(String value) {
+    switch (value) {
+      case 'in_progress':
+        return TaskStatus.inProgress;
+      case 'completed':
+        return TaskStatus.completed;
+      default:
+        return TaskStatus.pending;
+    }
+  }
+
   void _onTaskTap(TaskEntity task) {
+    if (task.ownerId != Supabase.instance.client.auth.currentUser?.id) {
+      return;
+    }
     context.read<TasksBloc>().add(TaskStatusToggled(task.id));
   }
 }

@@ -10,6 +10,21 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.22 - Friend public calendar, task colors and friend colors (2026-08-25)
+
+### Added in V 01.03.22
+
+- New `profiles.color` and `friendships.requester_color` / `addressee_color` columns
+- New `get_public_friend_tasks` RPC to load public friend tasks for the calendar
+- `CalendarPage` now loads accepted friends, their side color, and their public tasks
+- Calendar day/week/month views use the owner color for each task (own `profiles.color` or friendship color)
+- `SocialPage` shows a color circle for each friend and allows removing a friendship
+- Friend color can be changed from a color picker in Social
+- `EditProfileSheet` lets you set your own task color and calendar visibility
+- RLS for `tasks` updated to allow reading public friend tasks; `friendships` update allows both sides
+
+---
+
 ## V 01.03.21 - Edit shared friends in EditTaskSheet (2026-08-25)
 
 ### Added in V 01.03.21

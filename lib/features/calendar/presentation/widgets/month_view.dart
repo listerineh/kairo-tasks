@@ -277,6 +277,13 @@ class _TaskPreview extends StatelessWidget {
   }
 
   Color _color(AppColorScheme colors) {
+    if (task.color != null && task.color!.isNotEmpty) {
+      try {
+        return Color(int.parse(task.color!.replaceFirst('#', '0xFF')));
+      } catch (_) {
+        // fall through to priority color
+      }
+    }
     switch (task.priority) {
       case TaskPriority.urgent:
         return colors.urgent;
