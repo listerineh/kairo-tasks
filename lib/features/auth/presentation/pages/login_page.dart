@@ -24,8 +24,7 @@ class _LoginPageState extends State<LoginPage>
   bool _isPasswordVisible = false;
   bool _isSignUp = false;
 
-  late final AnimationController _animationController;
-  late final Animation<double> _fadeAnimation;
+  AnimationController? _animationController;
 
   @override
   void initState() {
@@ -34,11 +33,7 @@ class _LoginPageState extends State<LoginPage>
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    );
-    _animationController.forward();
+    _animationController?.forward();
   }
 
   @override
@@ -47,7 +42,7 @@ class _LoginPageState extends State<LoginPage>
     _passwordController.dispose();
     _nameController.dispose();
     _usernameController.dispose();
-    _animationController.dispose();
+    _animationController?.dispose();
     super.dispose();
   }
 
@@ -84,7 +79,8 @@ class _LoginPageState extends State<LoginPage>
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: FadeTransition(
-                    opacity: _fadeAnimation,
+                    opacity: _animationController ??
+                        const AlwaysStoppedAnimation<double>(1),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -206,7 +202,7 @@ class _LoginPageState extends State<LoginPage>
                                 setState(() {
                                   _isSignUp = !_isSignUp;
                                   _animationController
-                                    ..reset()
+                                    ?..reset()
                                     ..forward();
                                 });
                               },
