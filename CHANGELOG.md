@@ -10,6 +10,16 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.02.06 - Instant profile refresh (2026-08-25)
+
+### Fixed in V 01.02.06
+
+- Profile page now refreshes instantly when editing profile (returns updated data from EditProfileSheet and updates local state)
+- EditProfileSheet returns the new profile map on save instead of `true`
+- No need to switch tabs to see profile changes
+
+---
+
 ## V 01.02.05 - Profile source of truth (2026-08-25)
 
 ### Changed in V 01.02.05
