@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.04 - Share tasks with friends (2026-08-25)
+
+### Added in V 01.03.04
+
+- `TaskCreateRequested` accepts `sharedWith` friend user ID
+- `TasksBloc` creates the task, fetches its ID, and inserts a `shared_tasks` row
+- `CreateTaskSheet` loads accepted friends and shows a "Share with" dropdown
+- Shared tasks appear in the friend's task list through existing `tasks` RLS policy
+
+---
+
 ## V 01.03.03 - Fluid tab navigation (2026-08-25)
 
 ### Changed in V 01.03.03
