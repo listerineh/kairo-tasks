@@ -103,6 +103,20 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
       return;
     }
 
+    final existing = await Supabase.instance.client
+        .from('profiles')
+        .select('id')
+        .eq('username', username)
+        .neq('id', user.id)
+        .maybeSingle();
+    if (existing != null) {
+      setState(() {
+        _error = 'Username @$username is already taken. Try another one.';
+        _isSaving = false;
+      });
+      return;
+    }
+
     final newProfile = {
       'id': user.id,
       'display_name': displayName,
