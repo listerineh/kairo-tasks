@@ -14,12 +14,13 @@ class SocialPage extends StatefulWidget {
   State<SocialPage> createState() => _SocialPageState();
 }
 
-class _SocialPageState extends State<SocialPage> {
+class _SocialPageState extends State<SocialPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   final _searchController = TextEditingController();
   Timer? _debounce;
 
-  bool _isLoading = false;
-  String? _error;
+  bool _isLoading = true;
   List<Map<String, dynamic>> _searchResults = [];
   List<Map<String, dynamic>> _friends = [];
   List<Map<String, dynamic>> _pendingRequests = [];
@@ -27,12 +28,14 @@ class _SocialPageState extends State<SocialPage> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     _loadSocialData();
     _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
+    _tabController.dispose();
     _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
@@ -49,34 +52,38 @@ class _SocialPageState extends State<SocialPage> {
     setState(() => _isLoading = true);
     try {
       final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId == null) return;
+      if (userId == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
 
-      final friends = await Supabase.instance.client
-          .from('friendships')
-          .select('''
-            id,
-            status,
-            requester_id,
-            addressee_id,
-            created_at,
-            requester:profiles!requester_id(username, display_name, avatar_url),
-            addressee:profiles!addressee_id(username, display_name, avatar_url)
-          ''')
-          .or('requester_id.eq.$userId,addressee_id.eq.$userId')
-          .eq('status', 'accepted');
-
-      final pending = await Supabase.instance.client
-          .from('friendships')
-          .select('''
-            id,
-            status,
-            requester_id,
-            addressee_id,
-            created_at,
-            requester:profiles!requester_id(username, display_name, avatar_url)
-          ''')
-          .eq('addressee_id', userId)
-          .eq('status', 'pending');
+      final [friends, pending] = await Future.wait([
+        Supabase.instance.client
+            .from('friendships')
+            .select('''
+              id,
+              status,
+              requester_id,
+              addressee_id,
+              created_at,
+              requester:profiles!requester_id(username, display_name, avatar_url),
+              addressee:profiles!addressee_id(username, display_name, avatar_url)
+            ''')
+            .or('requester_id.eq.$userId,addressee_id.eq.$userId')
+            .eq('status', 'accepted'),
+        Supabase.instance.client
+            .from('friendships')
+            .select('''
+              id,
+              status,
+              requester_id,
+              addressee_id,
+              created_at,
+              requester:profiles!requester_id(username, display_name, avatar_url)
+            ''')
+            .eq('addressee_id', userId)
+            .eq('status', 'pending'),
+      ]);
 
       setState(() {
         _friends = friends;
@@ -84,10 +91,7 @@ class _SocialPageState extends State<SocialPage> {
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _error = 'Could not load social data';
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
@@ -108,16 +112,17 @@ class _SocialPageState extends State<SocialPage> {
           .neq('id', currentUser.id)
           .limit(20);
 
-      final friendsIds = _friends.map((f) => f['requester_id'] == currentUser.id
-          ? f['addressee_id']
-          : f['requester_id']).toSet();
+      final friendsIds = _friends.map((f) {
+        return f['requester_id'] == currentUser.id
+            ? f['addressee_id']
+            : f['requester_id'];
+      }).toSet();
 
-      final withStatus = results.map((profile) {
-        final isFriend = friendsIds.contains(profile['id']);
-        return {...profile, 'is_friend': isFriend};
-      }).toList();
-
-      setState(() => _searchResults = withStatus);
+      setState(() {
+        _searchResults = results.map((profile) {
+          return {...profile, 'is_friend': friendsIds.contains(profile['id'])};
+        }).toList();
+      });
     } catch (e) {
       setState(() => _searchResults = []);
     }
@@ -135,6 +140,7 @@ class _SocialPageState extends State<SocialPage> {
       });
       _showSuccess('Friend request sent');
       await _searchUsers(_searchController.text.trim());
+      await _loadSocialData();
     } catch (e) {
       _showError('Could not send request');
     }
@@ -174,133 +180,375 @@ class _SocialPageState extends State<SocialPage> {
     final colors = context.appColors;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Social'),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Search
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.spacing16),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: colors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
-                  border: Border.all(color: colors.border),
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search by username...',
-                    prefixIcon: Icon(Icons.search, color: colors.textSecondary),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.all(AppSpacing.spacing16),
-                  ),
+      body: NestedScrollView(
+        floatHeaderSlivers: true,
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverAppBar(
+            expandedHeight: 120,
+            pinned: true,
+            floating: true,
+            elevation: 0,
+            flexibleSpace: FlexibleSpaceBar(
+              centerTitle: true,
+              titlePadding: const EdgeInsets.only(bottom: 48),
+              title: Text(
+                'Social',
+                style: context.textTheme.headlineSmall?.copyWith(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
-
-            // Search results
-            if (_searchResults.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.spacing16,
+            bottom: TabBar(
+              controller: _tabController,
+              labelColor: colors.accent,
+              unselectedLabelColor: colors.textSecondary,
+              indicatorColor: colors.accent,
+              indicatorWeight: 3,
+              tabs: [
+                _Tab(
+                  icon: Icons.search,
+                  label: 'Search',
+                  count: _searchResults.length,
                 ),
-                child: Text(
-                  'Search results',
-                  style: context.textTheme.titleMedium?.copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                _Tab(
+                  icon: Icons.people,
+                  label: 'Friends',
+                  count: _friends.length,
                 ),
-              ),
-
-            Expanded(
-              child: _buildBody(colors),
+                _Tab(
+                  icon: Icons.mail,
+                  label: 'Requests',
+                  count: _pendingRequests.length,
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBody(AppColorScheme colors) {
-    if (_searchResults.isNotEmpty) {
-      return _SearchResultsList(
-        results: _searchResults,
-        onAdd: _sendRequest,
-      );
-    }
-
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_error != null) {
-      return Center(child: Text(_error!));
-    }
-
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
-      children: [
-        _SectionTitle('Pending requests (${_pendingRequests.length})'),
-        if (_pendingRequests.isEmpty)
-          _EmptyState('No pending friend requests', colors),
-        ..._pendingRequests.map(
-          (r) => _RequestCard(
-            request: r,
-            onAccept: () => _respondRequest(r['id'] as String, 'accepted'),
-            onDecline: () => _respondRequest(r['id'] as String, 'rejected'),
           ),
-        ),
-        const SizedBox(height: AppSpacing.spacing24),
-        _SectionTitle('Friends (${_friends.length})'),
-        if (_friends.isEmpty)
-          _EmptyState('No friends yet', colors),
-        ..._friends.map(
-          (f) => _FriendCard(friend: f),
-        ),
-      ],
+        ],
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : TabBarView(
+                controller: _tabController,
+                children: [
+                  _SearchTab(
+                    controller: _searchController,
+                    results: _searchResults,
+                    onAdd: _sendRequest,
+                  ),
+                  _FriendsTab(
+                    friends: _friends,
+                    colors: colors,
+                  ),
+                  _RequestsTab(
+                    requests: _pendingRequests,
+                    onAccept: _respondRequest,
+                    onDecline: _respondRequest,
+                    colors: colors,
+                  ),
+                ],
+              ),
+      ),
     );
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
+class _Tab extends StatelessWidget {
+  const _Tab({
+    required this.icon,
+    required this.label,
+    required this.count,
+  });
 
-  final String text;
+  final IconData icon;
+  final String label;
+  final int count;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.spacing8),
-      child: Text(
-        text,
-        style: context.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-        ),
+    final colors = context.appColors;
+
+    return Tab(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18),
+          const SizedBox(width: 6),
+          Text(label),
+          if (count > 0) ...[
+            const SizedBox(width: 6),
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: colors.urgent,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  count.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  const _EmptyState(this.text, this.colors);
+class _SearchTab extends StatelessWidget {
+  const _SearchTab({
+    required this.controller,
+    required this.results,
+    required this.onAdd,
+  });
 
-  final String text;
+  final TextEditingController controller;
+  final List<Map<String, dynamic>> results;
+  final void Function(String) onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: AppSpacing.spacing16),
+          Container(
+            decoration: BoxDecoration(
+              color: colors.surfaceElevated,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.textPrimary.withValues(alpha: 0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                hintText: 'Find someone by username...',
+                prefixIcon: Icon(Icons.search, color: colors.textSecondary),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.all(AppSpacing.spacing16),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.spacing16),
+          Text(
+            results.isEmpty ? 'Start typing to find people' : 'Search results',
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: colors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.spacing8),
+          Expanded(
+            child: results.isEmpty
+                ? _EmptySearchState(colors: colors)
+                : ListView.builder(
+                    itemCount: results.length,
+                    itemBuilder: (context, index) {
+                      final user = results[index];
+                      final isFriend = (user['is_friend'] as bool?) ?? false;
+
+                      return _UserListTile(
+                        profile: user,
+                        trailing: isFriend
+                            ? _StatusChip(
+                                icon: Icons.check,
+                                label: 'Friends',
+                                color: colors.accent,
+                              )
+                            : _IconActionButton(
+                                icon: Icons.person_add,
+                                onPressed: () => onAdd(user['id'] as String),
+                              ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FriendsTab extends StatelessWidget {
+  const _FriendsTab({
+    required this.friends,
+    required this.colors,
+  });
+
+  final List<Map<String, dynamic>> friends;
+  final AppColorScheme colors;
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
+      child: friends.isEmpty
+          ? _EmptyState(
+              icon: Icons.people_outline,
+              title: 'No friends yet',
+              subtitle: 'Search by username and connect with others',
+              colors: colors,
+            )
+          : ListView.builder(
+              itemCount: friends.length,
+              itemBuilder: (context, index) {
+                final friend = friends[index];
+                final other = friend['requester_id'] == currentUserId
+                    ? friend['addressee'] as Map<String, dynamic>?
+                    : friend['requester'] as Map<String, dynamic>?;
+
+                return _UserListTile(
+                  profile: other ?? {},
+                  trailing: _IconActionButton(
+                    icon: Icons.calendar_today_outlined,
+                    onPressed: () {
+                      // TODO: open friend's public calendar
+                    },
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}
+
+class _RequestsTab extends StatelessWidget {
+  const _RequestsTab({
+    required this.requests,
+    required this.onAccept,
+    required this.onDecline,
+    required this.colors,
+  });
+
+  final List<Map<String, dynamic>> requests;
+  final void Function(String, String) onAccept;
+  final void Function(String, String) onDecline;
   final AppColorScheme colors;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.spacing16),
-      child: Text(
-        text,
-        style: context.textTheme.bodyMedium?.copyWith(
-          color: colors.textSecondary,
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
+      child: requests.isEmpty
+          ? _EmptyState(
+              icon: Icons.mail_outline,
+              title: 'No pending requests',
+              subtitle: 'When someone adds you, it will show here',
+              colors: colors,
+            )
+          : ListView.builder(
+              itemCount: requests.length,
+              itemBuilder: (context, index) {
+                final request = requests[index];
+                final requester =
+                    request['requester'] as Map<String, dynamic>?;
+
+                return _UserListTile(
+                  profile: requester ?? {},
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _IconActionButton(
+                        icon: Icons.check,
+                        backgroundColor: colors.accent,
+                        iconColor: Colors.white,
+                        onPressed: () => onAccept(
+                          request['id'] as String,
+                          'accepted',
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.spacing8),
+                      _IconActionButton(
+                        icon: Icons.close,
+                        backgroundColor: colors.urgent.withValues(alpha: 0.1),
+                        iconColor: colors.urgent,
+                        onPressed: () => onDecline(
+                          request['id'] as String,
+                          'rejected',
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}
+
+class _UserListTile extends StatelessWidget {
+  const _UserListTile({
+    required this.profile,
+    this.trailing,
+  });
+
+  final Map<String, dynamic> profile;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final displayName = profile['display_name'] as String? ?? '';
+    final username = profile['username'] as String? ?? '';
+    final avatarUrl = profile['avatar_url'] as String?;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.spacing8),
+      padding: const EdgeInsets.all(AppSpacing.spacing12),
+      decoration: BoxDecoration(
+        color: colors.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
+        boxShadow: [
+          BoxShadow(
+            color: colors.textPrimary.withValues(alpha: 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _UserAvatar(url: avatarUrl, displayName: displayName),
+          const SizedBox(width: AppSpacing.spacing12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  displayName,
+                  style: context.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '@$username',
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (trailing != null) trailing!,
+        ],
       ),
     );
   }
@@ -317,7 +565,7 @@ class _UserAvatar extends StatelessWidget {
     final colors = context.appColors;
 
     return CircleAvatar(
-      radius: 24,
+      radius: 28,
       backgroundColor: colors.accentSoft,
       backgroundImage: url != null ? NetworkImage(url!) : null,
       child: url == null
@@ -332,141 +580,148 @@ class _UserAvatar extends StatelessWidget {
   }
 }
 
-class _SearchResultsList extends StatelessWidget {
-  const _SearchResultsList({
-    required this.results,
-    required this.onAdd,
+class _IconActionButton extends StatelessWidget {
+  const _IconActionButton({
+    required this.icon,
+    required this.onPressed,
+    this.backgroundColor,
+    this.iconColor,
   });
 
-  final List<Map<String, dynamic>> results;
-  final void Function(String) onAdd;
+  final IconData icon;
+  final VoidCallback onPressed;
+  final Color? backgroundColor;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
-      itemCount: results.length,
-      itemBuilder: (context, index) {
-        final user = results[index];
-        final isFriend = (user['is_friend'] as bool?) ?? false;
-
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: _UserAvatar(
-            url: user['avatar_url'] as String?,
-            displayName: user['display_name'] as String?,
+    return Material(
+      color: backgroundColor ?? colors.accentSoft,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onPressed,
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
           ),
-          title: Text(user['display_name'] as String? ?? ''),
-          subtitle: Text('@${user['username']}'),
-          trailing: isFriend
-              ? Icon(Icons.check_circle, color: colors.accent)
-              : IconButton(
-                  icon: Icon(Icons.person_add, color: colors.accent),
-                  onPressed: () => onAdd(user['id'] as String),
-                ),
-        );
-      },
+          child: Icon(
+            icon,
+            color: iconColor ?? colors.accent,
+            size: 20,
+          ),
+        ),
+      ),
     );
   }
 }
 
-class _RequestCard extends StatelessWidget {
-  const _RequestCard({
-    required this.request,
-    required this.onAccept,
-    required this.onDecline,
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({
+    required this.icon,
+    required this.label,
+    required this.color,
   });
 
-  final Map<String, dynamic> request;
-  final VoidCallback onAccept;
-  final VoidCallback onDecline;
+  final IconData icon;
+  final String label;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final requester = request['requester'] as Map<String, dynamic>?;
-
-    return Card(
-      color: colors.surfaceElevated,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.spacing12,
+        vertical: AppSpacing.spacing8,
       ),
-      margin: const EdgeInsets.symmetric(vertical: AppSpacing.spacing8),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.spacing16),
-        child: Row(
-          children: [
-            _UserAvatar(
-              url: requester?['avatar_url'] as String?,
-              displayName: requester?['display_name'] as String?,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
             ),
-            const SizedBox(width: AppSpacing.spacing12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    requester?['display_name'] as String? ?? '',
-                    style: context.textTheme.bodyLarge,
-                  ),
-                  Text(
-                    '@${requester?['username']}',
-                    style: context.textTheme.bodyMedium?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              icon: Icon(Icons.check, color: colors.accent),
-              onPressed: onAccept,
-            ),
-            IconButton(
-              icon: Icon(Icons.close, color: colors.urgent),
-              onPressed: onDecline,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _FriendCard extends StatelessWidget {
-  const _FriendCard({required this.friend});
+class _EmptySearchState extends StatelessWidget {
+  const _EmptySearchState({required this.colors});
 
-  final Map<String, dynamic> friend;
+  final AppColorScheme colors;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
-    final isRequester = friend['requester_id'] == currentUserId;
-    final other = isRequester
-        ? friend['addressee'] as Map<String, dynamic>?
-        : friend['requester'] as Map<String, dynamic>?;
-
-    return Card(
-      color: colors.surfaceElevated,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search, size: 48, color: colors.textMuted),
+          const SizedBox(height: AppSpacing.spacing12),
+          Text(
+            'Type a username to discover people',
+            style: context.textTheme.bodyLarge?.copyWith(
+              color: colors.textSecondary,
+            ),
+          ),
+        ],
       ),
-      margin: const EdgeInsets.symmetric(vertical: AppSpacing.spacing8),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.spacing16,
-        ),
-        leading: _UserAvatar(
-          url: other?['avatar_url'] as String?,
-          displayName: other?['display_name'] as String?,
-        ),
-        title: Text(other?['display_name'] as String? ?? ''),
-        subtitle: Text('@${other?['username']}'),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.colors,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final AppColorScheme colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 48, color: colors.textMuted),
+          const SizedBox(height: AppSpacing.spacing16),
+          Text(
+            title,
+            style: context.textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.spacing4),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: colors.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
