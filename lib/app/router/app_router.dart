@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/calendar/presentation/pages/calendar_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/social/presentation/pages/social_page.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
 import '../router/shell_scaffold.dart';
 import 'route_names.dart';
@@ -62,7 +63,7 @@ class AppRouter {
           GoRoute(
             path: '/social',
             name: RouteNames.social,
-            pageBuilder: (context, state) => _fadePage(_placeholder('Social'), state),
+            pageBuilder: (context, state) => _fadePage(const SocialPage(), state),
           ),
           GoRoute(
             path: '/profile',
@@ -73,12 +74,4 @@ class AppRouter {
       ),
     ],
   );
-
-  static Widget _placeholder(String title) {
-    return Scaffold(
-      body: Center(
-        child: Text(title, style: const TextStyle(fontSize: 24)),
-      ),
-    );
-  }
 }
