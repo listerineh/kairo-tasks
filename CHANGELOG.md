@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.10 - iOS CocoaPods configuration (2026-08-25)
+
+### Changed in V 01.03.10
+
+- Disabled Swift Package Manager for iOS to ensure `image_picker_ios` is installed by CocoaPods
+- Regenerated `ios/Podfile.lock` and `ios/Runner.xcodeproj/project.pbxproj`
+- Removed `ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved`
+- `pod install` now installs all 11 iOS dependencies including `image_picker_ios`
+
+---
+
 ## V 01.03.09 - Developer credit in Profile (2026-08-25)
 
 ### Added in V 01.03.09
