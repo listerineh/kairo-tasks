@@ -10,6 +10,16 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.13 - Social tab overflow fix (2026-08-25)
+
+### Fixed in V 01.03.13
+
+- Fixed `RenderFlex` overflow in `SocialPage` `_Tab`
+- Tab labels now use `Flexible` + `TextOverflow.ellipsis`
+- Reduced spacing between tab icon, label, and count badge
+
+---
+
 ## V 01.03.12 - Fix user profile creation and task FK (2026-08-25)
 
 ### Fixed in V 01.03.12

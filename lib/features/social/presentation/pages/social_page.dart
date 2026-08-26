@@ -255,10 +255,16 @@ class _Tab extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, size: 18),
-          const SizedBox(width: 6),
-          Text(label),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           if (count > 0) ...[
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
             Container(
               width: 20,
               height: 20,
