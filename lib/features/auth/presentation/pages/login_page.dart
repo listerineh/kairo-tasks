@@ -478,20 +478,10 @@ class _GoogleButton extends StatelessWidget {
 
     return OutlinedButton.icon(
       onPressed: onTap,
-      icon: Container(
-        width: 28,
-        height: 28,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-        ),
-        child: const Center(
-          child: Icon(
-            Icons.g_mobiledata,
-            size: 24,
-            color: Color(0xFF4285F4),
-          ),
-        ),
+      icon: SvgPicture.asset(
+        'assets/icons/google_logo.svg',
+        width: 24,
+        height: 24,
       ),
       label: const Text('Continue with Google'),
       style: OutlinedButton.styleFrom(
