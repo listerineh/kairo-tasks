@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/theme/app_spacing.dart';
@@ -14,11 +17,12 @@ class EditProfileSheet extends StatefulWidget {
 class _EditProfileSheetState extends State<EditProfileSheet> {
   final _displayNameController = TextEditingController();
   final _usernameController = TextEditingController();
-  final _avatarUrlController = TextEditingController();
   bool _isPublic = false;
   bool _isLoading = true;
   bool _isSaving = false;
   String? _error;
+  String? _avatarUrl;
+  File? _selectedImage;
 
   @override
   void initState() {
@@ -30,7 +34,6 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
   void dispose() {
     _displayNameController.dispose();
     _usernameController.dispose();
-    _avatarUrlController.dispose();
     super.dispose();
   }
 
@@ -45,8 +48,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
     final metadataUsername = (metadata['username'] as String?) ??
         (metadata['preferred_username'] as String?);
     final metadataAvatar = (metadata['avatar_url'] as String?) ??
-        (metadata['picture'] as String?) ??
-        (metadata['avatar_url'] as String?);
+        (metadata['picture'] as String?);
 
     try {
       final response = await Supabase.instance.client
@@ -69,8 +71,8 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                 profileUsername != emailPrefix)
             ? profileUsername
             : (metadataUsername ?? profileUsername ?? '');
-        _avatarUrlController.text =
-            (response['avatar_url'] as String?) ?? metadataAvatar ?? '';
+        _avatarUrl =
+            (response['avatar_url'] as String?) ?? metadataAvatar;
         _isPublic =
             (response['calendar_visibility'] as String?) == 'public';
         _isLoading = false;
@@ -83,6 +85,108 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
     }
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    try {
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+      setState(() => _selectedImage = File(picked.path));
+    } catch (e) {
+      setState(() => _error = 'Could not select image: $e');
+    }
+  }
+
+  void _showImageSourcePicker() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final colors = context.appColors;
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.spacing24),
+          decoration: BoxDecoration(
+            color: colors.surfaceElevated,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppSpacing.radiusXLarge),
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.spacing24),
+                Text(
+                  'Change photo',
+                  style: context.textTheme.titleLarge,
+                ),
+                const SizedBox(height: AppSpacing.spacing20),
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Choose from gallery'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _pickImage(ImageSource.gallery);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('Take a photo'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _pickImage(ImageSource.camera);
+                  },
+                ),
+                const SizedBox(height: AppSpacing.spacing16),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<String?> _uploadAvatar(String userId) async {
+    if (_selectedImage == null) return _avatarUrl;
+
+    final extension = _selectedImage!.path.split('.').last.toLowerCase();
+    final ext = ['jpg', 'jpeg', 'png', 'webp'].contains(extension)
+        ? extension
+        : 'jpg';
+    final fileName = 'avatars/$userId/avatar_${DateTime.now().millisecondsSinceEpoch}.$ext';
+
+    final contentType = ext == 'png'
+        ? 'image/png'
+        : ext == 'webp'
+            ? 'image/webp'
+            : 'image/jpeg';
+
+    await Supabase.instance.client.storage.from('avatars').upload(
+          fileName,
+          _selectedImage,
+          fileOptions: FileOptions(
+            contentType: contentType,
+            upsert: false,
+          ),
+        );
+
+    return Supabase.instance.client.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+  }
+
   Future<void> _save() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
@@ -91,9 +195,6 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
 
     final displayName = _displayNameController.text.trim();
     final username = _usernameController.text.trim().toLowerCase();
-    final avatarUrl = _avatarUrlController.text.trim().isEmpty
-        ? null
-        : _avatarUrlController.text.trim();
 
     if (displayName.isEmpty || username.isEmpty) {
       setState(() {
@@ -117,17 +218,22 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
       return;
     }
 
-    final newProfile = {
-      'id': user.id,
-      'display_name': displayName,
-      'username': username,
-      'avatar_url': avatarUrl,
-      'calendar_visibility': _isPublic ? 'public' : 'private',
-      'updated_at': DateTime.now().toIso8601String(),
-    };
-
     try {
-      await Supabase.instance.client.from('profiles').update(newProfile).eq('id', user.id);
+      final avatarUrl = await _uploadAvatar(user.id);
+
+      final newProfile = {
+        'id': user.id,
+        'display_name': displayName,
+        'username': username,
+        'avatar_url': avatarUrl,
+        'calendar_visibility': _isPublic ? 'public' : 'private',
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      await Supabase.instance.client
+          .from('profiles')
+          .update(newProfile)
+          .eq('id', user.id);
 
       await Supabase.instance.client.auth.updateUser(
         UserAttributes(
@@ -184,7 +290,35 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                   ),
                   const SizedBox(height: AppSpacing.spacing24),
                   Text('Edit Profile', style: context.textTheme.titleLarge),
-                  const SizedBox(height: AppSpacing.spacing20),
+                  const SizedBox(height: AppSpacing.spacing24),
+
+                  // Avatar picker
+                  Center(
+                    child: GestureDetector(
+                      onTap: _showImageSourcePicker,
+                      child: Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          CircleAvatar(
+                            radius: 48,
+                            backgroundColor: colors.accentSoft,
+                            backgroundImage: _avatarImage,
+                            child: _avatarChild,
+                          ),
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundColor: colors.accent,
+                            child: const Icon(
+                              Icons.camera_alt,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.spacing24),
 
                   TextField(
                     controller: _displayNameController,
@@ -202,16 +336,6 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                     decoration: const InputDecoration(
                       labelText: 'Username',
                       hintText: 'Unique handle',
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.spacing16),
-
-                  TextField(
-                    controller: _avatarUrlController,
-                    keyboardType: TextInputType.url,
-                    decoration: const InputDecoration(
-                      labelText: 'Avatar URL',
-                      hintText: 'Optional image URL',
                     ),
                   ),
                   const SizedBox(height: AppSpacing.spacing20),
@@ -293,6 +417,30 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                 ],
               ),
             ),
+    );
+  }
+
+  ImageProvider? get _avatarImage {
+    if (_selectedImage != null) return FileImage(_selectedImage!);
+    if (_avatarUrl != null && _avatarUrl!.isNotEmpty) {
+      return NetworkImage(_avatarUrl!);
+    }
+    return null;
+  }
+
+  Widget? get _avatarChild {
+    if (_selectedImage != null ||
+        (_avatarUrl != null && _avatarUrl!.isNotEmpty)) {
+      return null;
+    }
+    final initial = _displayNameController.text.isNotEmpty
+        ? _displayNameController.text[0].toUpperCase()
+        : '?';
+    return Text(
+      initial,
+      style: context.textTheme.displaySmall?.copyWith(
+        color: context.appColors.accent,
+      ),
     );
   }
 }
