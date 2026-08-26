@@ -10,6 +10,19 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.12 - Fix user profile creation and task FK (2026-08-25)
+
+### Fixed in V 01.03.12
+
+- `handle_new_user` now always produces a non-null `username` and `display_name`
+- Handles Google sign-ins where `email` or `raw_user_meta_data` is missing/empty
+- Backfilled missing `profiles` rows for all existing `auth.users`
+- `tasks.owner_id` FK no longer fails after a successful Google sign-in
+- `AuthBloc` rejects Google sign-in if `user` or `session` is null
+- `TasksPage` now shows a `SnackBar` when `TasksBloc` emits an `errorMessage`
+
+---
+
 ## V 01.03.11 - Avatar upload RLS path fix (2026-08-25)
 
 ### Fixed in V 01.03.11

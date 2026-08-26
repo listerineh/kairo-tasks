@@ -237,6 +237,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         nonce: rawNonce,
       );
 
+      if (response.user == null || response.session == null) {
+        emit(
+          state.copyWith(
+            status: AuthStatus.error,
+            errorMessage: 'Google sign-in did not return a valid session.',
+          ),
+        );
+        return;
+      }
+
       emit(
         state.copyWith(
           status: AuthStatus.authenticated,

@@ -25,8 +25,17 @@ class _TasksView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
+    return BlocListener<TasksBloc, TasksState>(
+      listenWhen: (previous, current) =>
+          current.errorMessage != null &&
+          current.errorMessage != previous.errorMessage,
+      listener: (context, state) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(state.errorMessage!)),
+        );
+      },
+      child: Scaffold(
+        body: SafeArea(
         child: CustomScrollView(
           slivers: [
             SliverPadding(
@@ -170,7 +179,8 @@ class _TasksView extends StatelessWidget {
         onPressed: () => _showCreateTaskSheet(context),
         child: const Icon(Icons.add),
       ),
-    );
+    ),
+  );
   }
 
   String _greeting() {
