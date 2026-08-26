@@ -92,7 +92,6 @@ class _LoginPageState extends State<LoginPage>
                           child: Container(
                             width: 140,
                             height: 140,
-                            padding: const EdgeInsets.all(AppSpacing.spacing24),
                             decoration: BoxDecoration(
                               color: colors.surfaceElevated,
                               shape: BoxShape.circle,
@@ -108,6 +107,9 @@ class _LoginPageState extends State<LoginPage>
                             ),
                             child: SvgPicture.asset(
                               'assets/icons/app_icon.svg',
+                              width: 140,
+                              height: 140,
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ),
