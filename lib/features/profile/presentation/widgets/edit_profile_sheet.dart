@@ -159,9 +159,10 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
   }
 
   Future<String?> _uploadAvatar(String userId) async {
-    if (_selectedImage == null) return _avatarUrl;
+    final selectedImage = _selectedImage;
+    if (selectedImage == null) return _avatarUrl;
 
-    final extension = _selectedImage!.path.split('.').last.toLowerCase();
+    final extension = selectedImage.path.split('.').last.toLowerCase();
     final ext = ['jpg', 'jpeg', 'png', 'webp'].contains(extension)
         ? extension
         : 'jpg';
@@ -175,7 +176,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
 
     await Supabase.instance.client.storage.from('avatars').upload(
           fileName,
-          _selectedImage,
+          selectedImage,
           fileOptions: FileOptions(
             contentType: contentType,
             upsert: false,

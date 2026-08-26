@@ -10,6 +10,16 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.08 - iOS build fix for avatar upload (2026-08-25)
+
+### Fixed in V 01.03.08
+
+- Fixed non-final field promotion issue in `edit_profile_sheet.dart`
+- `File? _selectedImage` is now assigned to a local variable before use
+- `flutter analyze` passes and iOS build succeeds
+
+---
+
 ## V 01.03.07 - Profile avatar upload (2026-08-25)
 
 ### Added in V 01.03.07
