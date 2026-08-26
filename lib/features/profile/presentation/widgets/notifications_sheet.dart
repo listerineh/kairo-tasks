@@ -10,6 +10,11 @@ class NotificationsSheet extends StatefulWidget {
   State<NotificationsSheet> createState() => _NotificationsSheetState();
 }
 
+// TODO: Connect to push notification permissions and user preferences.
+// The toggles are currently local placeholders. When FCM is implemented,
+// persist choices in Supabase `profiles` table and request notification
+// permissions. Also wire task reminders, friend activity, and shared task
+// updates to the notification service.
 class _NotificationsSheetState extends State<NotificationsSheet> {
   bool _taskReminders = true;
   bool _friendActivity = true;
