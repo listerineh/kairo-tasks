@@ -10,6 +10,16 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.28 - Calendar color auto-refresh (2026-08-25)
+
+### Fixed in V 01.03.28
+
+- `CalendarPage` now re-fetches `profiles.color` and `friendships.*_color` when the tab becomes visible
+- Prevents stale own/friend colors from persisting across tab switches
+- 2-second debounce to avoid extra DB calls
+
+---
+
 ## V 01.03.27 - My task color moved to Profile section (2026-08-25)
 
 ### Fixed in V 01.03.27

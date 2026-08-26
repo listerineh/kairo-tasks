@@ -26,6 +26,8 @@ class _CalendarPageState extends State<CalendarPage> {
   List<TaskEntity> _friendTasks = [];
   String _ownColor = '#4A6741';
   final Map<String, String> _friendColors = {};
+  DateTime _lastColorLoad = DateTime(2000);
+  bool _isLoadingColors = false;
 
   static const _dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   static const _monthNames = [
@@ -41,6 +43,8 @@ class _CalendarPageState extends State<CalendarPage> {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeReloadColors());
+
     final colors = context.appColors;
 
     return Scaffold(
@@ -365,7 +369,20 @@ class _CalendarPageState extends State<CalendarPage> {
     }).toList();
   }
 
+  void _maybeReloadColors() {
+    if (!mounted || _isLoadingColors) return;
+    if (DateTime.now().difference(_lastColorLoad) <
+        const Duration(seconds: 2)) {
+      return;
+    }
+    _loadCalendarFriends();
+  }
+
   Future<void> _loadCalendarFriends() async {
+    if (!mounted) return;
+    _isLoadingColors = true;
+    _lastColorLoad = DateTime.now();
+
     try {
       final userId = Supabase.instance.client.auth.currentUser?.id;
       if (userId == null) return;
@@ -416,6 +433,8 @@ class _CalendarPageState extends State<CalendarPage> {
       });
     } catch (_) {
       // friend calendar tasks are optional
+    } finally {
+      _isLoadingColors = false;
     }
   }
 
