@@ -10,6 +10,26 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.10.00 - Push notification server (2026-08-26)
+
+### Added in V 01.10.00
+
+- New Supabase Edge Function `fcm` at `supabase/functions/fcm/index.ts`
+  - Validates `x-fcm-internal-key` header
+  - Reads `FCM_SERVICE_ACCOUNT` and `FCM_INTERNAL_KEY` from Supabase secrets
+  - Sends FCM v1 push to a user's `fcm_token`
+- New migration `20260826000016_push_triggers.sql`
+  - Enables `pg_net` and `supabase_vault`
+  - Triggers on `friendships` and `shared_tasks` call the `fcm` Edge Function
+- FCM service account uploaded to Supabase secrets and removed from repo
+
+### Setup still required
+
+- Insert `FCM_INTERNAL_KEY` into `supabase_vault`
+- Add `google-services.json` and `GoogleService-Info.plist` from Firebase
+
+---
+
 ## V 01.09.00 - Push notification client (2026-08-26)
 
 ### Added in V 01.09.00
