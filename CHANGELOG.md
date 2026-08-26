@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.02.10 - Unique usernames (2026-08-25)
+
+### Added in V 01.02.10
+
+- Unique `username` enforced in `profiles` table with unique index
+- `handle_new_user` trigger now appends a numeric suffix if the desired username is already taken (e.g. `usertest1`)
+- `EditProfileSheet` checks username availability before saving and shows an alert if it is already occupied
+- Foundation for friend search by username
+
+---
+
 ## V 01.02.09 - App logo B (2026-08-25)
 
 ### Added in V 01.02.09
