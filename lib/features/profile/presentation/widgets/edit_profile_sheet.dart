@@ -85,14 +85,13 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
     }
 
     try {
-      await Supabase.instance.client.from('profiles').upsert({
-        'id': user.id,
+      await Supabase.instance.client.from('profiles').update({
         'display_name': displayName,
         'username': username,
         'avatar_url': avatarUrl,
         'calendar_visibility': _isPublic ? 'public' : 'private',
         'updated_at': DateTime.now().toIso8601String(),
-      });
+      }).eq('id', user.id);
 
       await Supabase.instance.client.auth.updateUser(
         UserAttributes(
