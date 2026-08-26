@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
@@ -192,21 +193,35 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       const webClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
       const iosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
 
+      if (webClientId.isEmpty) {
+        emit(
+          state.copyWith(
+            status: AuthStatus.error,
+            errorMessage: 'Google Web Client ID is missing.',
+          ),
+        );
+        return;
+      }
+
       // Generate nonce for token verification
       final rawNonce = _generateNonce();
       final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
 
       final googleSignIn = GoogleSignIn.instance;
       await googleSignIn.initialize(
-        clientId: iosClientId.isNotEmpty ? iosClientId : null,
-        serverClientId: webClientId.isNotEmpty ? webClientId : null,
+        clientId: Platform.isIOS && iosClientId.isNotEmpty
+            ? iosClientId
+            : null,
+        serverClientId: webClientId,
         nonce: hashedNonce,
       );
 
       final googleUser = await googleSignIn.authenticate();
-      final idToken = googleUser.authentication.idToken;
 
-      if (idToken == null) {
+      final googleAuth = googleUser.authentication;
+      final idToken = googleAuth.idToken;
+
+      if (idToken == null || idToken.isEmpty) {
         emit(
           state.copyWith(
             status: AuthStatus.error,
@@ -235,11 +250,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           errorMessage: e.message,
         ),
       );
-    } catch (e) {
+    } on Exception catch (e) {
       emit(
         state.copyWith(
           status: AuthStatus.error,
-          errorMessage: 'Google sign-in failed. Please try again.',
+          errorMessage: 'Google sign-in failed: $e',
         ),
       );
     }

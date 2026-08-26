@@ -55,6 +55,11 @@ class _LoginPageState extends State<LoginPage>
       listener: (context, state) {
         if (state.status == AuthStatus.authenticated) {
           context.go('/tasks');
+        } else if (state.status == AuthStatus.error &&
+            state.errorMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.errorMessage!)),
+          );
         }
       },
       child: Scaffold(
