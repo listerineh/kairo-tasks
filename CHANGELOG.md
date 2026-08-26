@@ -10,6 +10,18 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.05 - Google sign-in Android fixes (2026-08-25)
+
+### Fixed in V 01.03.05
+
+- `AuthBloc` now passes `clientId` only on iOS and `serverClientId` on both platforms
+- Added `Google Web Client ID` missing check and better error messages
+- `LoginPage` shows `SnackBar` on `AuthStatus.error`
+- Added `com.google.android.gms` to `AndroidManifest.xml` `<queries>` for package visibility
+- New debug APK built with the latest Google sign-in fixes
+
+---
+
 ## V 01.03.04 - Share tasks with friends (2026-08-25)
 
 ### Added in V 01.03.04
