@@ -10,6 +10,16 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.02 - Social keyboard scroll fix (2026-08-25)
+
+### Fixed in V 01.03.02
+
+- Replaced `NestedScrollView` / `SliverAppBar` with standard `AppBar` + `TabBarView`
+- Added `resizeToAvoidBottomInset: true` to the `SocialPage` `Scaffold`
+- Scrolling now works correctly when the search keyboard is open
+
+---
+
 ## V 01.03.01 - Social redesign (2026-08-25)
 
 ### Changed in V 01.03.01
