@@ -133,5 +133,6 @@
   "totalTasks": "Total tasks",
   "upcomingChart": "Upcoming",
   "urgentHigh": "Urgent/High",
-  "viewAllTasks": "View all tasks"
+  "viewAllTasks": "View all tasks",
+  "iOSRemoteNotAvailable": "Remote push notifications are not available on iOS without a paid Apple Developer account."
 }

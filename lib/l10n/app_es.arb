@@ -139,5 +139,6 @@
   "totalTasks": "Tareas totales",
   "upcomingChart": "Próximas",
   "urgentHigh": "Urgente/Alta",
-  "viewAllTasks": "Ver todas las tareas"
+  "viewAllTasks": "Ver todas las tareas",
+  "iOSRemoteNotAvailable": "Las notificaciones push remotas no están disponibles en iOS sin una cuenta de desarrollador de Apple de pago."
 }

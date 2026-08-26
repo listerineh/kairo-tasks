@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/services/notification_service.dart';
 import '../../domain/entities/task_entity.dart';
 
 // Events
@@ -356,6 +357,20 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
           await _client.from('shared_tasks').insert(records);
         }
       }
+
+      final createdTask = TaskEntity(
+        id: taskId,
+        ownerId: _userId,
+        title: event.title,
+        description: event.description,
+        priority: event.priority,
+        status: TaskStatus.pending,
+        startDate: event.startDate,
+        dueDate: event.dueDate,
+        createdAt: DateTime.now(),
+      );
+      await NotificationService.instance.scheduleTaskReminder(createdTask);
+
       // Realtime stream will update the list automatically
     } catch (e) {
       emit(state.copyWith(errorMessage: 'Failed to create task: $e'));

@@ -10,6 +10,25 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.06.00 - Push notifications foundation (2026-08-26)
+
+### Added in V 01.06.00
+
+- `NotificationService` singleton in `lib/core/services/notification_service.dart`
+- FCM token registration on Android stored in `profiles.fcm_token`
+- Local task reminders 15 minutes before `due_date` using `flutter_local_notifications`
+- Notification permission requests for iOS and Android 13+
+- Supabase migration `20260826000013_push_notifications.sql` adding `profiles.fcm_token`
+- iOS-only local notifications; FCM remote is disabled on iOS
+
+### Changed in V 01.06.00
+
+- `NotificationsSheet` now loads and persists three toggle preferences
+- `EditTaskSheet` cancels and reschedules task reminders on save
+- `TasksBloc` schedules a reminder when creating a task with a due date
+
+---
+
 ## V 01.05.03 - Logo on Dashboard and Social (2026-08-25)
 
 ### Added in V 01.05.03
