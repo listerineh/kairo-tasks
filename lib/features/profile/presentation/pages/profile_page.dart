@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
@@ -76,6 +77,21 @@ class _ProfilePageState extends State<ProfilePage> {
         }
       },
       child: Scaffold(
+        appBar: AppBar(
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SvgPicture.asset(
+                'assets/icons/app_icon.svg',
+                width: 28,
+                height: 28,
+              ),
+              const SizedBox(width: AppSpacing.spacing8),
+              const Text('KairoTasks'),
+            ],
+          ),
+          centerTitle: true,
+        ),
         body: SafeArea(
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())

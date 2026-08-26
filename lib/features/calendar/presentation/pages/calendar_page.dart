@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
@@ -36,7 +37,7 @@ class _CalendarPageState extends State<CalendarPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar: month name + view toggle
+            // Top bar: logo + month name + view toggle
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.spacing16,
@@ -46,6 +47,12 @@ class _CalendarPageState extends State<CalendarPage> {
               ),
               child: Row(
                 children: [
+                  SvgPicture.asset(
+                    'assets/icons/app_icon.svg',
+                    width: 28,
+                    height: 28,
+                  ),
+                  const SizedBox(width: AppSpacing.spacing8),
                   // Back arrow + month/year
                   GestureDetector(
                     onTap: _goBack,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
@@ -39,9 +40,19 @@ class _TasksView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'KairoTasks',
-                      style: context.textTheme.displayMedium,
+                    Row(
+                      children: [
+                        SvgPicture.asset(
+                          'assets/icons/app_icon.svg',
+                          width: 40,
+                          height: 40,
+                        ),
+                        const SizedBox(width: AppSpacing.spacing12),
+                        Text(
+                          'KairoTasks',
+                          style: context.textTheme.displayMedium,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.spacing4),
                     Text(
