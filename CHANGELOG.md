@@ -10,6 +10,19 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.21 - Edit shared friends in EditTaskSheet (2026-08-25)
+
+### Added in V 01.03.21
+
+- `TaskEditRequested` now accepts `sharedWith` list
+- `TasksBloc` inserts/deletes `shared_tasks` rows when editing to add or remove friends
+- `EditTaskSheet` loads accepted friends and shows `FilterChip`s
+- Owner can select/deselect multiple friends to share/unshare
+- Shared friends list is pre-selected from the existing `shared_tasks`
+- Non-owners do not see the sharing section
+
+---
+
 ## V 01.03.20 - Hide add friend button for pending requests (2026-08-25)
 
 ### Fixed in V 01.03.20

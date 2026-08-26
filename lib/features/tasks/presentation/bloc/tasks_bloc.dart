@@ -64,6 +64,7 @@ class TaskEditRequested extends TasksEvent {
     this.priority,
     this.startDate,
     this.dueDate,
+    this.sharedWith,
   });
 
   final String taskId;
@@ -72,10 +73,11 @@ class TaskEditRequested extends TasksEvent {
   final TaskPriority? priority;
   final DateTime? startDate;
   final DateTime? dueDate;
+  final List<String>? sharedWith;
 
   @override
   List<Object?> get props =>
-      [taskId, title, description, priority, startDate, dueDate];
+      [taskId, title, description, priority, startDate, dueDate, sharedWith];
 }
 
 class TaskDeleted extends TasksEvent {
@@ -233,8 +235,8 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
             task_id,
             shared_by_id,
             shared_with_id,
-            shared_with:profiles!shared_with_id(username, display_name, avatar_url),
-            shared_by:profiles!shared_by_id(username, display_name, avatar_url)
+            shared_with:profiles!shared_with_id(id, username, display_name, avatar_url),
+            shared_by:profiles!shared_by_id(id, username, display_name, avatar_url)
           )
         ''')
         .order('created_at', ascending: false);
@@ -374,6 +376,43 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
         if (event.dueDate != null)
           'due_date': event.dueDate!.toUtc().toIso8601String(),
       }).eq('id', event.taskId);
+
+      if (event.sharedWith != null) {
+        final current = await _client
+            .from('shared_tasks')
+            .select('shared_with_id')
+            .eq('task_id', event.taskId)
+            .eq('shared_by_id', _userId);
+        final currentRows = (current as List).cast<Map<String, dynamic>>();
+        final currentIds = currentRows
+            .map((r) => r['shared_with_id'] as String)
+            .toSet();
+        final desiredIds = event.sharedWith!.toSet();
+        final toAdd = desiredIds.difference(currentIds).toList();
+        final toRemove = currentIds.difference(desiredIds).toList();
+
+        if (toAdd.isNotEmpty) {
+          final records = toAdd
+              .where((id) => id != _userId)
+              .map((id) => {
+                    'task_id': event.taskId,
+                    'shared_by_id': _userId,
+                    'shared_with_id': id,
+                  })
+              .toList();
+          if (records.isNotEmpty) {
+            await _client.from('shared_tasks').insert(records);
+          }
+        }
+
+        if (toRemove.isNotEmpty) {
+          await _client
+              .from('shared_tasks')
+              .delete()
+              .eq('task_id', event.taskId)
+              .filter('shared_with_id', 'in', toRemove);
+        }
+      }
     } catch (e) {
       emit(state.copyWith(errorMessage: 'Failed to edit task: $e'));
     }

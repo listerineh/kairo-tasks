@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
@@ -22,6 +23,8 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
   late TaskPriority _priority;
   late DateTime? _startDate;
   late DateTime? _dueDate;
+  final _sharedWith = <String>[];
+  List<Map<String, dynamic>> _friends = [];
 
   @override
   void initState() {
@@ -32,6 +35,35 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
     _priority = widget.task.priority;
     _startDate = widget.task.startDate;
     _dueDate = widget.task.dueDate;
+    _sharedWith.addAll(
+      widget.task.sharedWith
+          .where((p) => p['id'] != null)
+          .map((p) => p['id'] as String),
+    );
+    _loadFriends();
+  }
+
+  Future<void> _loadFriends() async {
+    try {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final friends = await Supabase.instance.client
+          .from('friendships')
+          .select('''
+            id,
+            requester_id,
+            addressee_id,
+            requester:profiles!requester_id(id, username, display_name, avatar_url),
+            addressee:profiles!addressee_id(id, username, display_name, avatar_url)
+          ''')
+          .or('requester_id.eq.$userId,addressee_id.eq.$userId')
+          .eq('status', 'accepted');
+
+      setState(() => _friends = friends);
+    } catch (e) {
+      // ignore friend load errors
+    }
   }
 
   @override
@@ -210,6 +242,69 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
             ),
             const SizedBox(height: AppSpacing.spacing24),
 
+            // Shared with friends (only for the owner)
+            if (_isOwner && _friends.isNotEmpty) ...[
+              Text('Shared with', style: context.textTheme.labelLarge),
+              const SizedBox(height: AppSpacing.spacing8),
+              Wrap(
+                spacing: AppSpacing.spacing8,
+                runSpacing: AppSpacing.spacing8,
+                children: _friends.map((friend) {
+                  final isRequester =
+                      friend['requester_id'] ==
+                          Supabase.instance.client.auth.currentUser?.id;
+                  final profile = isRequester
+                      ? friend['addressee'] as Map<String, dynamic>?
+                      : friend['requester'] as Map<String, dynamic>?;
+                  final id = profile?['id'] as String?;
+                  final displayName =
+                      profile?['display_name'] as String? ?? '';
+                  final username =
+                      profile?['username'] as String? ?? '';
+                  final selected = id != null && _sharedWith.contains(id);
+
+                  return FilterChip(
+                    selected: selected,
+                    avatar: CircleAvatar(
+                      radius: 12,
+                      backgroundColor: colors.accentSoft,
+                      backgroundImage:
+                          (profile?['avatar_url'] as String?) != null
+                              ? NetworkImage(profile!['avatar_url'] as String)
+                              : null,
+                      child: (profile?['avatar_url'] as String?) == null
+                          ? Text(
+                              (displayName.isNotEmpty ? displayName[0] : '?')
+                                  .toUpperCase(),
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.accent,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            )
+                          : null,
+                    ),
+                    label: Text(
+                      displayName.isNotEmpty
+                          ? displayName
+                          : (username.isNotEmpty ? '@$username' : 'Friend'),
+                    ),
+                    onSelected: id == null
+                        ? null
+                        : (selected) {
+                            setState(() {
+                              if (selected) {
+                                _sharedWith.add(id);
+                              } else {
+                                _sharedWith.remove(id);
+                              }
+                            });
+                          },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: AppSpacing.spacing24),
+            ],
+
             // Save button
             ElevatedButton(
               onPressed: _saveTask,
@@ -281,6 +376,9 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
     });
   }
 
+  bool get _isOwner =>
+      widget.task.ownerId == Supabase.instance.client.auth.currentUser?.id;
+
   String _formatDateTime(DateTime dt) {
     final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
     final minute = dt.minute.toString().padLeft(2, '0');
@@ -302,6 +400,7 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
             priority: _priority,
             startDate: _startDate,
             dueDate: _dueDate,
+            sharedWith: _isOwner ? _sharedWith : null,
           ),
         );
 
