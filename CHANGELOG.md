@@ -10,6 +10,20 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.11.03 - Fix pg_net http_post signature (2026-08-26)
+
+### Fixed in V 01.11.03
+
+- `fcm_send` now calls `net.http_post` with **named parameters** matching the `pg_net` signature `(url, body, params, headers, timeout_milliseconds)`
+- This fixes the `42883` error that aborted `friendships` `INSERT` triggers
+- `pg_net` push calls now enqueue correctly without rolling back the social request
+
+### Database
+
+- New migration `20260826000018_fix_pg_net_signature.sql` replaces `fcm_send` with the correct `net.http_post` call
+
+---
+
 ## V 01.11.02 - Social realtime and FCM guard (2026-08-26)
 
 ### Added in V 01.11.02
