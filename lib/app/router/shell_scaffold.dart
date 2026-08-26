@@ -2,39 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class ShellScaffold extends StatelessWidget {
-  const ShellScaffold({required this.child, super.key});
+  const ShellScaffold({
+    required this.navigationShell,
+    super.key,
+  });
 
-  final Widget child;
-
-  int _currentIndex(BuildContext context) {
-    final location = GoRouterState.of(context).uri.path;
-    if (location.startsWith('/tasks')) return 0;
-    if (location.startsWith('/calendar')) return 1;
-    if (location.startsWith('/social')) return 2;
-    if (location.startsWith('/profile')) return 3;
-    return 0;
-  }
-
-  void _onTap(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        context.go('/tasks');
-      case 1:
-        context.go('/calendar');
-      case 2:
-        context.go('/social');
-      case 3:
-        context.go('/profile');
-    }
-  }
+  final StatefulNavigationShell navigationShell;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: child,
+      body: navigationShell,
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex(context),
-        onTap: (index) => _onTap(context, index),
+        currentIndex: navigationShell.currentIndex,
+        onTap: navigationShell.goBranch,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.check_circle_outline),

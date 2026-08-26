@@ -10,23 +10,13 @@ import '../../features/tasks/presentation/pages/tasks_page.dart';
 import '../router/shell_scaffold.dart';
 import 'route_names.dart';
 
-CustomTransitionPage<void> _fadePage(Widget child, GoRouterState state) {
-  return CustomTransitionPage<void>(
-    key: state.pageKey,
-    child: child,
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      return FadeTransition(
-        opacity: CurveTween(curve: Curves.easeInOut).animate(animation),
-        child: child,
-      );
-    },
-  );
-}
-
 class AppRouter {
   AppRouter._();
 
+  static final _rootNavigatorKey = GlobalKey<NavigatorState>();
+
   static final router = GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: '/tasks',
     debugLogDiagnostics: false,
     redirect: (context, state) {
@@ -39,36 +29,51 @@ class AppRouter {
       return null;
     },
     routes: [
-      // Auth routes
       GoRoute(
         path: '/login',
         name: RouteNames.login,
         builder: (context, state) => const LoginPage(),
       ),
-
-      // Main shell with bottom navigation
-      ShellRoute(
-        builder: (context, state, child) => ShellScaffold(child: child),
-        routes: [
-          GoRoute(
-            path: '/tasks',
-            name: RouteNames.tasks,
-            pageBuilder: (context, state) => _fadePage(const TasksPage(), state),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) => ShellScaffold(
+          navigationShell: navigationShell,
+        ),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/tasks',
+                name: RouteNames.tasks,
+                builder: (context, state) => const TasksPage(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/calendar',
-            name: RouteNames.calendar,
-            pageBuilder: (context, state) => _fadePage(const CalendarPage(), state),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/calendar',
+                name: RouteNames.calendar,
+                builder: (context, state) => const CalendarPage(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/social',
-            name: RouteNames.social,
-            pageBuilder: (context, state) => _fadePage(const SocialPage(), state),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/social',
+                name: RouteNames.social,
+                builder: (context, state) => const SocialPage(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/profile',
-            name: RouteNames.profile,
-            pageBuilder: (context, state) => _fadePage(const ProfilePage(), state),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                name: RouteNames.profile,
+                builder: (context, state) => const ProfilePage(),
+              ),
+            ],
           ),
         ],
       ),
