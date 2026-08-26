@@ -10,6 +10,20 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.01 - Social redesign (2026-08-25)
+
+### Changed in V 01.03.01
+
+- Redesigned `SocialPage` with modern look
+- Added `NestedScrollView` with `SliverAppBar` and `TabBar`
+- Three tabs: Search, Friends, Requests
+- Improved user cards with large avatars, shadows, and rounded corners
+- Search bar with modern rounded container and shadow
+- Empty states with icons and copy
+- Status chips and icon action buttons
+
+---
+
 ## V 01.03.00 - Social v1 (2026-08-25)
 
 ### Added in V 01.03.00
