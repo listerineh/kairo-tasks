@@ -169,6 +169,7 @@ class TaskRepositoryImpl implements TaskRepository {
 | username | TEXT | UNIQUE, NOT NULL |
 | display_name | TEXT | NOT NULL |
 | avatar_url | TEXT | nullable |
+| color | TEXT | DEFAULT '#4A6741' |
 | calendar_visibility | TEXT | DEFAULT 'private', CHECK('public','private') |
 | created_at | TIMESTAMPTZ | DEFAULT NOW() |
 | updated_at | TIMESTAMPTZ | DEFAULT NOW() |
@@ -203,6 +204,8 @@ class TaskRepositoryImpl implements TaskRepository {
 | requester_id | UUID | FK → profiles(id) |
 | addressee_id | UUID | FK → profiles(id) |
 | status | TEXT | DEFAULT 'pending', CHECK('pending','accepted','rejected') |
+| requester_color | TEXT | DEFAULT '#6B8FA3' |
+| addressee_color | TEXT | DEFAULT '#6B8FA3' |
 | created_at | TIMESTAMPTZ | DEFAULT NOW() |
 | | | UNIQUE(requester_id, addressee_id) |
 
@@ -210,17 +213,25 @@ class TaskRepositoryImpl implements TaskRepository {
 
 All tables have RLS enabled. Key policies:
 
-- **tasks**: Users can CRUD their own tasks. Users can view/edit tasks shared with them.
+- **tasks**: Users can CRUD their own tasks. Shared users can view/edit tasks explicitly shared with them. Public friend tasks are read through the `get_public_friend_tasks` RPC, not RLS.
 - **shared_tasks**: Only task owners can share. Only participants can view.
 - **friendships**: Users can see their own friendship records.
 - **profiles**: Public read for username/display_name. Only owner can update.
+
+### Public Calendar Access (RPC)
+
+Friend calendar data is exposed through the `get_public_friend_tasks` RPC:
+- The function is defined as `SECURITY DEFINER` so it bypasses RLS and returns all accepted friend tasks
+- Each result includes the owner's `calendar_visibility`
+- The client renders "Busy" blocks for private calendars and full task data for public calendars
 
 ### Realtime Subscriptions
 
 Enabled on:
 - `tasks` (INSERT, UPDATE, DELETE) - for shared task updates
 - `shared_tasks` (INSERT, DELETE) - new shares / removed shares
-- `friendships` (INSERT, UPDATE) - friend requests
+- `friendships` (INSERT, UPDATE) - friend requests and color changes
+- `profiles` (UPDATE) - own profile and friend color changes for calendar rendering
 
 ---
 
@@ -278,6 +289,16 @@ final sharedSubscription = supabase
 ```
 
 ---
+
+## Internationalization (i18n/l10n)
+
+The app uses Flutter's `flutter_localizations` with ARB files and code generation:
+
+- Translations are stored in `lib/l10n/app_en.arb` and `lib/l10n/app_es.arb`
+- `flutter gen-l10n` generates `AppLocalizations` and `AppLocalizations.localizationsDelegates` for `MaterialApp`
+- All UI strings are accessed via `context.l10n` (an extension on `BuildContext`)
+- Spanish (`es`) is the default locale; `supportedLocales` is set to `es` and `en`, with device-locale fallback
+- Adding a new string requires updating both ARB files and regenerating localizations
 
 ## Dependency Injection
 

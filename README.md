@@ -27,8 +27,11 @@
 - Current time red indicator
 - Tap a task to toggle completion
 - Navigation arrows + "Today" quick-jump
-- See public tasks from friends with due dates on your calendar
-- Each owner gets a distinct task color: your own profile color or a per-friend color
+- See accepted friends' public tasks with due dates on your calendar
+- Task block color is the owner's profile or friend color; updates in realtime via Supabase
+- Priority shown as a small dot in the top-left corner of day/week blocks
+- Avatars of shared-with users shown in the bottom-right of day/week task blocks
+- Private friend calendars display "Busy" blocks; public calendars show full task data
 
 ### Authentication
 - Email sign up / sign in
@@ -40,15 +43,20 @@
 - Send, accept, reject and cancel friend requests
 - Create tasks with a friend preselected
 - Remove friends
-- Assign a custom color to each friend
+- Assign a custom color to each friend; stored per side in `friendships.requester_color` / `addressee_color`
 
 ### Profile
 - Edit profile (display name, username, avatar URL)
 - Calendar visibility (public / private)
-- Choose your own task color
+- Choose your own task color in a dedicated "My task color" section
 - Appearance settings (light / dark / system)
 - Notifications preferences (placeholder)
 - Version tile pulled from package info
+
+### Internationalization
+- Bilingual English/Spanish support using Flutter ARB files (`lib/l10n/app_en.arb`, `lib/l10n/app_es.arb`)
+- Generated `AppLocalizations` accessible via `context.l10n`
+- Spanish is the default; the device locale falls back to `es` or `en` through `supportedLocales`
 
 ### Coming Soon
 - Push notifications
@@ -69,6 +77,7 @@
 | DI | get_it + injectable |
 | Push | Firebase Cloud Messaging |
 | Version | package_info_plus |
+| Internationalization | flutter_localizations + ARB (en/es) |
 
 **100% free and open source.** Core services use free tiers.
 

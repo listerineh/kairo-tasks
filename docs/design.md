@@ -71,16 +71,25 @@ Priority colors are used exclusively for:
 Never use priority colors for backgrounds or large areas.
 
 ### Visibility & Privacy
-- `profiles.calendar_visibility` controls whether an accepted friend can see your tasks in their calendar
-- Private (default): only you and users you explicitly share a task with can see it
-- Public: all accepted friends can see your tasks with due dates via the `get_public_friend_tasks` RPC
-- Task details and sharing are still protected by RLS; public only exposes task title, time and priority
+- `profiles.calendar_visibility` controls whether accepted friends see your tasks in their calendar
+- Private (default): only you and users you explicitly share a task with can see it; friends see "Busy" blocks
+- Public: all accepted friends can see your tasks with due dates via the `get_public_friend_tasks` RPC, which returns full data including title, time, and priority
+- `get_public_friend_tasks` is a `SECURITY DEFINER` function that returns all accepted friend tasks and the owner's `calendar_visibility`
+- Task details and sharing are protected by RLS; public calendar data is exposed only through the RPC
 
 ### Calendar Color Coding
-Calendar events are colored by their owner to help distinguish whose task is whose:
+Calendar events are colored by their owner to help distinguish whose task is whose, and update in realtime via Supabase:
 - **Own tasks**: use the current user's `profiles.color` (default: app `accent` green `#4A6741`)
-- **Friend public tasks**: use the `friendships.*_color` assigned by the current user (default muted slate `#6B8FA3`)
+- **Friend public tasks**: use `friendships.requester_color` / `friendships.addressee_color` assigned by the current user (default muted slate `#6B8FA3`)
+- **Priority dot**: a small colored dot in the top-left corner of day/week blocks indicates the task priority
+- **Shared avatars**: avatars of the people a task is shared with are shown in the bottom-right of day/week blocks
 - **Priority color**: used only as a fallback when no owner color is set
+
+### Calendar Task Indicators
+Each day/week task block communicates ownership, priority, and sharing at a glance:
+- **Owner color fill**: the block uses the owner's profile or friend color (see Calendar Color Coding)
+- **Priority dot**: a small colored dot in the top-left corner shows the task priority without filling the whole block
+- **Shared avatars**: circular avatars of the people a task is shared with are shown in the bottom-right; overflow is collapsed behind a count chip
 
 ### Social Color Indicators
 - Each friend row in the Social tab displays a small circular color chip
@@ -245,6 +254,15 @@ When implementing any new component, verify:
 - [ ] Error states include text explanation (not just red color)
 
 ---
+
+## Internationalization
+
+The app supports English and Spanish using Flutter's ARB localization workflow:
+
+- Source strings live in `lib/l10n/app_en.arb` and `lib/l10n/app_es.arb`
+- `flutter gen-l10n` generates `AppLocalizations` accessible via `context.l10n`
+- Spanish is the default locale; the device locale falls back to `es` or `en` through `supportedLocales`
+- New UI copy is added to both ARB files to keep translations in sync
 
 ## Implementation Guide
 
