@@ -38,6 +38,16 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
+    final metadata = user.userMetadata ?? {};
+    final metadataName = (metadata['display_name'] as String?) ??
+        (metadata['full_name'] as String?) ??
+        (metadata['name'] as String?);
+    final metadataUsername = (metadata['username'] as String?) ??
+        (metadata['preferred_username'] as String?);
+    final metadataAvatar = (metadata['avatar_url'] as String?) ??
+        (metadata['picture'] as String?) ??
+        (metadata['avatar_url'] as String?);
+
     try {
       final response = await Supabase.instance.client
           .from('profiles')
@@ -45,13 +55,22 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
           .eq('id', user.id)
           .single();
 
+      final profileName = response['display_name'] as String?;
+      final profileUsername = response['username'] as String?;
+      final emailPrefix =
+          user.email != null ? user.email!.split('@').first : '';
+
       setState(() {
-        _displayNameController.text =
-            (response['display_name'] as String?) ?? '';
-        _usernameController.text =
-            (response['username'] as String?) ?? '';
+        _displayNameController.text = (profileName != null &&
+                profileName != emailPrefix)
+            ? profileName
+            : (metadataName ?? profileName ?? '');
+        _usernameController.text = (profileUsername != null &&
+                profileUsername != emailPrefix)
+            ? profileUsername
+            : (metadataUsername ?? profileUsername ?? '');
         _avatarUrlController.text =
-            (response['avatar_url'] as String?) ?? '';
+            (response['avatar_url'] as String?) ?? metadataAvatar ?? '';
         _isPublic =
             (response['calendar_visibility'] as String?) == 'public';
         _isLoading = false;
