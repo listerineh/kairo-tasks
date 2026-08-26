@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.05.01 - Dashboard visual cleanup (2026-08-25)
+
+### Fixed in V 01.05.01
+
+- Removed heavy `Card` containers from the dashboard
+- Metric cards replaced by a lightweight wrap of value + label pairs
+- Charts sit directly under section titles with no card backgrounds
+- More editorial, breathable layout
+
+---
+
 ## V 01.05.00 - Dashboard homepage with charts (2026-08-25)
 
 ### Added in V 01.05.00

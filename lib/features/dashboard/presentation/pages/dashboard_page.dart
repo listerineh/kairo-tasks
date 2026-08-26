@@ -149,49 +149,40 @@ class _MetricCards extends StatelessWidget {
       (context.l10n.completionRate, '${rate.toStringAsFixed(0)}%'),
     ];
 
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: AppSpacing.spacing12,
-      crossAxisSpacing: AppSpacing.spacing12,
-      childAspectRatio: 1.6,
+    return Wrap(
+      spacing: AppSpacing.spacing32,
+      runSpacing: AppSpacing.spacing20,
       children: metrics
-          .map(
-            (m) => _MetricCard(label: m.$1, value: m.$2),
-          )
+          .map((m) => _MetricItem(label: m.$1, value: m.$2))
           .toList(),
     );
   }
 }
 
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({required this.label, required this.value});
+class _MetricItem extends StatelessWidget {
+  const _MetricItem({required this.label, required this.value});
 
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.spacing16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: context.textTheme.titleMedium,
-            ),
-            const SizedBox(height: AppSpacing.spacing4),
-            Text(
-              label,
-              style: context.textTheme.bodySmall,
-            ),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: context.textTheme.titleLarge,
         ),
-      ),
+        const SizedBox(height: AppSpacing.spacing4),
+        Text(
+          label,
+          style: context.textTheme.bodySmall?.copyWith(
+            color: context.appColors.textSecondary,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -208,7 +199,7 @@ class _CompletionChart extends StatelessWidget {
     final rate = tasks.isEmpty ? 0.0 : (completed / tasks.length) * 100;
     final colors = context.appColors;
 
-    return _ChartCard(
+    return _ChartSection(
       title: context.l10n.completionChart,
       child: SizedBox(
         height: 200,
@@ -285,7 +276,7 @@ class _PriorityChart extends StatelessWidget {
     const priorities = TaskPriority.values;
     final maxY = _maxValue(counts.values) * 1.2;
 
-    return _ChartCard(
+    return _ChartSection(
       title: context.l10n.priorityChart,
       child: SizedBox(
         height: 200,
@@ -397,7 +388,7 @@ class _UpcomingChart extends StatelessWidget {
     final maxY = _maxValue(counts) * 1.2;
     final labels = days.map(_weekdayLabel).toList();
 
-    return _ChartCard(
+    return _ChartSection(
       title: context.l10n.upcomingChart,
       child: SizedBox(
         height: 200,
@@ -478,29 +469,24 @@ class _UpcomingChart extends StatelessWidget {
   }
 }
 
-class _ChartCard extends StatelessWidget {
-  const _ChartCard({required this.title, required this.child});
+class _ChartSection extends StatelessWidget {
+  const _ChartSection({required this.title, required this.child});
 
   final String title;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.spacing16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: context.textTheme.titleSmall,
-            ),
-            const SizedBox(height: AppSpacing.spacing8),
-            child,
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: context.textTheme.titleSmall,
         ),
-      ),
+        const SizedBox(height: AppSpacing.spacing8),
+        child,
+      ],
     );
   }
 }
