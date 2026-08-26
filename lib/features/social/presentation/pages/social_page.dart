@@ -57,41 +57,67 @@ class _SocialPageState extends State<SocialPage>
         return;
       }
 
-      final [friends, pending] = await Future.wait([
+      final [friendshipsRaw, pendingRaw] = await Future.wait([
         Supabase.instance.client
             .from('friendships')
-            .select('''
-              id,
-              status,
-              requester_id,
-              addressee_id,
-              created_at,
-              requester:profiles!requester_id(username, display_name, avatar_url),
-              addressee:profiles!addressee_id(username, display_name, avatar_url)
-            ''')
+            .select('id, status, requester_id, addressee_id, created_at')
             .or('requester_id.eq.$userId,addressee_id.eq.$userId')
             .eq('status', 'accepted'),
         Supabase.instance.client
             .from('friendships')
-            .select('''
-              id,
-              status,
-              requester_id,
-              addressee_id,
-              created_at,
-              requester:profiles!requester_id(username, display_name, avatar_url)
-            ''')
+            .select('id, status, requester_id, addressee_id, created_at')
             .eq('addressee_id', userId)
             .eq('status', 'pending'),
       ]);
 
+      final friendships =
+          (friendshipsRaw as List).cast<Map<String, dynamic>>();
+      final pending = (pendingRaw as List).cast<Map<String, dynamic>>();
+
+      final profileIds = <String>{};
+      for (final f in friendships) {
+        final otherId = f['requester_id'] == userId
+            ? f['addressee_id']
+            : f['requester_id'];
+        profileIds.add(otherId as String);
+      }
+      for (final p in pending) {
+        profileIds.add(p['requester_id'] as String);
+      }
+
+      final profileMap = <String, Map<String, dynamic>>{};
+      if (profileIds.isNotEmpty) {
+        final profilesData = await Supabase.instance.client
+            .from('profiles')
+            .select('id, username, display_name, avatar_url')
+            .filter('id', 'in', profileIds.toList());
+        for (final p in (profilesData as List).cast<Map<String, dynamic>>()) {
+          profileMap[p['id'] as String] = p;
+        }
+      }
+
       setState(() {
-        _friends = friends;
-        _pendingRequests = pending;
+        _friends = friendships.map((f) {
+          final otherId = f['requester_id'] == userId
+              ? f['addressee_id'] as String
+              : f['requester_id'] as String;
+          return {
+            ...f,
+            'profile': profileMap[otherId] ?? <String, dynamic>{},
+          };
+        }).toList();
+        _pendingRequests = pending.map((p) {
+          final requesterId = p['requester_id'] as String;
+          return {
+            ...p,
+            'requester_profile': profileMap[requesterId] ?? <String, dynamic>{},
+          };
+        }).toList();
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
+      _showError('Could not load social data: $e');
     }
   }
 
@@ -383,8 +409,6 @@ class _FriendsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
       child: friends.isEmpty
@@ -398,9 +422,7 @@ class _FriendsTab extends StatelessWidget {
               itemCount: friends.length,
               itemBuilder: (context, index) {
                 final friend = friends[index];
-                final other = friend['requester_id'] == currentUserId
-                    ? friend['addressee'] as Map<String, dynamic>?
-                    : friend['requester'] as Map<String, dynamic>?;
+                final other = friend['profile'] as Map<String, dynamic>?;
 
                 return _UserListTile(
                   profile: other ?? {},
@@ -446,7 +468,7 @@ class _RequestsTab extends StatelessWidget {
               itemBuilder: (context, index) {
                 final request = requests[index];
                 final requester =
-                    request['requester'] as Map<String, dynamic>?;
+                    request['requester_profile'] as Map<String, dynamic>?;
 
                 return _UserListTile(
                   profile: requester ?? {},

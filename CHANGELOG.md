@@ -10,6 +10,18 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.14 - Social friends loading fix (2026-08-25)
+
+### Fixed in V 01.03.14
+
+- Refactored `SocialPage` friends/pending queries to load `friendships` and `profiles` separately
+- Profiles are now fetched with `.filter('id', 'in', [...])` using the collected `requester_id`/`addressee_id` values
+- Friends and requesters are stored as `profile`/`requester_profile` maps in the lists
+- `_FriendsTab` and `_RequestsTab` use the mapped profile, avoiding embedded query ambiguity
+- `_loadSocialData` now shows a `SnackBar` when loading fails
+
+---
+
 ## V 01.03.13 - Social tab overflow fix (2026-08-25)
 
 ### Fixed in V 01.03.13
