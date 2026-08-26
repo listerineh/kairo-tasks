@@ -10,6 +10,22 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.18 - Task detail sheet with edit button (2026-08-25)
+
+### Added in V 01.03.18
+
+- New `TaskDetailSheet` widget
+- Tapping a task opens a bottom sheet with:
+  - Title and description
+  - Status and priority chips
+  - Start and due dates
+  - Shared-with profile and avatar
+  - "Edit Task" button
+- The "Edit Task" button closes the detail sheet and opens `EditTaskSheet`
+- `TaskCard` now triggers the detail sheet instead of jumping straight to edit
+
+---
+
 ## V 01.03.17 - Give the friend action button a purpose (2026-08-25)
 
 ### Added in V 01.03.17

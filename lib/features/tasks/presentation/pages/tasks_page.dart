@@ -9,6 +9,7 @@ import '../bloc/tasks_bloc.dart';
 import '../widgets/create_task_sheet.dart';
 import '../widgets/edit_task_sheet.dart';
 import '../widgets/task_card.dart';
+import '../widgets/task_detail_sheet.dart';
 import '../widgets/task_filter_chips.dart';
 
 class TasksPage extends StatelessWidget {
@@ -117,7 +118,7 @@ class _TasksView extends StatelessWidget {
                             .read<TasksBloc>()
                             .add(TaskDeleted(task.id)),
                         onTap: () =>
-                            _showEditTaskSheet(context, task),
+                            _showTaskDetail(context, task),
                       );
                     },
                   ),
@@ -160,7 +161,7 @@ class _TasksView extends StatelessWidget {
                                 .read<TasksBloc>()
                                 .add(TaskDeleted(task.id)),
                             onTap: () =>
-                                _showEditTaskSheet(context, task),
+                                _showTaskDetail(context, task),
                           ),
                         ),
                       ),
@@ -198,6 +199,21 @@ class _TasksView extends StatelessWidget {
       builder: (_) => BlocProvider.value(
         value: context.read<TasksBloc>(),
         child: const CreateTaskSheet(),
+      ),
+    );
+  }
+
+  void _showTaskDetail(BuildContext context, TaskEntity task) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => TaskDetailSheet(
+        task: task,
+        onEdit: () {
+          Navigator.pop(sheetContext);
+          _showEditTaskSheet(context, task);
+        },
       ),
     );
   }
