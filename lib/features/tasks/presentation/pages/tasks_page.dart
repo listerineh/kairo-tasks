@@ -37,8 +37,13 @@ class _TasksView extends StatelessWidget {
       },
       child: Scaffold(
         body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
+        child: RefreshIndicator(
+          color: context.appColors.accent,
+          backgroundColor: context.appColors.surfaceElevated,
+          onRefresh: () => _onRefresh(context),
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.spacing24,
@@ -163,6 +168,7 @@ class _TasksView extends StatelessWidget {
           ],
         ),
       ),
+    ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCreateTaskSheet(context),
         child: const Icon(Icons.add),
@@ -176,6 +182,11 @@ class _TasksView extends StatelessWidget {
     if (hour < 12) return context.l10n.goodMorning;
     if (hour < 17) return context.l10n.goodAfternoon;
     return context.l10n.goodEvening;
+  }
+
+  Future<void> _onRefresh(BuildContext context) async {
+    final bloc = context.read<TasksBloc>()..add(const TasksLoadRequested());
+    await bloc.stream.firstWhere((state) => state.status != TasksStatus.loading);
   }
 
   void _showCreateTaskSheet(BuildContext context) {

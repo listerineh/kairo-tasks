@@ -10,6 +10,16 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.11.00 - Pull-to-refresh (2026-08-26)
+
+### Added in V 01.11.00
+
+- Pull-to-refresh on `TasksPage` using `RefreshIndicator` around `CustomScrollView`
+- Pull-to-refresh on `SocialPage` tabs (Search, Friends, Requests) using `RefreshIndicator` on each `ListView`
+- Refresh triggers the relevant BLoC/`_loadSocialData()` reload and waits for completion
+
+---
+
 ## V 01.10.01 - FCM Android config and push test (2026-08-26)
 
 ### Added in V 01.10.01

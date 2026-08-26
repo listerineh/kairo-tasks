@@ -365,17 +365,20 @@ class _SocialPageState extends State<SocialPage>
                   controller: _searchController,
                   results: _searchResults,
                   onAdd: _sendRequest,
+                  onRefresh: _loadSocialData,
                 ),
                 _FriendsTab(
                   friends: _friends,
                   colors: colors,
                   onOpen: _openFriendDetail,
+                  onRefresh: _loadSocialData,
                 ),
                 _RequestsTab(
                   requests: _pendingRequests,
                   onAccept: _respondRequest,
                   onDecline: _respondRequest,
                   colors: colors,
+                  onRefresh: _loadSocialData,
                 ),
               ],
             ),
@@ -443,11 +446,13 @@ class _SearchTab extends StatelessWidget {
     required this.controller,
     required this.results,
     required this.onAdd,
+    required this.onRefresh,
   });
 
   final TextEditingController controller;
   final List<Map<String, dynamic>> results;
   final void Function(String) onAdd;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -492,35 +497,41 @@ class _SearchTab extends StatelessWidget {
           Expanded(
             child: results.isEmpty
                 ? _EmptySearchState(colors: colors)
-                : ListView.builder(
-                    itemCount: results.length,
-                    itemBuilder: (context, index) {
-                      final user = results[index];
-                      final isFriend = (user['is_friend'] as bool?) ?? false;
-                      final isRequestSent =
-                          (user['is_request_sent'] as bool?) ?? false;
+                : RefreshIndicator(
+                    color: colors.accent,
+                    backgroundColor: colors.surfaceElevated,
+                    onRefresh: onRefresh,
+                    child: ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: results.length,
+                      itemBuilder: (context, index) {
+                        final user = results[index];
+                        final isFriend = (user['is_friend'] as bool?) ?? false;
+                        final isRequestSent =
+                            (user['is_request_sent'] as bool?) ?? false;
 
-                      return _UserListTile(
-                        profile: user,
-                        trailing: isFriend
-                            ? _StatusChip(
-                                icon: Icons.check,
-                                label: context.l10n.friends,
-                                color: colors.accent,
-                              )
-                            : isRequestSent
-                                ? _StatusChip(
-                                    icon: Icons.hourglass_empty,
-                                    label: context.l10n.pending,
-                                    color: colors.textMuted,
-                                  )
-                                : _IconActionButton(
-                                    icon: Icons.person_add,
-                                    tooltip: context.l10n.sendFriendRequest,
-                                    onPressed: () => onAdd(user['id'] as String),
-                                  ),
-                      );
-                    },
+                        return _UserListTile(
+                          profile: user,
+                          trailing: isFriend
+                              ? _StatusChip(
+                                  icon: Icons.check,
+                                  label: context.l10n.friends,
+                                  color: colors.accent,
+                                )
+                              : isRequestSent
+                                  ? _StatusChip(
+                                      icon: Icons.hourglass_empty,
+                                      label: context.l10n.pending,
+                                      color: colors.textMuted,
+                                    )
+                                  : _IconActionButton(
+                                      icon: Icons.person_add,
+                                      tooltip: context.l10n.sendFriendRequest,
+                                      onPressed: () => onAdd(user['id'] as String),
+                                    ),
+                        );
+                      },
+                    ),
                   ),
           ),
         ],
@@ -534,11 +545,13 @@ class _FriendsTab extends StatelessWidget {
     required this.friends,
     required this.colors,
     required this.onOpen,
+    required this.onRefresh,
   });
 
   final List<Map<String, dynamic>> friends;
   final AppColorScheme colors;
   final void Function(Map<String, dynamic> friend) onOpen;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -551,16 +564,22 @@ class _FriendsTab extends StatelessWidget {
               subtitle: context.l10n.noFriendsSubtitle,
               colors: colors,
             )
-          : ListView.builder(
-              itemCount: friends.length,
-              itemBuilder: (context, index) {
-                final friend = friends[index];
+          : RefreshIndicator(
+              color: colors.accent,
+              backgroundColor: colors.surfaceElevated,
+              onRefresh: onRefresh,
+              child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: friends.length,
+                itemBuilder: (context, index) {
+                  final friend = friends[index];
 
-                return _UserListTile(
-                  profile: (friend['profile'] as Map<String, dynamic>?) ?? {},
-                  onTap: () => onOpen(friend),
-                );
-              },
+                  return _UserListTile(
+                    profile: (friend['profile'] as Map<String, dynamic>?) ?? {},
+                    onTap: () => onOpen(friend),
+                  );
+                },
+              ),
             ),
     );
   }
@@ -572,12 +591,14 @@ class _RequestsTab extends StatelessWidget {
     required this.onAccept,
     required this.onDecline,
     required this.colors,
+    required this.onRefresh,
   });
 
   final List<Map<String, dynamic>> requests;
   final void Function(String, String) onAccept;
   final void Function(String, String) onDecline;
   final AppColorScheme colors;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -590,41 +611,47 @@ class _RequestsTab extends StatelessWidget {
               subtitle: context.l10n.noPendingRequestsSubtitle,
               colors: colors,
             )
-          : ListView.builder(
-              itemCount: requests.length,
-              itemBuilder: (context, index) {
-                final request = requests[index];
-                final requester =
-                    request['requester_profile'] as Map<String, dynamic>?;
+          : RefreshIndicator(
+              color: colors.accent,
+              backgroundColor: colors.surfaceElevated,
+              onRefresh: onRefresh,
+              child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: requests.length,
+                itemBuilder: (context, index) {
+                  final request = requests[index];
+                  final requester =
+                      request['requester_profile'] as Map<String, dynamic>?;
 
-                return _UserListTile(
-                  profile: requester ?? {},
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _IconActionButton(
-                        icon: Icons.check,
-                        backgroundColor: colors.accent,
-                        iconColor: Colors.white,
-                        onPressed: () => onAccept(
-                          request['id'] as String,
-                          'accepted',
+                  return _UserListTile(
+                    profile: requester ?? {},
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _IconActionButton(
+                          icon: Icons.check,
+                          backgroundColor: colors.accent,
+                          iconColor: Colors.white,
+                          onPressed: () => onAccept(
+                            request['id'] as String,
+                            'accepted',
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.spacing8),
-                      _IconActionButton(
-                        icon: Icons.close,
-                        backgroundColor: colors.urgent.withValues(alpha: 0.1),
-                        iconColor: colors.urgent,
-                        onPressed: () => onDecline(
-                          request['id'] as String,
-                          'rejected',
+                        const SizedBox(width: AppSpacing.spacing8),
+                        _IconActionButton(
+                          icon: Icons.close,
+                          backgroundColor: colors.urgent.withValues(alpha: 0.1),
+                          iconColor: colors.urgent,
+                          onPressed: () => onDecline(
+                            request['id'] as String,
+                            'rejected',
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
     );
   }
