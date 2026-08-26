@@ -16,7 +16,7 @@ class TaskEntity extends Equatable {
     this.startDate,
     this.dueDate,
     this.updatedAt,
-    this.sharedWith,
+    this.sharedWith = const [],
   });
 
   final String id;
@@ -29,9 +29,9 @@ class TaskEntity extends Equatable {
   final DateTime? dueDate;
   final DateTime createdAt;
   final DateTime? updatedAt;
-  final Map<String, dynamic>? sharedWith;
+  final List<Map<String, dynamic>> sharedWith;
 
-  bool get isShared => sharedWith != null;
+  bool get isShared => sharedWith.isNotEmpty;
 
   TaskEntity copyWith({
     String? id,
@@ -44,7 +44,7 @@ class TaskEntity extends Equatable {
     DateTime? dueDate,
     DateTime? createdAt,
     DateTime? updatedAt,
-    Map<String, dynamic>? sharedWith,
+    List<Map<String, dynamic>>? sharedWith,
   }) =>
       TaskEntity(
         id: id ?? this.id,

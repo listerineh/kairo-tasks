@@ -23,7 +23,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
   TaskPriority _priority = TaskPriority.medium;
   DateTime? _startDate;
   DateTime? _dueDate;
-  String? _sharedWith;
+  final List<String> _sharedWith = [];
   List<Map<String, dynamic>> _friends = [];
 
   @override
@@ -73,7 +73,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
             orElse: () => <String, dynamic>{},
           );
           if (match.isNotEmpty) {
-            _sharedWith = initial;
+            _sharedWith.add(initial);
           }
         }
       });
@@ -251,62 +251,66 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
             ),
             const SizedBox(height: AppSpacing.spacing20),
 
-            // Share with friend
+            // Share with friends
             if (_friends.isNotEmpty) ...[
               Text('Share with', style: context.textTheme.labelLarge),
               const SizedBox(height: AppSpacing.spacing8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
-                decoration: BoxDecoration(
-                  color: colors.surfaceSubtle,
-                  borderRadius:
-                      BorderRadius.circular(AppSpacing.radiusMedium),
-                  border: Border.all(color: colors.border),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String?>(
-                    isExpanded: true,
-                    value: _sharedWith,
-                    hint: Text(
-                      'Just me',
-                      style: context.textTheme.bodyMedium,
-                    ),
-                    icon: Icon(Icons.people, color: colors.textSecondary),
-                    items: _friends.map((friend) {
-                      final isRequester =
-                          friend['requester_id'] ==
-                              Supabase.instance.client.auth.currentUser?.id;
-                      final profile = isRequester
-                          ? friend['addressee'] as Map<String, dynamic>?
-                          : friend['requester'] as Map<String, dynamic>?;
-                      final id = isRequester
-                          ? friend['addressee_id'] as String?
-                          : friend['requester_id'] as String?;
-                      final displayName =
-                          profile?['display_name'] as String? ?? '';
-                      final username =
-                          profile?['username'] as String? ?? '';
+              Wrap(
+                spacing: AppSpacing.spacing8,
+                runSpacing: AppSpacing.spacing8,
+                children: _friends.map((friend) {
+                  final isRequester =
+                      friend['requester_id'] ==
+                          Supabase.instance.client.auth.currentUser?.id;
+                  final profile = isRequester
+                      ? friend['addressee'] as Map<String, dynamic>?
+                      : friend['requester'] as Map<String, dynamic>?;
+                  final id = isRequester
+                      ? friend['addressee_id'] as String?
+                      : friend['requester_id'] as String?;
+                  final displayName =
+                      profile?['display_name'] as String? ?? '';
+                  final username =
+                      profile?['username'] as String? ?? '';
+                  final selected = id != null && _sharedWith.contains(id);
 
-                      return DropdownMenuItem<String?>(
-                        value: id,
-                        child: Text(
-                          '$displayName (@$username)',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    }).toList()
-                      ..insert(
-                        0,
-                        const DropdownMenuItem<String?>(
-                          value: null,
-                          child: Text('Just me'),
-                        ),
-                      ),
-                    onChanged: (value) {
-                      setState(() => _sharedWith = value);
-                    },
-                  ),
-                ),
+                  return FilterChip(
+                    selected: selected,
+                    avatar: CircleAvatar(
+                      radius: 12,
+                      backgroundColor: colors.accentSoft,
+                      backgroundImage: (profile?['avatar_url'] as String?) != null
+                          ? NetworkImage(profile!['avatar_url'] as String)
+                          : null,
+                      child: (profile?['avatar_url'] as String?) == null
+                          ? Text(
+                              (displayName.isNotEmpty ? displayName[0] : '?')
+                                  .toUpperCase(),
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.accent,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            )
+                          : null,
+                    ),
+                    label: Text(
+                      displayName.isNotEmpty
+                          ? displayName
+                          : (username.isNotEmpty ? '@$username' : 'Friend'),
+                    ),
+                    onSelected: id == null
+                        ? null
+                        : (selected) {
+                            setState(() {
+                              if (selected) {
+                                _sharedWith.add(id);
+                              } else {
+                                _sharedWith.remove(id);
+                              }
+                            });
+                          },
+                  );
+                }).toList(),
               ),
             ],
 

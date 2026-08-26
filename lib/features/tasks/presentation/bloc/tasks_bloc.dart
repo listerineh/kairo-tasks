@@ -41,7 +41,7 @@ class TaskCreateRequested extends TasksEvent {
   final TaskPriority priority;
   final DateTime? startDate;
   final DateTime? dueDate;
-  final String? sharedWith;
+  final List<String>? sharedWith;
 
   @override
   List<Object?> get props =>
@@ -301,9 +301,9 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
   ) {
     final previousMap = {for (final t in state.tasks) t.id: t};
     final mergedTasks = event.tasks.map((task) {
-      if (task.sharedWith != null) return task;
+      if (task.sharedWith.isNotEmpty) return task;
       final previous = previousMap[task.id];
-      if (previous != null && previous.sharedWith != null) {
+      if (previous != null && previous.sharedWith.isNotEmpty) {
         return task.copyWith(sharedWith: previous.sharedWith);
       }
       return task;
@@ -341,12 +341,18 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
 
       final taskId = result['id'] as String;
 
-      if (event.sharedWith != null && event.sharedWith != _userId) {
-        await _client.from('shared_tasks').insert({
-          'task_id': taskId,
-          'shared_by_id': _userId,
-          'shared_with_id': event.sharedWith,
-        });
+      if (event.sharedWith != null && event.sharedWith!.isNotEmpty) {
+        final records = event.sharedWith!
+            .where((id) => id != _userId)
+            .map((id) => {
+                  'task_id': taskId,
+                  'shared_by_id': _userId,
+                  'shared_with_id': id,
+                })
+            .toList();
+        if (records.isNotEmpty) {
+          await _client.from('shared_tasks').insert(records);
+        }
       }
       // Realtime stream will update the list automatically
     } catch (e) {
@@ -403,16 +409,21 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
   }
 
   TaskEntity _taskFromJson(Map<String, dynamic> json) {
-    Map<String, dynamic>? sharedWith;
+    final sharedWith = <Map<String, dynamic>>[];
     final sharedTasks = json['shared_tasks'] as List<dynamic>?;
-    if (sharedTasks != null && sharedTasks.isNotEmpty) {
-      final share = sharedTasks.first as Map<String, dynamic>;
-      final sharedById = share['shared_by_id'] as String?;
-      final sharedWithId = share['shared_with_id'] as String?;
-      if (sharedById == _userId) {
-        sharedWith = share['shared_with'] as Map<String, dynamic>?;
-      } else if (sharedWithId == _userId) {
-        sharedWith = share['shared_by'] as Map<String, dynamic>?;
+    if (sharedTasks != null) {
+      for (final item in sharedTasks) {
+        final share = item as Map<String, dynamic>;
+        final sharedById = share['shared_by_id'] as String?;
+        final sharedWithId = share['shared_with_id'] as String?;
+        final profile = sharedById == _userId
+            ? share['shared_with'] as Map<String, dynamic>?
+            : (sharedWithId == _userId
+                ? share['shared_by'] as Map<String, dynamic>?
+                : null);
+        if (profile != null) {
+          sharedWith.add(profile);
+        }
       }
     }
 

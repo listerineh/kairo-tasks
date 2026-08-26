@@ -258,52 +258,88 @@ class _SharedSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
     final isOwner = task.ownerId == currentUserId;
-    final friend = task.sharedWith ?? {};
+    final count = task.sharedWith.length;
+    final header = isOwner
+        ? 'Shared with $count ${count == 1 ? 'friend' : 'friends'}'
+        : 'Shared by';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          header,
+          style: context.textTheme.bodyMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.spacing8),
+        ...task.sharedWith
+            .map((friend) => _SharedRow(friend: friend, colors: colors)),
+      ],
+    );
+  }
+}
+
+class _SharedRow extends StatelessWidget {
+  const _SharedRow({
+    required this.friend,
+    required this.colors,
+  });
+
+  final Map<String, dynamic> friend;
+  final AppColorScheme colors;
+
+  @override
+  Widget build(BuildContext context) {
     final displayName = friend['display_name'] as String? ?? '';
     final username = friend['username'] as String? ?? '';
     final avatarUrl = friend['avatar_url'] as String?;
-    final label = isOwner
-        ? 'Shared with $displayName'
-        : 'Shared by $displayName';
 
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 20,
-          backgroundColor: colors.accentSoft,
-          backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-          child: avatarUrl == null
-              ? Text(
-                  (displayName.isNotEmpty ? displayName[0] : '?').toUpperCase(),
-                  style: context.textTheme.titleSmall?.copyWith(
-                    color: colors.accent,
-                    fontWeight: FontWeight.w700,
-                  ),
-                )
-              : null,
-        ),
-        const SizedBox(width: AppSpacing.spacing12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                displayName.isNotEmpty ? label : (username.isNotEmpty ? '@$username' : 'Shared'),
-                style: context.textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (displayName.isNotEmpty && username.isNotEmpty)
-                Text(
-                  '@$username',
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.spacing8),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: colors.accentSoft,
+            backgroundImage:
+                avatarUrl != null ? NetworkImage(avatarUrl) : null,
+            child: avatarUrl == null
+                ? Text(
+                    (displayName.isNotEmpty ? displayName[0] : '?')
+                        .toUpperCase(),
+                    style: context.textTheme.titleSmall?.copyWith(
+                      color: colors.accent,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  )
+                : null,
           ),
-        ),
-      ],
+          const SizedBox(width: AppSpacing.spacing12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  displayName.isNotEmpty
+                      ? displayName
+                      : (username.isNotEmpty ? '@$username' : 'Shared'),
+                  style: context.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (displayName.isNotEmpty && username.isNotEmpty)
+                  Text(
+                    '@$username',
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

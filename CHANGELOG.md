@@ -10,6 +10,18 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.19 - Share tasks with multiple friends (2026-08-25)
+
+### Added in V 01.03.19
+
+- `TaskEntity.sharedWith` is now a `List<Map<String, dynamic>>` to support n friends
+- `TasksBloc` inserts `shared_tasks` for every selected friend
+- `CreateTaskSheet` replaced the friend `DropdownButton` with multi-select `FilterChip`s
+- `TaskCard` now shows the first friend plus a `+n` count when shared with multiple
+- `TaskDetailSheet` lists every shared friend with avatar, display name and username
+
+---
+
 ## V 01.03.18 - Task detail sheet with edit button (2026-08-25)
 
 ### Added in V 01.03.18

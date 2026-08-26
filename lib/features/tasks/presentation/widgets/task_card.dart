@@ -218,12 +218,13 @@ class _SharedWithChip extends StatelessWidget {
     final colors = context.appColors;
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
     final isOwner = task.ownerId == currentUserId;
-    final friend = task.sharedWith ?? {};
-    final displayName = friend['display_name'] as String? ?? '';
-    final username = friend['username'] as String? ?? '';
-    final avatarUrl = friend['avatar_url'] as String?;
+    final first = task.sharedWith.isNotEmpty ? task.sharedWith.first : null;
+    final displayName = first?['display_name'] as String? ?? '';
+    final username = first?['username'] as String? ?? '';
+    final avatarUrl = first?['avatar_url'] as String?;
+    final extraCount = task.sharedWith.length - 1;
     final label = isOwner
-        ? 'Shared with $displayName'
+        ? 'Shared with $displayName${extraCount > 0 ? ' +$extraCount' : ''}'
         : 'Shared by $displayName';
 
     return Row(
@@ -246,7 +247,9 @@ class _SharedWithChip extends StatelessWidget {
         const SizedBox(width: AppSpacing.spacing8),
         Flexible(
           child: Text(
-            displayName.isNotEmpty ? label : (username.isNotEmpty ? '@$username' : 'Shared'),
+            displayName.isNotEmpty
+                ? label
+                : (username.isNotEmpty ? '@$username' : 'Shared'),
             style: context.textTheme.labelSmall?.copyWith(
               color: colors.textSecondary,
             ),
