@@ -229,6 +229,8 @@ class _TaskPreview extends StatelessWidget {
     final taskColor = _color(colors);
     final isCompleted = task.status == TaskStatus.completed;
 
+    final priorityColor = _priorityColor(colors);
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 1),
@@ -244,7 +246,7 @@ class _TaskPreview extends StatelessWidget {
             height: 4,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: taskColor,
+              color: priorityColor,
             ),
           ),
           const SizedBox(width: 2),
@@ -274,6 +276,19 @@ class _TaskPreview extends StatelessWidget {
       return '$display $period ${task.title}';
     }
     return task.title;
+  }
+
+  Color _priorityColor(AppColorScheme colors) {
+    switch (task.priority) {
+      case TaskPriority.urgent:
+        return colors.urgent;
+      case TaskPriority.high:
+        return colors.high;
+      case TaskPriority.medium:
+        return colors.medium;
+      case TaskPriority.low:
+        return colors.low;
+    }
   }
 
   Color _color(AppColorScheme colors) {

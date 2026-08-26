@@ -24,7 +24,7 @@ class _CalendarPageState extends State<CalendarPage> {
   CalendarViewType _viewType = CalendarViewType.week;
   DateTime _selectedDate = DateTime.now();
   List<TaskEntity> _friendTasks = [];
-  String? _ownColor;
+  String _ownColor = '#4A6741';
   final Map<String, String> _friendColors = {};
 
   static const _dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -357,10 +357,11 @@ class _CalendarPageState extends State<CalendarPage> {
     return tasks.map((task) {
       final hex = task.ownerId == currentUserId
           ? _ownColor
-          : _friendColors[task.ownerId];
-      return hex == null || hex == task.color
-          ? task
-          : task.copyWith(color: hex);
+          : (_friendColors[task.ownerId] ?? '#6B8FA3');
+      if (hex == task.color || (task.color == null && hex == _ownColor)) {
+        return task;
+      }
+      return task.copyWith(color: hex);
     }).toList();
   }
 

@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.26 - Calendar owner color and priority dots (2026-08-25)
+
+### Fixed in V 01.03.26
+
+- Default own calendar color (`#4A6741`) is applied while the profile loads
+- Friend tasks fallback to `#6B8FA3` when a friend color is not loaded yet
+- Calendar day/week/month views now show the owner/friend chosen color as fill
+- Added a priority dot (urgent/high/medium/low) inside each calendar task
+
+---
+
 ## V 01.03.25 - Friend detail sheet with color and actions (2026-08-25)
 
 ### Fixed in V 01.03.25

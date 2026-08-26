@@ -259,6 +259,7 @@ class _DayColumn extends StatelessWidget {
           task.dueDate!.difference(startTime).inMinutes.clamp(20, 480);
       final height = (durationMinutes * _hourHeight / 60).clamp(24.0, _hourHeight * 6);
       final taskColor = _taskColor(task, colors);
+      final priorityColor = _priorityColor(task, colors);
       final isCompleted = task.status == TaskStatus.completed;
 
       return Positioned(
@@ -285,21 +286,35 @@ class _DayColumn extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Flexible(
-                  child: Text(
-                    task.title,
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: isCompleted
-                          ? colors.textMuted
-                          : colors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
-                      decoration:
-                          isCompleted ? TextDecoration.lineThrough : null,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.only(top: 3, right: 4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: priorityColor,
+                      ),
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                    Expanded(
+                      child: Text(
+                        task.title,
+                        style: context.textTheme.labelSmall?.copyWith(
+                          color: isCompleted
+                              ? colors.textMuted
+                              : colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                          decoration:
+                              isCompleted ? TextDecoration.lineThrough : null,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
                 if (height > 36 && task.startDate != null)
                   Text(
@@ -327,6 +342,19 @@ class _DayColumn extends StatelessWidget {
     final minute = dt.minute.toString().padLeft(2, '0');
     final period = dt.hour >= 12 ? 'PM' : 'AM';
     return '$hour:$minute $period';
+  }
+
+  Color _priorityColor(TaskEntity task, AppColorScheme colors) {
+    switch (task.priority) {
+      case TaskPriority.urgent:
+        return colors.urgent;
+      case TaskPriority.high:
+        return colors.high;
+      case TaskPriority.medium:
+        return colors.medium;
+      case TaskPriority.low:
+        return colors.low;
+    }
   }
 
   Color _taskColor(TaskEntity task, AppColorScheme colors) {

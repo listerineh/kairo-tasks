@@ -169,6 +169,7 @@ class DayView extends StatelessWidget {
         dueDate.difference(startTime).inMinutes.clamp(20, 480);
     final blockHeight = (durationMinutes * _hourHeight / 60).clamp(28.0, _hourHeight * 6);
     final taskColor = _taskColor(task, colors);
+    final priorityColor = _priorityColor(task, colors);
     final isCompleted = task.status == TaskStatus.completed;
 
     return Positioned(
@@ -195,20 +196,34 @@ class DayView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Flexible(
-                child: Text(
-                  task.title,
-                  style: context.textTheme.labelMedium?.copyWith(
-                    color: isCompleted
-                        ? colors.textMuted
-                        : colors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                    decoration:
-                        isCompleted ? TextDecoration.lineThrough : null,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.only(top: 4, right: 6),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: priorityColor,
+                    ),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                  Expanded(
+                    child: Text(
+                      task.title,
+                      style: context.textTheme.labelMedium?.copyWith(
+                        color: isCompleted
+                            ? colors.textMuted
+                            : colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                        decoration:
+                            isCompleted ? TextDecoration.lineThrough : null,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
               if (blockHeight > 40) ...[
                 const SizedBox(height: 2),
@@ -262,6 +277,19 @@ class DayView extends StatelessWidget {
 
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+
+  Color _priorityColor(TaskEntity task, AppColorScheme colors) {
+    switch (task.priority) {
+      case TaskPriority.urgent:
+        return colors.urgent;
+      case TaskPriority.high:
+        return colors.high;
+      case TaskPriority.medium:
+        return colors.medium;
+      case TaskPriority.low:
+        return colors.low;
+    }
+  }
 
   Color _taskColor(TaskEntity task, AppColorScheme colors) {
     if (task.color != null && task.color!.isNotEmpty) {
