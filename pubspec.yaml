@@ -63,6 +63,9 @@ dev_dependencies:
   build_runner: ^2.4.14
   injectable_generator: ^2.7.0
 
+  # Icon generation
+  flutter_launcher_icons: ^0.14.0
+
   # Testing
   bloc_test: ^9.1.7
   mocktail: ^1.0.4
@@ -73,3 +76,5 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/icons/app_icon.svg
+    - assets/icons/logo_options/
