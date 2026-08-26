@@ -64,12 +64,12 @@ class MonthView extends StatelessWidget {
           ),
         ),
 
-        // Weeks
+        // Weeks (fills remaining height)
         Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              children: List.generate(rows, (row) {
-                return _WeekRow(
+          child: Column(
+            children: List.generate(rows, (row) {
+              return Expanded(
+                child: _WeekRow(
                   row: row,
                   startWeekday: startWeekday,
                   daysInMonth: daysInMonth,
@@ -78,9 +78,9 @@ class MonthView extends StatelessWidget {
                   selectedDate: selectedDate,
                   tasks: tasks,
                   onDateTap: onDateTap,
-                );
-              }),
-            ),
+                ),
+              );
+            }),
           ),
         ),
       ],
@@ -113,10 +113,9 @@ class _WeekRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: List.generate(7, (col) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: List.generate(7, (col) {
           final cellIndex = row * 7 + col;
           final dayNumber = cellIndex - startWeekday + 1;
 
@@ -202,8 +201,7 @@ class _WeekRow extends StatelessWidget {
             ),
           );
         }),
-      ),
-    );
+      );
   }
 
   List<TaskEntity> _tasksForDate(DateTime date) {
