@@ -4,6 +4,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../tasks/domain/entities/task_entity.dart';
+import 'shared_task_avatars.dart';
 
 /// 2-day view (like Google Calendar's "week" on mobile).
 /// Shows the selected date and the next day side by side.
@@ -327,6 +328,15 @@ class _DayColumn extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (task.sharedWith.isNotEmpty)
+                  Positioned(
+                    bottom: 4,
+                    right: 8,
+                    child: SharedTaskAvatars(
+                      sharedWith: task.sharedWith,
+                      radius: 7,
+                    ),
+                  ),
               ],
             ),
           ),

@@ -10,6 +10,16 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.32 - Shared task avatars in calendar (2026-08-25)
+
+### Added in V 01.03.32
+
+- New `SharedTaskAvatars` widget for calendar task blocks
+- Day and Week views now show the avatars of the people a task is shared with
+- Falls back to the contact's initial when no avatar is set
+
+---
+
 ## V 01.03.31 - Enable Supabase realtime for own color changes (2026-08-25)
 
 ### Fixed in V 01.03.31

@@ -4,6 +4,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../tasks/domain/entities/task_entity.dart';
+import 'shared_task_avatars.dart';
 
 class DayView extends StatelessWidget {
   const DayView({
@@ -252,6 +253,15 @@ class DayView extends StatelessWidget {
                   ),
                 ),
               ),
+              if (task.sharedWith.isNotEmpty)
+                Positioned(
+                  bottom: 6,
+                  right: 12,
+                  child: SharedTaskAvatars(
+                    sharedWith: task.sharedWith,
+                    radius: 9,
+                  ),
+                ),
             ],
           ),
         ),
