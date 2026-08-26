@@ -54,6 +54,14 @@ app.*.map.json
 !.env.example
 **/ios/Flutter/Env.xcconfig
 
+# Firebase (platform config files - not sensitive but project-specific)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# FCM server service account (sensitive)
+service-account*.json
+supabase/.env
+
 # Generated files
 *.g.dart
 *.freezed.dart
