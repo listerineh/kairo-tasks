@@ -131,22 +131,12 @@ class _MetricCards extends StatelessWidget {
         tasks.where((t) => t.status == TaskStatus.completed).length;
     final pending = total - completed;
     final overdue = tasks.where((t) => t.isOverdue).length;
-    final urgentHigh = tasks
-        .where(
-          (t) =>
-              t.priority == TaskPriority.urgent ||
-              t.priority == TaskPriority.high,
-        )
-        .length;
-    final rate = total == 0 ? 0.0 : (completed / total) * 100;
 
     final metrics = [
       (context.l10n.totalTasks, total.toString()),
       (context.l10n.completedTasks, completed.toString()),
       (context.l10n.pendingTasks, pending.toString()),
       (context.l10n.overdueTasks, overdue.toString()),
-      (context.l10n.urgentHigh, urgentHigh.toString()),
-      (context.l10n.completionRate, '${rate.toStringAsFixed(0)}%'),
     ];
 
     return Wrap(

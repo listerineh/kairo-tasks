@@ -10,6 +10,15 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.05.02 - Dashboard metrics trimmed (2026-08-25)
+
+### Changed in V 01.05.02
+
+- Removed urgent/high and completion rate metric chips from dashboard
+- Kept total, completed, pending and overdue quick numbers
+
+---
+
 ## V 01.05.01 - Dashboard visual cleanup (2026-08-25)
 
 ### Fixed in V 01.05.01
