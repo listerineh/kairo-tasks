@@ -9,7 +9,9 @@ import '../../domain/entities/task_entity.dart';
 import '../bloc/tasks_bloc.dart';
 
 class CreateTaskSheet extends StatefulWidget {
-  const CreateTaskSheet({super.key});
+  const CreateTaskSheet({super.key, this.initialSharedWith});
+
+  final String? initialSharedWith;
 
   @override
   State<CreateTaskSheet> createState() => _CreateTaskSheetState();
@@ -54,7 +56,27 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
           .or('requester_id.eq.$userId,addressee_id.eq.$userId')
           .eq('status', 'accepted');
 
-      setState(() => _friends = friends);
+      setState(() {
+        _friends = friends;
+        final initial = widget.initialSharedWith;
+        if (initial != null) {
+          final match = _friends.firstWhere(
+            (f) {
+              final isRequester =
+                  f['requester_id'] ==
+                      Supabase.instance.client.auth.currentUser?.id;
+              final id = isRequester
+                  ? f['addressee_id'] as String?
+                  : f['requester_id'] as String?;
+              return id == initial;
+            },
+            orElse: () => <String, dynamic>{},
+          );
+          if (match.isNotEmpty) {
+            _sharedWith = initial;
+          }
+        }
+      });
     } catch (e) {
       // ignore friend load errors
     }

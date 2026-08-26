@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../tasks/presentation/widgets/create_task_sheet.dart';
 
 class SocialPage extends StatefulWidget {
   const SocialPage({super.key});
@@ -191,13 +192,28 @@ class _SocialPageState extends State<SocialPage>
 
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showCreateTaskWithFriend(String? friendId) {
+    if (friendId == null) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => CreateTaskSheet(initialSharedWith: friendId),
     );
   }
 
@@ -248,6 +264,7 @@ class _SocialPageState extends State<SocialPage>
                 _FriendsTab(
                   friends: _friends,
                   colors: colors,
+                  onCreateTask: _showCreateTaskWithFriend,
                 ),
                 _RequestsTab(
                   requests: _pendingRequests,
@@ -386,6 +403,7 @@ class _SearchTab extends StatelessWidget {
                               )
                             : _IconActionButton(
                                 icon: Icons.person_add,
+                                tooltip: 'Send friend request',
                                 onPressed: () => onAdd(user['id'] as String),
                               ),
                       );
@@ -402,10 +420,12 @@ class _FriendsTab extends StatelessWidget {
   const _FriendsTab({
     required this.friends,
     required this.colors,
+    required this.onCreateTask,
   });
 
   final List<Map<String, dynamic>> friends;
   final AppColorScheme colors;
+  final void Function(String?) onCreateTask;
 
   @override
   Widget build(BuildContext context) {
@@ -423,14 +443,18 @@ class _FriendsTab extends StatelessWidget {
               itemBuilder: (context, index) {
                 final friend = friends[index];
                 final other = friend['profile'] as Map<String, dynamic>?;
+                final friendId = other?['id'] as String?;
+                final displayName =
+                    other?['display_name'] as String? ??
+                    other?['username'] as String? ??
+                    'friend';
 
                 return _UserListTile(
                   profile: other ?? {},
                   trailing: _IconActionButton(
-                    icon: Icons.calendar_today_outlined,
-                    onPressed: () {
-                      // TODO: open friend's public calendar
-                    },
+                    icon: Icons.add_task,
+                    tooltip: 'Create task with $displayName',
+                    onPressed: () => onCreateTask(friendId),
                   ),
                 );
               },
@@ -597,18 +621,20 @@ class _IconActionButton extends StatelessWidget {
     required this.onPressed,
     this.backgroundColor,
     this.iconColor,
+    this.tooltip,
   });
 
   final IconData icon;
   final VoidCallback onPressed;
   final Color? backgroundColor;
   final Color? iconColor;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
-    return Material(
+    final button = Material(
       color: backgroundColor ?? colors.accentSoft,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
@@ -628,6 +654,15 @@ class _IconActionButton extends StatelessWidget {
         ),
       ),
     );
+
+    if (tooltip != null) {
+      return Tooltip(
+        message: tooltip,
+        child: button,
+      );
+    }
+
+    return button;
   }
 }
 

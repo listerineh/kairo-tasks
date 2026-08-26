@@ -10,6 +10,20 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.17 - Give the friend action button a purpose (2026-08-25)
+
+### Added in V 01.03.17
+
+- `CreateTaskSheet` now accepts an `initialSharedWith` friend id
+- `SocialPage` Friends tab icon changed from calendar to `add_task`
+- Tapping a friend now opens `CreateTaskSheet` with that friend pre-selected
+- Added tooltips to `_IconActionButton` for better affordance
+- Friend search `person_add` shows "Send friend request" tooltip
+- Friend row `add_task` shows "Create task with [name]" tooltip
+- `SocialPage` SnackBars now use `SnackBarBehavior.floating` to appear above the keyboard
+
+---
+
 ## V 01.03.16 - Show who a shared task is with (2026-08-25)
 
 ### Added in V 01.03.16
