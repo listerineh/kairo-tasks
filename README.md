@@ -8,13 +8,41 @@
 
 ## Features
 
-- **Smart Task Management**: Create tasks with priorities (urgent/high/medium/low) and optional due dates
-- **Calendar View**: Visualize your tasks and availability at a glance
-- **Priority View**: Filter and sort tasks by what matters most
-- **Social Collaboration**: Add friends, share calendars, and collaborate on tasks in real-time
-- **Privacy Controls**: Choose public (share details) or private (show only busy/free) calendar visibility
-- **Real-time Sync**: Changes appear instantly across all connected users
-- **Accessibility First**: Designed with ADHD/Autism-friendly interfaces in mind
+### Tasks
+- Create tasks with title, description, priority, and optional start/end time
+- Swipe right to complete / swipe left to delete
+- Tap a task to edit
+- Visual time progress bar showing remaining time
+- Completed tasks section ordered by most recently completed
+- Priority filtering (all, urgent, high, medium, low)
+
+### Calendar
+- **Day view**: 24h vertical timeline with task blocks sized by duration
+- **Week view**: 2-day side-by-side layout (selected + next day)
+- **Month view**: task title previews inside each day cell
+- Current time red indicator
+- Tap a task to toggle completion
+- Navigation arrows + "Today" quick-jump
+
+### Authentication
+- Email sign up / sign in
+- Google Sign-In (native iOS flow)
+- Session-aware routing
+
+### Profile
+- Edit profile (display name, username, avatar URL)
+- Calendar visibility (public / private)
+- Appearance settings (light / dark / system)
+- Notifications preferences (placeholder)
+- Version tile pulled from package info
+
+### Coming Soon
+- Social: friends, shared calendars, shared tasks
+- Push notifications
+- Offline support
+- ADHD/Autism accessibility tools
+
+---
 
 ## Tech Stack
 
@@ -24,9 +52,12 @@
 | Backend | Supabase (Postgres, Auth, Realtime, Storage) |
 | State | BLoC Pattern (flutter_bloc) |
 | Architecture | Clean Architecture (feature-first) |
+| Navigation | go_router |
+| DI | get_it + injectable |
 | Push | Firebase Cloud Messaging |
+| Version | package_info_plus |
 
-**100% free and open source.** All services use free tiers.
+**100% free and open source.** Core services use free tiers.
 
 ---
 
@@ -43,16 +74,20 @@
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/YOUR_USERNAME/kairotasks.git
-cd kairotasks
+git clone https://github.com/listerineh/kairo-tasks.git
+cd kairo-tasks
 
-# 2. Install Flutter dependencies
+# 2. Create environment file from example
+cp .env.example .env
+# Edit .env with your Supabase & Google OAuth credentials
+
+# 3. Install Flutter dependencies
 flutter pub get
 
-# 3. Run the app (iOS simulator or connected device)
-flutter run
+# 4. Run the app (iOS simulator or connected device)
+flutter run --dart-define-from-file=.env
 
-# 4. Or build an APK for Android testing
+# 5. Or build an APK for Android testing
 flutter build apk --split-per-abi
 ```
 
@@ -106,7 +141,7 @@ lib/
 └── features/     # Feature modules
     ├── auth/     # Authentication
     ├── tasks/    # Task management
-    ├── calendar/ # Calendar view
+    ├── calendar/ # Calendar views (day, week, month)
     ├── social/   # Friends & sharing
     ├── notifications/ # Push & in-app
     └── profile/  # User settings
@@ -150,17 +185,13 @@ We welcome contributions! This project is built to be accessible to developers o
 - Update CHANGELOG.md with your changes
 - One feature/fix per PR
 
-### First Good Issues
-
-Look for issues tagged `good-first-issue` to get started.
-
 ---
 
 ## Roadmap
 
-- [x] V 01.00 - Project setup, tasks CRUD, priority view
-- [ ] V 01.01 - Supabase integration (auth + database)
-- [ ] V 01.02 - Calendar view
+- [x] V 01.00 - Project setup, tasks UI
+- [x] V 01.01 - Supabase integration (auth + database)
+- [x] V 01.02 - Calendar views (day, week, month)
 - [ ] V 01.03 - Social features (friends, shared calendars)
 - [ ] V 01.04 - Real-time collaboration + shared tasks
 - [ ] V 01.05 - Push notifications
