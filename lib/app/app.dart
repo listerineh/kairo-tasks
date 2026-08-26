@@ -5,6 +5,7 @@ import 'package:kairotasks/generated/app_localizations.dart';
 
 import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/tasks/presentation/bloc/tasks_bloc.dart';
+import 'locale/locale_service.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_service.dart';
@@ -23,6 +24,7 @@ class _KairoTasksAppState extends State<KairoTasksApp> {
   void initState() {
     super.initState();
     ThemeService.instance.init();
+    LocaleService.instance.init();
   }
 
   @override
@@ -48,25 +50,25 @@ class _KairoTasksAppState extends State<KairoTasksApp> {
           create: (_) => TasksBloc()..add(const TasksLoadRequested()),
         ),
       ],
-      child: MaterialApp.router(
-        title: 'KairoTasks',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        themeMode: ThemeService.instance.themeMode.value,
-        routerConfig: AppRouter.create(widget.initialLocation),
-        localizationsDelegates: AppLocalizations.localizationsDelegates +
-            [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-        supportedLocales: const [Locale('es'), Locale('en')],
-        localeResolutionCallback: (locale, supportedLocales) {
-          for (final l in supportedLocales) {
-            if (l.languageCode == locale?.languageCode) return l;
-          }
-          return const Locale('es');
+      child: ValueListenableBuilder<Locale>(
+        valueListenable: LocaleService.instance.locale,
+        builder: (context, locale, _) {
+          return MaterialApp.router(
+            title: 'KairoTasks',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeService.instance.themeMode.value,
+            routerConfig: AppRouter.create(widget.initialLocation),
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates +
+                [
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+            supportedLocales: const [Locale('es'), Locale('en')],
+          );
         },
       ),
     );

@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.08.00 - Language switcher in Profile (2026-08-26)
+
+### Added in V 01.08.00
+
+- `LocaleService` to persist and apply app language
+- Language selector in Profile (Español / English)
+- App locale updates immediately when selected
+- New `language`, `spanish`, `english` l10n keys
+
+---
+
 ## V 01.07.02 - Correct app display name (2026-08-26)
 
 ### Fixed in V 01.07.02

@@ -151,5 +151,8 @@
   "onboardingTitle3": "Do it together",
   "onboardingBody3": "Connect with friends, share calendars, and work on tasks as a team.",
   "onboardingTitle4": "Plan your time",
-  "onboardingBody4": "Use the calendar to schedule tasks and see what's coming next."
+  "onboardingBody4": "Use the calendar to schedule tasks and see what's coming next.",
+  "language": "Language",
+  "spanish": "Spanish",
+  "english": "English"
 }

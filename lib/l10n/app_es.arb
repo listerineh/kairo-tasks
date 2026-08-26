@@ -157,5 +157,8 @@
   "onboardingTitle3": "Hazlo junto a otros",
   "onboardingBody3": "Conecta con amigos, comparte calendarios y trabaja en tareas en equipo.",
   "onboardingTitle4": "Planifica tu tiempo",
-  "onboardingBody4": "Usa el calendario para programar tareas y ver lo que viene."
+  "onboardingBody4": "Usa el calendario para programar tareas y ver lo que viene.",
+  "language": "Idioma",
+  "spanish": "Español",
+  "english": "Inglés"
 }

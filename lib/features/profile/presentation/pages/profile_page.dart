@@ -5,6 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../app/locale/locale_service.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/widgets/kairo_header.dart';
 import '../../../../core/extensions/context_extensions.dart';
@@ -179,6 +180,11 @@ class _ProfilePageState extends State<ProfilePage> {
                         title: context.l10n.notifications,
                         onTap: () => _showNotificationsSheet(context),
                       ),
+                      _SettingsTile(
+                        icon: Icons.language_outlined,
+                        title: context.l10n.language,
+                        onTap: () => _showLanguageSheet(context),
+                      ),
 
                       const SizedBox(height: AppSpacing.spacing24),
                       _SectionHeader(title: context.l10n.about),
@@ -317,6 +323,70 @@ class _ProfilePageState extends State<ProfilePage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const NotificationsSheet(),
+    );
+  }
+
+  void _showLanguageSheet(BuildContext context) {
+    final currentLocale = LocaleService.instance.locale.value;
+    final colors = context.appColors;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors.surfaceElevated,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppSpacing.radiusXLarge),
+            ),
+          ),
+          padding: const EdgeInsets.all(AppSpacing.spacing24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.spacing24),
+              Text(
+                context.l10n.language,
+                style: context.textTheme.headlineSmall,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.spacing20),
+              ListTile(
+                title: Text(context.l10n.spanish),
+                trailing: currentLocale.languageCode == 'es'
+                  ? Icon(Icons.check, color: colors.accent)
+                  : null,
+                onTap: () {
+                  LocaleService.instance.setLocale(const Locale('es'));
+                  Navigator.of(sheetContext).pop();
+                },
+              ),
+              ListTile(
+                title: Text(context.l10n.english),
+                trailing: currentLocale.languageCode == 'en'
+                  ? Icon(Icons.check, color: colors.accent)
+                  : null,
+                onTap: () {
+                  LocaleService.instance.setLocale(const Locale('en'));
+                  Navigator.of(sheetContext).pop();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
