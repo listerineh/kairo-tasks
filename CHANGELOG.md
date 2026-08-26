@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.20 - Hide add friend button for pending requests (2026-08-25)
+
+### Fixed in V 01.03.20
+
+- Social search now loads sent pending friend requests
+- Pending sent users appear with a "Pending" status chip (hourglass icon)
+- The `person_add` button is hidden for friends and pending requests
+- After sending a request, the result updates to "Pending" immediately
+
+---
+
 ## V 01.03.19 - Share tasks with multiple friends (2026-08-25)
 
 ### Added in V 01.03.19

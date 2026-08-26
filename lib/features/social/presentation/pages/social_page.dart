@@ -25,6 +25,8 @@ class _SocialPageState extends State<SocialPage>
   List<Map<String, dynamic>> _searchResults = [];
   List<Map<String, dynamic>> _friends = [];
   List<Map<String, dynamic>> _pendingRequests = [];
+  Set<String> _sentRequestIds = {};
+  Set<String> _friendIds = {};
 
   @override
   void initState() {
@@ -67,13 +69,19 @@ class _SocialPageState extends State<SocialPage>
         Supabase.instance.client
             .from('friendships')
             .select('id, status, requester_id, addressee_id, created_at')
-            .eq('addressee_id', userId)
+            .or('requester_id.eq.$userId,addressee_id.eq.$userId')
             .eq('status', 'pending'),
       ]);
 
       final friendships =
           (friendshipsRaw as List).cast<Map<String, dynamic>>();
-      final pending = (pendingRaw as List).cast<Map<String, dynamic>>();
+      final allPending = (pendingRaw as List).cast<Map<String, dynamic>>();
+      final receivedPending = allPending
+          .where((p) => p['addressee_id'] == userId)
+          .toList();
+      final sentPending = allPending
+          .where((p) => p['requester_id'] == userId)
+          .toList();
 
       final profileIds = <String>{};
       for (final f in friendships) {
@@ -82,8 +90,11 @@ class _SocialPageState extends State<SocialPage>
             : f['requester_id'];
         profileIds.add(otherId as String);
       }
-      for (final p in pending) {
+      for (final p in receivedPending) {
         profileIds.add(p['requester_id'] as String);
+      }
+      for (final p in sentPending) {
+        profileIds.add(p['addressee_id'] as String);
       }
 
       final profileMap = <String, Map<String, dynamic>>{};
@@ -98,6 +109,14 @@ class _SocialPageState extends State<SocialPage>
       }
 
       setState(() {
+        _friendIds = friendships.map((f) {
+          return f['requester_id'] == userId
+              ? f['addressee_id'] as String
+              : f['requester_id'] as String;
+        }).toSet();
+        _sentRequestIds = sentPending
+            .map((p) => p['addressee_id'] as String)
+            .toSet();
         _friends = friendships.map((f) {
           final otherId = f['requester_id'] == userId
               ? f['addressee_id'] as String
@@ -107,7 +126,7 @@ class _SocialPageState extends State<SocialPage>
             'profile': profileMap[otherId] ?? <String, dynamic>{},
           };
         }).toList();
-        _pendingRequests = pending.map((p) {
+        _pendingRequests = receivedPending.map((p) {
           final requesterId = p['requester_id'] as String;
           return {
             ...p,
@@ -139,15 +158,14 @@ class _SocialPageState extends State<SocialPage>
           .neq('id', currentUser.id)
           .limit(20);
 
-      final friendsIds = _friends.map((f) {
-        return f['requester_id'] == currentUser.id
-            ? f['addressee_id']
-            : f['requester_id'];
-      }).toSet();
-
       setState(() {
         _searchResults = results.map((profile) {
-          return {...profile, 'is_friend': friendsIds.contains(profile['id'])};
+          final id = profile['id'] as String;
+          return {
+            ...profile,
+            'is_friend': _friendIds.contains(id),
+            'is_request_sent': _sentRequestIds.contains(id),
+          };
         }).toList();
       });
     } catch (e) {
@@ -166,6 +184,7 @@ class _SocialPageState extends State<SocialPage>
         'status': 'pending',
       });
       _showSuccess('Friend request sent');
+      _sentRequestIds.add(addresseeId);
       await _searchUsers(_searchController.text.trim());
       await _loadSocialData();
     } catch (e) {
@@ -392,6 +411,8 @@ class _SearchTab extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final user = results[index];
                       final isFriend = (user['is_friend'] as bool?) ?? false;
+                      final isRequestSent =
+                          (user['is_request_sent'] as bool?) ?? false;
 
                       return _UserListTile(
                         profile: user,
@@ -401,11 +422,17 @@ class _SearchTab extends StatelessWidget {
                                 label: 'Friends',
                                 color: colors.accent,
                               )
-                            : _IconActionButton(
-                                icon: Icons.person_add,
-                                tooltip: 'Send friend request',
-                                onPressed: () => onAdd(user['id'] as String),
-                              ),
+                            : isRequestSent
+                                ? _StatusChip(
+                                    icon: Icons.hourglass_empty,
+                                    label: 'Pending',
+                                    color: colors.textMuted,
+                                  )
+                                : _IconActionButton(
+                                    icon: Icons.person_add,
+                                    tooltip: 'Send friend request',
+                                    onPressed: () => onAdd(user['id'] as String),
+                                  ),
                       );
                     },
                   ),
