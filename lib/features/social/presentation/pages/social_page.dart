@@ -251,91 +251,6 @@ class _SocialPageState extends State<SocialPage>
     }
   }
 
-  Future<void> _showColorPicker(
-    String friendshipId,
-    String currentColor, {
-    required bool isRequester,
-  }) async {
-    final colors = context.appColors;
-    final palette = _colorPalette;
-
-    final newColor = await showModalBottomSheet<String>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.spacing24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Pick a color', style: context.textTheme.titleLarge),
-              const SizedBox(height: AppSpacing.spacing16),
-              Wrap(
-                spacing: AppSpacing.spacing12,
-                runSpacing: AppSpacing.spacing12,
-                children: palette.map((hex) {
-                  final selected = hex == currentColor;
-                  return GestureDetector(
-                    onTap: () => Navigator.pop(context, hex),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: _hexColor(hex),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: selected ? colors.textPrimary : Colors.transparent,
-                          width: 3,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: AppSpacing.spacing24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (newColor != null && newColor != currentColor) {
-      await _updateFriendColor(
-        friendshipId,
-        newColor,
-        isRequester: isRequester,
-      );
-    }
-  }
-
-  Color _hexColor(String hex) {
-    try {
-      return Color(int.parse(hex.replaceFirst('#', '0xFF')));
-    } catch (_) {
-      return Colors.grey;
-    }
-  }
-
-  List<String> get _colorPalette => const [
-        '#4A6741',
-        '#5A7C51',
-        '#6B8C7A',
-        '#6B8FA3',
-        '#7A7A8C',
-        '#8C7B6B',
-        '#9B7A5B',
-        '#A36B6B',
-        '#8E6B9B',
-        '#6B5B8C',
-      ];
-
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -352,6 +267,44 @@ class _SocialPageState extends State<SocialPage>
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  Future<void> _openFriendDetail(Map<String, dynamic> friend) async {
+    final other = friend['profile'] as Map<String, dynamic>?;
+    if (other == null) return;
+
+    final friendId = other['id'] as String?;
+    final displayName =
+        other['display_name'] as String? ??
+        other['username'] as String? ??
+        'friend';
+    final username = other['username'] as String? ?? '';
+    final avatarUrl = other['avatar_url'] as String?;
+    final color = friend['color'] as String? ?? '#6B8FA3';
+    final friendshipId = friend['friendship_id'] as String? ?? '';
+    final isRequester = friend['is_requester'] as bool? ?? false;
+
+    final shouldRemove = await showModalBottomSheet<bool?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _FriendDetailSheet(
+        displayName: displayName,
+        username: username,
+        color: color,
+        avatarUrl: avatarUrl,
+        onColor: (newColor) => _updateFriendColor(
+          friendshipId,
+          newColor,
+          isRequester: isRequester,
+        ),
+        onCreateTask: () => _showCreateTaskWithFriend(friendId),
+      ),
+    );
+
+    if (shouldRemove ?? false) {
+      await _removeFriend(friendshipId);
+    }
   }
 
   void _showCreateTaskWithFriend(String? friendId) {
@@ -410,9 +363,7 @@ class _SocialPageState extends State<SocialPage>
                 _FriendsTab(
                   friends: _friends,
                   colors: colors,
-                  onCreateTask: _showCreateTaskWithFriend,
-                  onColor: _showColorPicker,
-                  onRemove: _removeFriend,
+                  onOpen: _openFriendDetail,
                 ),
                 _RequestsTab(
                   requests: _pendingRequests,
@@ -576,18 +527,12 @@ class _FriendsTab extends StatelessWidget {
   const _FriendsTab({
     required this.friends,
     required this.colors,
-    required this.onCreateTask,
-    required this.onColor,
-    required this.onRemove,
+    required this.onOpen,
   });
 
   final List<Map<String, dynamic>> friends;
   final AppColorScheme colors;
-  final void Function(String?) onCreateTask;
-  final void Function(String friendshipId, String currentColor,
-          {required bool isRequester})
-      onColor;
-  final void Function(String friendshipId) onRemove;
+  final void Function(Map<String, dynamic> friend) onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -604,72 +549,10 @@ class _FriendsTab extends StatelessWidget {
               itemCount: friends.length,
               itemBuilder: (context, index) {
                 final friend = friends[index];
-                final other = friend['profile'] as Map<String, dynamic>?;
-                final friendId = other?['id'] as String?;
-                final displayName =
-                    other?['display_name'] as String? ??
-                    other?['username'] as String? ??
-                    'friend';
-                final color = friend['color'] as String? ?? '#6B8FA3';
-                final friendshipId = friend['friendship_id'] as String?;
-                final isRequester = friend['is_requester'] as bool? ?? false;
 
                 return _UserListTile(
-                  profile: other ?? {},
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _ColorCircle(
-                        color: color,
-                        onTap: () => onColor(
-                          friendshipId ?? '',
-                          color,
-                          isRequester: isRequester,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.spacing8),
-                      _IconActionButton(
-                        icon: Icons.add_task,
-                        tooltip: 'Create task with $displayName',
-                        onPressed: () => onCreateTask(friendId),
-                      ),
-                      _IconActionButton(
-                        icon: Icons.more_vert,
-                        tooltip: 'Options',
-                        onPressed: () async {
-                          final action = await showModalBottomSheet<String>(
-                            context: context,
-                            builder: (context) => SafeArea(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  ListTile(
-                                    leading: Icon(Icons.palette, color: colors.textPrimary),
-                                    title: Text('Set color', style: TextStyle(color: colors.textPrimary)),
-                                    onTap: () => Navigator.pop(context, 'color'),
-                                  ),
-                                  ListTile(
-                                    leading: Icon(Icons.delete, color: colors.urgent),
-                                    title: Text('Remove friend', style: TextStyle(color: colors.urgent)),
-                                    onTap: () => Navigator.pop(context, 'remove'),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                          if (action == 'color') {
-                            onColor(
-                              friendshipId ?? '',
-                              color,
-                              isRequester: isRequester,
-                            );
-                          } else if (action == 'remove') {
-                            onRemove(friendshipId ?? '');
-                          }
-                        },
-                      ),
-                    ],
-                  ),
+                  profile: (friend['profile'] as Map<String, dynamic>?) ?? {},
+                  onTap: () => onOpen(friend),
                 );
               },
             ),
@@ -745,10 +628,12 @@ class _UserListTile extends StatelessWidget {
   const _UserListTile({
     required this.profile,
     this.trailing,
+    this.onTap,
   });
 
   final Map<String, dynamic> profile;
   final Widget? trailing;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -757,7 +642,7 @@ class _UserListTile extends StatelessWidget {
     final username = profile['username'] as String? ?? '';
     final avatarUrl = profile['avatar_url'] as String?;
 
-    return Container(
+    final card = Container(
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.spacing8),
       padding: const EdgeInsets.all(AppSpacing.spacing12),
       decoration: BoxDecoration(
@@ -800,6 +685,15 @@ class _UserListTile extends StatelessWidget {
         ],
       ),
     );
+
+    if (onTap != null) {
+      return GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: card,
+      );
+    }
+    return card;
   }
 }
 
@@ -880,41 +774,165 @@ class _IconActionButton extends StatelessWidget {
   }
 }
 
-class _ColorCircle extends StatelessWidget {
-  const _ColorCircle({
+class _FriendDetailSheet extends StatelessWidget {
+  const _FriendDetailSheet({
+    required this.displayName,
+    required this.username,
     required this.color,
-    required this.onTap,
+    required this.onColor,
+    required this.onCreateTask,
+    this.avatarUrl,
   });
 
+  final String displayName;
+  final String username;
+  final String? avatarUrl;
   final String color;
-  final VoidCallback onTap;
+  final void Function(String) onColor;
+  final VoidCallback onCreateTask;
+
+  static const _palette = [
+    '#4A6741',
+    '#5A7C51',
+    '#6B8C7A',
+    '#6B8FA3',
+    '#7A7A8C',
+    '#8C7B6B',
+    '#9B7A5B',
+    '#A36B6B',
+    '#8E6B9B',
+    '#6B5B8C',
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final hexColor = tryParseColor(color) ?? Colors.grey;
+    final colors = context.appColors;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: hexColor,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: context.appColors.border,
-            width: 1,
+    return Container(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      decoration: BoxDecoration(
+        color: colors.surfaceElevated,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.radiusXLarge),
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.spacing24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.spacing24),
+              CircleAvatar(
+                radius: 48,
+                backgroundColor: colors.accentSoft,
+                backgroundImage:
+                    avatarUrl != null ? NetworkImage(avatarUrl!) : null,
+                child: avatarUrl == null
+                    ? Text(
+                        displayName.isNotEmpty
+                            ? displayName[0].toUpperCase()
+                            : '?',
+                        style: context.textTheme.displaySmall?.copyWith(
+                          color: colors.accent,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(height: AppSpacing.spacing16),
+              Text(
+                displayName,
+                style: context.textTheme.titleLarge,
+              ),
+              Text(
+                '@$username',
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.spacing24),
+              Text(
+                'Friend color',
+                style: context.textTheme.labelLarge,
+              ),
+              const SizedBox(height: AppSpacing.spacing12),
+              Wrap(
+                spacing: AppSpacing.spacing12,
+                runSpacing: AppSpacing.spacing12,
+                alignment: WrapAlignment.center,
+                children: _palette.map((hex) {
+                  final selected = hex == color;
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      onColor(hex);
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: _parseColor(hex),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: selected
+                              ? colors.textPrimary
+                              : Colors.transparent,
+                          width: 3,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: AppSpacing.spacing24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    onCreateTask();
+                  },
+                  icon: const Icon(Icons.add_task),
+                  label: const Text('Create task together'),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.spacing12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  icon: const Icon(Icons.delete),
+                  label: const Text('Remove friend'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: colors.urgent,
+                    side: BorderSide(color: colors.urgent),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.spacing16),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Color? tryParseColor(String hex) {
+  Color _parseColor(String hex) {
     try {
       return Color(int.parse(hex.replaceFirst('#', '0xFF')));
     } catch (_) {
-      return null;
+      return Colors.grey;
     }
   }
 }

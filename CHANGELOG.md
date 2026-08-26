@@ -10,6 +10,18 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.25 - Friend detail sheet with color and actions (2026-08-25)
+
+### Fixed in V 01.03.25
+
+- Friend rows are now tappable and open a full bottom sheet
+- Detail sheet shows friend avatar, name, username
+- Color picker moved to the detail sheet
+- "Create task together" and "Remove friend" moved to the detail sheet
+- Removed crowded action buttons from friend list rows
+
+---
+
 ## V 01.03.24 - Muted color palette for friends and profile (2026-08-25)
 
 ### Fixed in V 01.03.24
