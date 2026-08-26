@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
@@ -137,6 +138,12 @@ class TaskCard extends StatelessWidget {
                                       isOverdue: task.isOverdue,
                                     ),
                                   ],
+                                  if (task.isShared) ...[
+                                    const SizedBox(
+                                      height: AppSpacing.spacing8,
+                                    ),
+                                    _SharedWithChip(task: task),
+                                  ],
                                 ],
                               ),
                             ),
@@ -198,6 +205,56 @@ class TaskCard extends StatelessWidget {
       case TaskPriority.low:
         return colors.low;
     }
+  }
+}
+
+class _SharedWithChip extends StatelessWidget {
+  const _SharedWithChip({required this.task});
+
+  final TaskEntity task;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    final isOwner = task.ownerId == currentUserId;
+    final friend = task.sharedWith ?? {};
+    final displayName = friend['display_name'] as String? ?? '';
+    final username = friend['username'] as String? ?? '';
+    final avatarUrl = friend['avatar_url'] as String?;
+    final label = isOwner
+        ? 'Shared with $displayName'
+        : 'Shared by $displayName';
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CircleAvatar(
+          radius: 10,
+          backgroundColor: colors.accentSoft,
+          backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+          child: avatarUrl == null
+              ? Text(
+                  (displayName.isNotEmpty ? displayName[0] : '?').toUpperCase(),
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: colors.accent,
+                    fontWeight: FontWeight.w700,
+                  ),
+                )
+              : null,
+        ),
+        const SizedBox(width: AppSpacing.spacing8),
+        Flexible(
+          child: Text(
+            displayName.isNotEmpty ? label : (username.isNotEmpty ? '@$username' : 'Shared'),
+            style: context.textTheme.labelSmall?.copyWith(
+              color: colors.textSecondary,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
   }
 }
 

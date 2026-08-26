@@ -10,6 +10,20 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.16 - Show who a shared task is with (2026-08-25)
+
+### Added in V 01.03.16
+
+- `TaskEntity` now carries a `sharedWith` profile map
+- `TasksBloc` fetches `shared_tasks` joined with the friend `profiles`
+- The task owner sees `Shared with [friend name]`
+- The recipient sees `Shared by [friend name]`
+- Added small avatar circle next to the shared label in `TaskCard`
+- Preserves shared profile info across `tasks` realtime updates
+- New `_TasksReloadFromStream` event for silent reload on `shared_tasks` changes
+
+---
+
 ## V 01.03.15 - Shared tasks in Tasks list (2026-08-25)
 
 ### Fixed in V 01.03.15

@@ -16,6 +16,7 @@ class TaskEntity extends Equatable {
     this.startDate,
     this.dueDate,
     this.updatedAt,
+    this.sharedWith,
   });
 
   final String id;
@@ -28,6 +29,36 @@ class TaskEntity extends Equatable {
   final DateTime? dueDate;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final Map<String, dynamic>? sharedWith;
+
+  bool get isShared => sharedWith != null;
+
+  TaskEntity copyWith({
+    String? id,
+    String? ownerId,
+    String? title,
+    String? description,
+    TaskPriority? priority,
+    TaskStatus? status,
+    DateTime? startDate,
+    DateTime? dueDate,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Map<String, dynamic>? sharedWith,
+  }) =>
+      TaskEntity(
+        id: id ?? this.id,
+        ownerId: ownerId ?? this.ownerId,
+        title: title ?? this.title,
+        description: description ?? this.description,
+        priority: priority ?? this.priority,
+        status: status ?? this.status,
+        startDate: startDate ?? this.startDate,
+        dueDate: dueDate ?? this.dueDate,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        sharedWith: sharedWith ?? this.sharedWith,
+      );
 
   bool get isOverdue =>
       dueDate != null &&
@@ -54,5 +85,6 @@ class TaskEntity extends Equatable {
         dueDate,
         createdAt,
         updatedAt,
+        sharedWith,
       ];
 }

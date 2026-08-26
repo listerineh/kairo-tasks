@@ -94,6 +94,10 @@ class _TasksUpdatedFromStream extends TasksEvent {
   List<Object?> get props => [tasks];
 }
 
+class _TasksReloadFromStream extends TasksEvent {
+  const _TasksReloadFromStream();
+}
+
 // Filter
 enum TasksFilter { all, urgent, high, medium, low, completed }
 
@@ -212,12 +216,33 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     on<TaskStatusToggled>(_onStatusToggled);
     on<TaskDeleted>(_onDeleted);
     on<_TasksUpdatedFromStream>(_onStreamUpdate);
+    on<_TasksReloadFromStream>(_onReloadFromStream);
   }
 
   SupabaseClient get _client => Supabase.instance.client;
   String get _userId => _client.auth.currentUser!.id;
   StreamSubscription<List<Map<String, dynamic>>>? _subscription;
   StreamSubscription<List<Map<String, dynamic>>>? _sharedSubscription;
+
+  Future<List<TaskEntity>> _fetchTasks() async {
+    final response = await _client
+        .from('tasks')
+        .select('''
+          *,
+          shared_tasks!task_id(
+            task_id,
+            shared_by_id,
+            shared_with_id,
+            shared_with:profiles!shared_with_id(username, display_name, avatar_url),
+            shared_by:profiles!shared_by_id(username, display_name, avatar_url)
+          )
+        ''')
+        .order('created_at', ascending: false);
+
+    return (response as List)
+        .map((json) => _taskFromJson(json as Map<String, dynamic>))
+        .toList();
+  }
 
   Future<void> _onLoadRequested(
     TasksLoadRequested event,
@@ -226,16 +251,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     emit(state.copyWith(status: TasksStatus.loading));
 
     try {
-      // Fetch all tasks the user can see (owned + shared) via RLS
-      final response = await _client
-          .from('tasks')
-          .select()
-          .order('created_at', ascending: false);
-
-      final tasks = (response as List)
-          .map((json) => _taskFromJson(json as Map<String, dynamic>))
-          .toList();
-
+      final tasks = await _fetchTasks();
       emit(state.copyWith(status: TasksStatus.loaded, tasks: tasks));
 
       // Subscribe to realtime changes on tasks
@@ -256,7 +272,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
           .stream(primaryKey: ['id'])
           .eq('shared_with_id', _userId)
           .order('created_at', ascending: false)
-          .listen((_) => add(const TasksLoadRequested()));
+          .listen((_) => add(const _TasksReloadFromStream()));
     } catch (e) {
       emit(
         state.copyWith(
@@ -267,11 +283,32 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     }
   }
 
+  Future<void> _onReloadFromStream(
+    _TasksReloadFromStream event,
+    Emitter<TasksState> emit,
+  ) async {
+    try {
+      final tasks = await _fetchTasks();
+      emit(state.copyWith(tasks: tasks, status: TasksStatus.loaded));
+    } catch (e) {
+      emit(state.copyWith(errorMessage: 'Failed to reload shared tasks: $e'));
+    }
+  }
+
   void _onStreamUpdate(
     _TasksUpdatedFromStream event,
     Emitter<TasksState> emit,
   ) {
-    emit(state.copyWith(tasks: event.tasks, status: TasksStatus.loaded));
+    final previousMap = {for (final t in state.tasks) t.id: t};
+    final mergedTasks = event.tasks.map((task) {
+      if (task.sharedWith != null) return task;
+      final previous = previousMap[task.id];
+      if (previous != null && previous.sharedWith != null) {
+        return task.copyWith(sharedWith: previous.sharedWith);
+      }
+      return task;
+    }).toList();
+    emit(state.copyWith(tasks: mergedTasks, status: TasksStatus.loaded));
   }
 
   void _onFilterChanged(
@@ -366,6 +403,19 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
   }
 
   TaskEntity _taskFromJson(Map<String, dynamic> json) {
+    Map<String, dynamic>? sharedWith;
+    final sharedTasks = json['shared_tasks'] as List<dynamic>?;
+    if (sharedTasks != null && sharedTasks.isNotEmpty) {
+      final share = sharedTasks.first as Map<String, dynamic>;
+      final sharedById = share['shared_by_id'] as String?;
+      final sharedWithId = share['shared_with_id'] as String?;
+      if (sharedById == _userId) {
+        sharedWith = share['shared_with'] as Map<String, dynamic>?;
+      } else if (sharedWithId == _userId) {
+        sharedWith = share['shared_by'] as Map<String, dynamic>?;
+      }
+    }
+
     return TaskEntity(
       id: json['id'] as String,
       ownerId: json['owner_id'] as String,
@@ -383,6 +433,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String).toLocal()
           : null,
+      sharedWith: sharedWith,
     );
   }
 
