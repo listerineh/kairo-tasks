@@ -222,12 +222,17 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _showEditProfileSheet(BuildContext context) {
-    showModalBottomSheet<void>(
+    showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const EditProfileSheet(),
-    ).then((_) => _loadProfile());
+    ).then((result) {
+      if (result != null) {
+        setState(() => _profile = result);
+      }
+      _loadProfile();
+    });
   }
 
   void _showAppearanceSheet(BuildContext context) {

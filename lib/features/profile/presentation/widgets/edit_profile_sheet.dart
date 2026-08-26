@@ -103,14 +103,17 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
       return;
     }
 
+    final newProfile = {
+      'id': user.id,
+      'display_name': displayName,
+      'username': username,
+      'avatar_url': avatarUrl,
+      'calendar_visibility': _isPublic ? 'public' : 'private',
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+
     try {
-      await Supabase.instance.client.from('profiles').update({
-        'display_name': displayName,
-        'username': username,
-        'avatar_url': avatarUrl,
-        'calendar_visibility': _isPublic ? 'public' : 'private',
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', user.id);
+      await Supabase.instance.client.from('profiles').update(newProfile).eq('id', user.id);
 
       await Supabase.instance.client.auth.updateUser(
         UserAttributes(
@@ -122,7 +125,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
         ),
       );
 
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) Navigator.of(context).pop(newProfile);
     } catch (e) {
       setState(() {
         _error = 'Could not save profile: $e';
