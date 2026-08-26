@@ -9,6 +9,19 @@ import '../../features/tasks/presentation/pages/tasks_page.dart';
 import '../router/shell_scaffold.dart';
 import 'route_names.dart';
 
+CustomTransitionPage<void> _fadePage(Widget child, GoRouterState state) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: CurveTween(curve: Curves.easeInOut).animate(animation),
+        child: child,
+      );
+    },
+  );
+}
+
 class AppRouter {
   AppRouter._();
 
@@ -39,30 +52,22 @@ class AppRouter {
           GoRoute(
             path: '/tasks',
             name: RouteNames.tasks,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: TasksPage(),
-            ),
+            pageBuilder: (context, state) => _fadePage(const TasksPage(), state),
           ),
           GoRoute(
             path: '/calendar',
             name: RouteNames.calendar,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: CalendarPage(),
-            ),
+            pageBuilder: (context, state) => _fadePage(const CalendarPage(), state),
           ),
           GoRoute(
             path: '/social',
             name: RouteNames.social,
-            pageBuilder: (context, state) => NoTransitionPage(
-              child: _placeholder('Social'),
-            ),
+            pageBuilder: (context, state) => _fadePage(_placeholder('Social'), state),
           ),
           GoRoute(
             path: '/profile',
             name: RouteNames.profile,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: ProfilePage(),
-            ),
+            pageBuilder: (context, state) => _fadePage(const ProfilePage(), state),
           ),
         ],
       ),
