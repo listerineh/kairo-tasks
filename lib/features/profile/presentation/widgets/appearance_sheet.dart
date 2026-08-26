@@ -1,61 +1,60 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../app/theme/theme_service.dart';
 import '../../../../core/extensions/context_extensions.dart';
 
-typedef ThemeCallback = void Function(ThemeMode mode);
-
 class AppearanceSheet extends StatelessWidget {
-  const AppearanceSheet({
-    required this.currentMode,
-    required this.onChanged,
-    super.key,
-  });
-
-  final ThemeMode currentMode;
-  final ThemeCallback onChanged;
+  const AppearanceSheet({super.key});
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return Container(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      decoration: BoxDecoration(
-        color: colors.surfaceElevated,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppSpacing.radiusXLarge),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.spacing24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeService.instance.themeMode,
+      builder: (context, currentMode, _) {
+        return Container(
+          padding: EdgeInsets.only(bottom: bottomInset),
+          decoration: BoxDecoration(
+            color: colors.surfaceElevated,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppSpacing.radiusXLarge),
             ),
-            const SizedBox(height: AppSpacing.spacing24),
-            Text('Appearance', style: context.textTheme.titleLarge),
-            const SizedBox(height: AppSpacing.spacing20),
-            ...ThemeMode.values.map((mode) => _ThemeOption(
-                  mode: mode,
-                  isSelected: currentMode == mode,
-                  onTap: () => onChanged(mode),
-                )),
-            const SizedBox(height: AppSpacing.spacing16),
-          ],
-        ),
-      ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.spacing24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.spacing24),
+                Text('Appearance', style: context.textTheme.titleLarge),
+                const SizedBox(height: AppSpacing.spacing20),
+                ...ThemeMode.values.map((mode) => _ThemeOption(
+                      mode: mode,
+                      isSelected: currentMode == mode,
+                      onTap: () async {
+                        await ThemeService.instance.setThemeMode(mode);
+                      },
+                    )),
+                const SizedBox(height: AppSpacing.spacing16),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

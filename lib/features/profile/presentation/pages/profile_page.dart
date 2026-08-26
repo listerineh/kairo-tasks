@@ -240,12 +240,7 @@ class _ProfilePageState extends State<ProfilePage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => AppearanceSheet(
-        currentMode: ThemeMode.system,
-        onChanged: (mode) {
-          Navigator.of(context).pop();
-        },
-      ),
+      builder: (_) => const AppearanceSheet(),
     );
   }
 
