@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.06 - Email in profiles (2026-08-25)
+
+### Added in V 01.03.06
+
+- `email` column added to `public.profiles`
+- Backfilled `email` for existing profiles from `auth.users`
+- Updated `handle_new_user` trigger to save `NEW.email` on signup
+- Foundation for email-based search or display in future features
+
+---
+
 ## V 01.03.05 - Google sign-in Android fixes (2026-08-25)
 
 ### Fixed in V 01.03.05
