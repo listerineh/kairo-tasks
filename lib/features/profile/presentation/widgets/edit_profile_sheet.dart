@@ -23,7 +23,6 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
   String? _error;
   String? _avatarUrl;
   File? _selectedImage;
-  String _color = '#4A6741';
 
   @override
   void initState() {
@@ -76,7 +75,6 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
             (response['avatar_url'] as String?) ?? metadataAvatar;
         _isPublic =
             (response['calendar_visibility'] as String?) == 'public';
-        _color = (response['color'] as String?) ?? '#4A6741';
         _isLoading = false;
       });
     } catch (e) {
@@ -230,7 +228,6 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
         'username': username,
         'avatar_url': avatarUrl,
         'calendar_visibility': _isPublic ? 'public' : 'private',
-        'color': _color,
         'updated_at': DateTime.now().toIso8601String(),
       };
 
@@ -393,40 +390,6 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                     ),
                   ),
 
-                  const SizedBox(height: AppSpacing.spacing20),
-
-                  // Task color picker
-                  Text(
-                    'My task color',
-                    style: context.textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: AppSpacing.spacing8),
-                  Wrap(
-                    spacing: AppSpacing.spacing12,
-                    runSpacing: AppSpacing.spacing12,
-                    children: _colorPalette.map((hex) {
-                      final selected = hex == _color;
-                      return GestureDetector(
-                        onTap: () => setState(() => _color = hex),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: _parseColor(hex),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: selected
-                                  ? colors.textPrimary
-                                  : Colors.transparent,
-                              width: 3,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-
                   if (_error != null) ...[
                     const SizedBox(height: AppSpacing.spacing16),
                     Text(
@@ -482,24 +445,4 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
     );
   }
 
-  Color _parseColor(String hex) {
-    try {
-      return Color(int.parse(hex.replaceFirst('#', '0xFF')));
-    } catch (_) {
-      return Colors.grey;
-    }
-  }
-
-  static const _colorPalette = [
-    '#4A6741',
-    '#5A7C51',
-    '#6B8C7A',
-    '#6B8FA3',
-    '#7A7A8C',
-    '#8C7B6B',
-    '#9B7A5B',
-    '#A36B6B',
-    '#8E6B9B',
-    '#6B5B8C',
-  ];
 }

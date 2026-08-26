@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.03.27 - My task color moved to Profile section (2026-08-25)
+
+### Fixed in V 01.03.27
+
+- Removed color picker from Edit Profile sheet
+- Added "My task color" option in Profile page with a color preview dot
+- New `ProfileColorSheet` bottom sheet to choose and save the profile task color
+- Color is still saved in `profiles.color` and reflected in the calendar
+
+---
+
 ## V 01.03.26 - Calendar owner color and priority dots (2026-08-25)
 
 ### Fixed in V 01.03.26

@@ -12,6 +12,7 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../widgets/appearance_sheet.dart';
 import '../widgets/edit_profile_sheet.dart';
 import '../widgets/notifications_sheet.dart';
+import '../widgets/profile_color_sheet.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -68,6 +69,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final avatarUrl = _profile?['avatar_url'] as String? ??
         metadata?['avatar_url'] as String? ??
         metadata?['picture'] as String?;
+    final color = _profile?['color'] as String? ?? '#4A6741';
     final createdAt = user?.createdAt;
 
     return BlocListener<AuthBloc, AuthState>(
@@ -163,6 +165,21 @@ class _ProfilePageState extends State<ProfilePage> {
                         onTap: () => _showEditProfileSheet(context),
                       ),
                       _SettingsTile(
+                        icon: Icons.color_lens_outlined,
+                        title: 'My task color',
+                        subtitle: 'Color used for your calendar tasks',
+                        trailing: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: _parseColor(color),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: colors.border),
+                          ),
+                        ),
+                        onTap: () => _showColorSheet(context, color),
+                      ),
+                      _SettingsTile(
                         icon: Icons.palette_outlined,
                         title: 'Appearance',
                         subtitle: 'Theme, colors',
@@ -244,6 +261,44 @@ class _ProfilePageState extends State<ProfilePage> {
     return '${months[date.month - 1]} ${date.year}';
   }
 
+  Future<void> _showColorSheet(BuildContext context, String currentColor) async {
+    final newColor = await showModalBottomSheet<String?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ProfileColorSheet(initialColor: currentColor),
+    );
+
+    if (newColor == null || newColor == currentColor) return;
+    await _updateColor(newColor);
+  }
+
+  Future<void> _updateColor(String newColor) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await Supabase.instance.client
+          .from('profiles')
+          .update({
+            'color': newColor,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', user.id);
+      await _loadProfile();
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  Color _parseColor(String hex) {
+    try {
+      return Color(int.parse(hex.replaceFirst('#', '0xFF')));
+    } catch (_) {
+      return Colors.grey;
+    }
+  }
+
   void _showEditProfileSheet(BuildContext context) {
     showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
@@ -309,12 +364,14 @@ class _SettingsTile extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.onTap,
+    this.trailing,
   });
 
   final IconData icon;
   final String title;
   final String? subtitle;
   final VoidCallback? onTap;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -324,9 +381,10 @@ class _SettingsTile extends StatelessWidget {
       leading: Icon(icon, color: colors.textSecondary),
       title: Text(title),
       subtitle: subtitle != null ? Text(subtitle!) : null,
-      trailing: onTap != null
-          ? Icon(Icons.chevron_right, color: colors.textMuted)
-          : null,
+      trailing: trailing ??
+          (onTap != null
+              ? Icon(Icons.chevron_right, color: colors.textMuted)
+              : null),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.spacing8,
