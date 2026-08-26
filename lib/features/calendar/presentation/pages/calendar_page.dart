@@ -130,10 +130,15 @@ class _CalendarPageState extends State<CalendarPage> {
             Expanded(
               child: BlocBuilder<TasksBloc, TasksState>(
                 builder: (context, state) {
-                  final tasks = [
-                    ..._coloredTasks(state.tasks),
-                    ..._friendTasks,
-                  ];
+                  final myTasks = _coloredTasks(state.tasks);
+                  final taskMap = <String, TaskEntity>{};
+                  for (final task in myTasks) {
+                    taskMap[task.id] = task;
+                  }
+                  for (final task in _friendTasks) {
+                    taskMap.putIfAbsent(task.id, () => task);
+                  }
+                  final tasks = taskMap.values.toList();
 
                   switch (_viewType) {
                     case CalendarViewType.day:
@@ -400,11 +405,7 @@ class _CalendarPageState extends State<CalendarPage> {
           .or('requester_id.eq.$userId,addressee_id.eq.$userId')
           .eq('status', 'accepted');
 
-      final friendTasks = await Supabase.instance.client
-          .rpc<List<dynamic>>('get_public_friend_tasks');
-
       final friendshipRows = friendships.cast<Map<String, dynamic>>();
-      final friendTaskRows = friendTasks.cast<Map<String, dynamic>>();
 
       final ownColor = profileData['color'] as String? ?? '#4A6741';
       final friendColors = <String, String>{};
@@ -419,18 +420,23 @@ class _CalendarPageState extends State<CalendarPage> {
         friendColors[friendId] = color;
       }
 
-      final parsedFriendTasks = friendTaskRows
-          .map((json) =>
-              _taskFromJson(json, friendColors[json['owner_id'] as String?]))
-          .toList();
-
       setState(() {
         _ownColor = ownColor;
         _friendColors
           ..clear()
           ..addAll(friendColors);
-        _friendTasks = parsedFriendTasks;
       });
+
+      final friendTasks = await Supabase.instance.client
+          .rpc<List<dynamic>>('get_public_friend_tasks');
+
+      final friendTaskRows = friendTasks.cast<Map<String, dynamic>>();
+      final parsedFriendTasks = friendTaskRows
+          .map((json) =>
+              _taskFromJson(json, friendColors[json['owner_id'] as String?]))
+          .toList();
+
+      setState(() => _friendTasks = parsedFriendTasks);
     } catch (_) {
       // friend calendar tasks are optional
     } finally {
@@ -439,11 +445,13 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   TaskEntity _taskFromJson(Map<String, dynamic> json, String? color) {
+    final isPrivate =
+        (json['calendar_visibility'] as String? ?? 'public') == 'private';
     return TaskEntity(
       id: json['id'] as String,
       ownerId: json['owner_id'] as String,
-      title: json['title'] as String,
-      description: json['description'] as String?,
+      title: isPrivate ? 'Busy' : json['title'] as String,
+      description: isPrivate ? null : json['description'] as String?,
       priority: _parsePriority(json['priority'] as String? ?? 'medium'),
       status: _parseStatus(json['status'] as String? ?? 'pending'),
       startDate: json['start_date'] != null
