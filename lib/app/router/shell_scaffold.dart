@@ -21,6 +21,11 @@ class ShellScaffold extends StatelessWidget {
         type: BottomNavigationBarType.fixed,
         items: [
           BottomNavigationBarItem(
+            icon: const Icon(Icons.dashboard_outlined),
+            activeIcon: const Icon(Icons.dashboard),
+            label: context.l10n.dashboard,
+          ),
+          BottomNavigationBarItem(
             icon: const Icon(Icons.check_circle_outline),
             activeIcon: const Icon(Icons.check_circle),
             label: context.l10n.tasks,

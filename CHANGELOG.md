@@ -10,6 +10,27 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.05.00 - Dashboard homepage with charts (2026-08-25)
+
+### Added in V 01.05.00
+
+- New `DashboardPage` as the home screen (first tab)
+- Metric cards: total, completed, pending, overdue, urgent/high, completion rate
+- `fl_chart` powered charts:
+  - Donut chart for completion status
+  - Bar chart for tasks by priority
+  - Bar chart for tasks due in the next 7 days
+- "View all tasks" button to go to the Tasks list
+- Bottom navigation now has 5 tabs: Dashboard, Tasks, Calendar, Social, Profile
+- New i18n keys for dashboard labels
+
+### Changed in V 01.05.00
+
+- `TasksPage` is now its own tab; the dashboard is the new homepage
+- App `initialLocation` and login redirect point to `/dashboard`
+
+---
+
 ## V 01.04.00 - Internationalization (2026-08-25)
 
 ### Added in V 01.04.00

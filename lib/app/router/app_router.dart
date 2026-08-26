@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/calendar/presentation/pages/calendar_page.dart';
+import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/social/presentation/pages/social_page.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
@@ -17,7 +18,7 @@ class AppRouter {
 
   static final router = GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/tasks',
+    initialLocation: '/dashboard',
     debugLogDiagnostics: false,
     redirect: (context, state) {
       final session = Supabase.instance.client.auth.currentSession;
@@ -25,7 +26,7 @@ class AppRouter {
       final isOnLogin = state.matchedLocation == '/login';
 
       if (!isLoggedIn && !isOnLogin) return '/login';
-      if (isLoggedIn && isOnLogin) return '/tasks';
+      if (isLoggedIn && isOnLogin) return '/dashboard';
       return null;
     },
     routes: [
@@ -39,6 +40,15 @@ class AppRouter {
           navigationShell: navigationShell,
         ),
         branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/dashboard',
+                name: RouteNames.dashboard,
+                builder: (context, state) => const DashboardPage(),
+              ),
+            ],
+          ),
           StatefulShellBranch(
             routes: [
               GoRoute(

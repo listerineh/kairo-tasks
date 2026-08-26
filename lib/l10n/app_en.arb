@@ -121,5 +121,17 @@
   "urgent": "Urgent",
   "version": "Version",
   "weekInitial": "W",
-  "when": "When"
+  "when": "When",
+  "completionChart": "Completion",
+  "completionRate": "Completion rate",
+  "completedTasks": "Completed",
+  "dashboard": "Dashboard",
+  "noTasksYet": "No tasks yet",
+  "overdueTasks": "Overdue",
+  "pendingTasks": "Pending",
+  "priorityChart": "Priority",
+  "totalTasks": "Total tasks",
+  "upcomingChart": "Upcoming",
+  "urgentHigh": "Urgent/High",
+  "viewAllTasks": "View all tasks"
 }
