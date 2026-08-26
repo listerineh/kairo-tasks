@@ -10,6 +10,15 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.07.02 - Correct app display name (2026-08-26)
+
+### Fixed in V 01.07.02
+
+- iOS `CFBundleDisplayName` and `CFBundleName` now show `KairoTasks`
+- Android `android:label` now shows `KairoTasks`
+
+---
+
 ## V 01.07.01 - Unified KairoTasks header (2026-08-26)
 
 ### Added in V 01.07.01
