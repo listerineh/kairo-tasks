@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../app/widgets/kairo_header.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../tasks/domain/entities/task_entity.dart';
 import '../../../tasks/presentation/bloc/tasks_bloc.dart';
@@ -66,7 +66,7 @@ class _CalendarPageState extends State<CalendarPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar: logo + month name + view toggle
+            // Top bar: logo + view toggle + date navigation
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.spacing16,
@@ -74,64 +74,66 @@ class _CalendarPageState extends State<CalendarPage> {
                 AppSpacing.spacing16,
                 0,
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  SvgPicture.asset(
-                    'assets/icons/app_icon.svg',
-                    width: 28,
-                    height: 28,
-                  ),
-                  const SizedBox(width: AppSpacing.spacing8),
-                  // Back arrow + month/year
-                  GestureDetector(
-                    onTap: _goBack,
-                    child: Icon(
-                      Icons.chevron_left,
-                      color: colors.textSecondary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.spacing4),
-                  GestureDetector(
-                    onTap: () => setState(
-                      () => _viewType = CalendarViewType.month,
-                    ),
-                    child: Text(
-                      _headerTitle(),
-                      style: context.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                  Row(
+                    children: [
+                      const KairoHeader(),
+                      const Spacer(),
+                      _ViewChip(
+                        label: context.l10n.dayInitial,
+                        isSelected: _viewType == CalendarViewType.day,
+                        onTap: () =>
+                            setState(() => _viewType = CalendarViewType.day),
                       ),
-                    ),
+                      const SizedBox(width: 6),
+                      _ViewChip(
+                        label: context.l10n.weekInitial,
+                        isSelected: _viewType == CalendarViewType.week,
+                        onTap: () =>
+                            setState(() => _viewType = CalendarViewType.week),
+                      ),
+                      const SizedBox(width: 6),
+                      _ViewChip(
+                        label: context.l10n.monthInitial,
+                        isSelected: _viewType == CalendarViewType.month,
+                        onTap: () =>
+                            setState(() => _viewType = CalendarViewType.month),
+                      ),
+                    ],
                   ),
-                  GestureDetector(
-                    onTap: _goForward,
-                    child: Icon(
-                      Icons.chevron_right,
-                      color: colors.textSecondary,
-                      size: 24,
-                    ),
-                  ),
-                  const Spacer(),
-                  // View type chips
-                  _ViewChip(
-                    label: context.l10n.dayInitial,
-                    isSelected: _viewType == CalendarViewType.day,
-                    onTap: () =>
-                        setState(() => _viewType = CalendarViewType.day),
-                  ),
-                  const SizedBox(width: 6),
-                  _ViewChip(
-                    label: context.l10n.weekInitial,
-                    isSelected: _viewType == CalendarViewType.week,
-                    onTap: () =>
-                        setState(() => _viewType = CalendarViewType.week),
-                  ),
-                  const SizedBox(width: 6),
-                  _ViewChip(
-                    label: context.l10n.monthInitial,
-                    isSelected: _viewType == CalendarViewType.month,
-                    onTap: () =>
-                        setState(() => _viewType = CalendarViewType.month),
+                  const SizedBox(height: AppSpacing.spacing8),
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: _goBack,
+                        child: Icon(
+                          Icons.chevron_left,
+                          color: colors.textSecondary,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.spacing4),
+                      GestureDetector(
+                        onTap: () => setState(
+                          () => _viewType = CalendarViewType.month,
+                        ),
+                        child: Text(
+                          _headerTitle(),
+                          style: context.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: _goForward,
+                        child: Icon(
+                          Icons.chevron_right,
+                          color: colors.textSecondary,
+                          size: 24,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

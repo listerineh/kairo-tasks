@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../app/widgets/kairo_header.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../widgets/appearance_sheet.dart';
@@ -80,18 +80,7 @@ class _ProfilePageState extends State<ProfilePage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SvgPicture.asset(
-                'assets/icons/app_icon.svg',
-                width: 28,
-                height: 28,
-              ),
-              const SizedBox(width: AppSpacing.spacing8),
-              Text(context.l10n.kairoTasks),
-            ],
-          ),
+          title: const KairoHeader(),
           centerTitle: true,
         ),
         body: SafeArea(

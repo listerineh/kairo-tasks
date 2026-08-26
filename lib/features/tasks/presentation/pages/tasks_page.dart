@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../app/widgets/kairo_header.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../domain/entities/task_entity.dart';
 import '../bloc/tasks_bloc.dart';
@@ -50,20 +50,7 @@ class _TasksView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        SvgPicture.asset(
-                          'assets/icons/app_icon.svg',
-                          width: 40,
-                          height: 40,
-                        ),
-                        const SizedBox(width: AppSpacing.spacing12),
-                        Text(
-                          context.l10n.kairoTasks,
-                          style: context.textTheme.displayMedium,
-                        ),
-                      ],
-                    ),
+                    const KairoHeader(),
                     const SizedBox(height: AppSpacing.spacing4),
                     Text(
                       _greeting(context),

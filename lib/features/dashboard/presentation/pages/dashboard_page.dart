@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../app/widgets/kairo_header.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../tasks/domain/entities/task_entity.dart';
 import '../../../tasks/presentation/bloc/tasks_bloc.dart';
@@ -61,19 +61,7 @@ class DashboardPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            SvgPicture.asset(
-                              'assets/icons/app_icon.svg',
-                              height: 32,
-                            ),
-                            const SizedBox(width: AppSpacing.spacing12),
-                            Text(
-                              context.l10n.kairoTasks,
-                              style: context.textTheme.displayMedium,
-                            ),
-                          ],
-                        ),
+                        const KairoHeader(),
                         const SizedBox(height: AppSpacing.spacing4),
                         Text(
                           _greeting(context),

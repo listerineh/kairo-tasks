@@ -10,6 +10,16 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.07.01 - Unified KairoTasks header (2026-08-26)
+
+### Added in V 01.07.01
+
+- New `KairoHeader` widget in `lib/app/widgets/kairo_header.dart`
+- Consistent logo + app name header used across Dashboard, Tasks, Calendar, Social, and Profile
+- Removed duplicate logo/header code from each page
+
+---
+
 ## V 01.07.00 - Onboarding tour (2026-08-26)
 
 ### Added in V 01.07.00
