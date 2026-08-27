@@ -10,6 +10,19 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.15.02 - Celebracion de racha y recordatorio 23:00 (2026-08-26)
+
+### Added in V 01.15.02
+
+- `TasksBloc` detects the first owned task completed each day and emits `streakToCelebrate`
+- `StreakCelebration` overlay shows the happy mascot, `+1 día de racha` and falling confetti for 2.5 seconds
+- New `NotificationService.showStreakNotification(int streak)` for instant `+1 día` push
+- New `NotificationService.rescheduleStreakReminder({required bool hasCompletedToday})` that schedules a local notification at 23:00 if no task completed
+- The 23:00 reminder is cancelled/rescheduled automatically on task completion
+- Removed temporary `Preview mascot states` button from dashboard
+
+---
+
 ## V 01.15.01 - Gatito mas lindo y preview de estados (2026-08-26)
 
 ### Added in V 01.15.01

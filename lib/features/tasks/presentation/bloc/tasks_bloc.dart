@@ -102,22 +102,34 @@ class _TasksReloadFromStream extends TasksEvent {
   const _TasksReloadFromStream();
 }
 
+class TasksClearStreakCelebration extends TasksEvent {
+  const TasksClearStreakCelebration();
+}
+
 // Filter
 enum TasksFilter { all, urgent, high, medium, low, completed }
 
 // State
+class _Undefined {
+  const _Undefined();
+}
+
 class TasksState extends Equatable {
   const TasksState({
     this.tasks = const [],
     this.status = TasksStatus.initial,
     this.filter = TasksFilter.all,
     this.errorMessage,
+    this.streakToCelebrate,
   });
 
   final List<TaskEntity> tasks;
   final TasksStatus status;
   final TasksFilter filter;
   final String? errorMessage;
+  final int? streakToCelebrate;
+
+  static const Object _streakUndefined = _Undefined();
 
   static const _priorityOrder = {
     TaskPriority.urgent: 0,
@@ -195,17 +207,21 @@ class TasksState extends Equatable {
     TasksStatus? status,
     TasksFilter? filter,
     String? errorMessage,
+    Object? streakToCelebrate = _streakUndefined,
   }) {
     return TasksState(
       tasks: tasks ?? this.tasks,
       status: status ?? this.status,
       filter: filter ?? this.filter,
       errorMessage: errorMessage,
+      streakToCelebrate: identical(streakToCelebrate, _streakUndefined)
+          ? this.streakToCelebrate
+          : streakToCelebrate as int?,
     );
   }
 
   @override
-  List<Object?> get props => [tasks, status, filter, errorMessage];
+  List<Object?> get props => [tasks, status, filter, errorMessage, streakToCelebrate];
 }
 
 enum TasksStatus { initial, loading, loaded, error }
@@ -221,6 +237,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     on<TaskDeleted>(_onDeleted);
     on<_TasksUpdatedFromStream>(_onStreamUpdate);
     on<_TasksReloadFromStream>(_onReloadFromStream);
+    on<TasksClearStreakCelebration>(_onClearStreakCelebration);
   }
 
   SupabaseClient get _client => Supabase.instance.client;
@@ -266,6 +283,17 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
         data: {'operation': 'tasks.loadTasks', 'count': tasks.length},
       );
       await NotificationService.instance.rescheduleMorningSummary(tasks);
+
+      final today = _dateOnly(DateTime.now());
+      final completedTodayCount = tasks.where((t) {
+        if (t.status != TaskStatus.completed || t.ownerId != _userId) {
+          return false;
+        }
+        return _isSameDay(t.updatedAt ?? t.createdAt, today);
+      }).length;
+      await NotificationService.instance.rescheduleStreakReminder(
+        hasCompletedToday: completedTodayCount > 0,
+      );
 
       // Subscribe to realtime changes on tasks
       await _subscription?.cancel();
@@ -326,6 +354,13 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
       return task;
     }).toList();
     emit(state.copyWith(tasks: mergedTasks, status: TasksStatus.loaded));
+  }
+
+  void _onClearStreakCelebration(
+    TasksClearStreakCelebration event,
+    Emitter<TasksState> emit,
+  ) {
+    emit(state.copyWith(streakToCelebrate: null));
   }
 
   void _onFilterChanged(
@@ -490,8 +525,18 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     Emitter<TasksState> emit,
   ) async {
     final task = state.tasks.firstWhere((t) => t.id == event.taskId);
+    final previousStatus = task.status;
     final newStatus =
-        task.status == TaskStatus.completed ? 'pending' : 'completed';
+        previousStatus == TaskStatus.completed ? 'pending' : 'completed';
+    final today = _dateOnly(DateTime.now());
+    final wasCompletedTodayBefore = state.tasks.any((t) {
+      if (t.id == event.taskId ||
+          t.status != TaskStatus.completed ||
+          t.ownerId != _userId) {
+        return false;
+      }
+      return _isSameDay(t.updatedAt ?? t.createdAt, today);
+    });
 
     LoggerService.instance.info(
       'Toggling task status',
@@ -509,6 +554,29 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
           .eq('id', event.taskId);
       if (newStatus == 'completed') {
         await NotificationService.instance.cancelTaskReminder(event.taskId);
+        if (!wasCompletedTodayBefore) {
+          final days = <DateTime>{today};
+          for (final t in state.tasks) {
+            if (t.ownerId != _userId || t.status != TaskStatus.completed) {
+              continue;
+            }
+            final d = _dateOnly(t.updatedAt ?? t.createdAt);
+            if (!d.isAfter(today)) days.add(d);
+          }
+          final newStreak = _streakFromDays(days.toList(), today);
+          LoggerService.instance.info(
+            'Streak celebration triggered',
+            data: {
+              'operation': 'tasks.streak',
+              'streak': newStreak,
+            },
+          );
+          await NotificationService.instance.showStreakNotification(newStreak);
+          emit(state.copyWith(streakToCelebrate: newStreak));
+        }
+      } else if (newStatus == 'pending' &&
+          previousStatus == TaskStatus.completed) {
+        emit(state.copyWith(streakToCelebrate: null));
       }
     } catch (e) {
       LoggerService.instance.error(
@@ -611,6 +679,30 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
       default:
         return TaskStatus.pending;
     }
+  }
+
+  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  bool _isSameDay(DateTime a, DateTime b) => _dateOnly(a) == _dateOnly(b);
+
+  int _streakFromDays(List<DateTime> days, DateTime today) {
+    if (days.isEmpty) return 0;
+    final unique = days.map(_dateOnly).toSet();
+    final sorted = unique.toList()..sort((a, b) => b.compareTo(a));
+    final yesterday = today.subtract(const Duration(days: 1));
+    if (sorted.first != today && sorted.first != yesterday) return 0;
+
+    var count = 0;
+    var expected = sorted.first;
+    for (final d in sorted) {
+      if (d == expected) {
+        count++;
+        expected = expected.subtract(const Duration(days: 1));
+      } else if (d.isBefore(expected)) {
+        break;
+      }
+    }
+    return count;
   }
 
   @override

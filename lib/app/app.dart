@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:kairotasks/generated/app_localizations.dart';
 
 import '../features/auth/presentation/bloc/auth_bloc.dart';
+import '../features/dashboard/presentation/widgets/streak_celebration.dart';
 import '../features/tasks/presentation/bloc/tasks_bloc.dart';
 import 'locale/locale_service.dart';
 import 'router/app_router.dart';
@@ -53,21 +54,30 @@ class _KairoTasksAppState extends State<KairoTasksApp> {
       child: ValueListenableBuilder<Locale>(
         valueListenable: LocaleService.instance.locale,
         builder: (context, locale, _) {
-          return MaterialApp.router(
-            title: 'KairoTasks',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.light,
-            darkTheme: AppTheme.dark,
-            themeMode: ThemeService.instance.themeMode.value,
-            routerConfig: AppRouter.create(widget.initialLocation),
-            locale: locale,
-            localizationsDelegates: AppLocalizations.localizationsDelegates +
-                [
-                  GlobalMaterialLocalizations.delegate,
-                  GlobalWidgetsLocalizations.delegate,
-                  GlobalCupertinoLocalizations.delegate,
-                ],
-            supportedLocales: const [Locale('es'), Locale('en')],
+          return BlocListener<TasksBloc, TasksState>(
+            listenWhen: (previous, current) =>
+                current.streakToCelebrate != null &&
+                previous.streakToCelebrate != current.streakToCelebrate,
+            listener: (context, state) {
+              showStreakCelebration(context, state.streakToCelebrate!);
+              context.read<TasksBloc>().add(const TasksClearStreakCelebration());
+            },
+            child: MaterialApp.router(
+              title: 'KairoTasks',
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.light,
+              darkTheme: AppTheme.dark,
+              themeMode: ThemeService.instance.themeMode.value,
+              routerConfig: AppRouter.create(widget.initialLocation),
+              locale: locale,
+              localizationsDelegates: AppLocalizations.localizationsDelegates +
+                  [
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+              supportedLocales: const [Locale('es'), Locale('en')],
+            ),
           );
         },
       ),

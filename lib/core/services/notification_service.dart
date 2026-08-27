@@ -56,6 +56,8 @@ class NotificationService {
   static const int _kUrgentOffset = 400000000;
   static const int _kMorningSummaryId = 999999998;
   static const int _kInactivityNudgeId = 999999999;
+  static const int _kStreakId = 9999;
+  static const int _kStreakReminderId = 8888;
 
   int _reminderId(String taskId, int offset) =>
       taskId.hashCode.abs() + offset;
@@ -444,6 +446,69 @@ class NotificationService {
       details,
       androidScheduleMode: AndroidScheduleMode.inexact,
     );
+  }
+
+  Future<void> showStreakNotification(int streak) async {
+    await showLocalNotification(
+      id: _kStreakId,
+      title: '¡+1 día de racha!',
+      body: 'Llevas $streak días seguidos completando tareas',
+    );
+  }
+
+  Future<void> rescheduleStreakReminder({
+    required bool hasCompletedToday,
+  }) async {
+    await _flutterLocalNotificationsPlugin.cancel(_kStreakReminderId);
+
+    if (hasCompletedToday) {
+      LoggerService.instance.info(
+        'Streak reminder canceled, tasks completed today',
+        data: {'operation': 'notification.rescheduleStreakReminder'},
+      );
+      return;
+    }
+
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduleDate =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, 23);
+    if (!scheduleDate.isAfter(now)) {
+      scheduleDate = scheduleDate.add(const Duration(days: 1));
+    }
+
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'high_importance_channel',
+        'High Importance Notifications',
+        channelDescription:
+            'This channel is used for important notifications.',
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
+
+    await _flutterLocalNotificationsPlugin.zonedSchedule(
+      _kStreakReminderId,
+      '¡No pierdas tu racha!',
+      'Es casi medianoche y aún no completaste una tarea hoy',
+      scheduleDate,
+      details,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+
+    LoggerService.instance.info(
+      'Streak reminder rescheduled',
+      data: {
+        'operation': 'notification.rescheduleStreakReminder',
+        'scheduleDate': scheduleDate.toIso8601String(),
+      },
+    );
+  }
+
+  Future<void> cancelStreakReminder() async {
+    await _flutterLocalNotificationsPlugin.cancel(_kStreakReminderId);
   }
 
   Future<void> showUrgentNotification(TaskEntity task) async {
