@@ -10,15 +10,15 @@ Format: **V xx.yy.zz**
 
 ---
 
-## V 01.15.05 - Cuter mascot matching reference image (2026-08-26)
+## V 01.15.05 - SVG mascot (2026-08-26)
 
 ### Changed in V 01.15.05
 
-- Rewrote `MascotPainter` for a simpler, cuter kitten:
-  - Big round head, wide soft ears, chubby cheeks with blush
-  - Small dot eyes, tiny mouth, whiskers
-  - Simple rounded body, small paws, curled tail
-  - Still only 2 colors and 4 animated states
+- Replaced `MascotPainter` with 4 SVG assets rendered via `flutter_svg`
+- New `assets/mascot/mascot_normal.svg`, `mascot_happy.svg`, `mascot_sad.svg`, `mascot_sleeping.svg`
+- SVG body uses `detailColor` (white/black per theme); tail, ears, eyes, strokes use `currentColor` (app accent)
+- Added `flutter_svg` dependency and `assets/mascot/` to `pubspec.yaml`
+- `MascotWidget` loads the SVG asset, replaces the body color, and applies simple state animations
 
 ---
 

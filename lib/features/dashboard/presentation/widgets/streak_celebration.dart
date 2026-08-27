@@ -71,12 +71,12 @@ class _StreakCelebrationState extends State<StreakCelebration>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CustomPaint(
-                      size: const Size(180, 180),
-                      painter: MascotPainter(
+                    SizedBox(
+                      width: 180,
+                      height: 180,
+                      child: MascotWidget(
                         state: MascotState.happy,
-                        animation: _controller,
-                        color: context.appColors.accent,
+                        streak: widget.streak,
                         detailColor: Colors.white,
                       ),
                     ),
