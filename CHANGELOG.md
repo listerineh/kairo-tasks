@@ -10,6 +10,19 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.15.00 - Mascota gatito y racha (2026-08-26)
+
+### Added in V 01.15.00
+
+- New `MascotWidget` on the dashboard with a simple, animated, single-color cat
+- Cat states: `normal`, `happy`, `sleeping`, `sad`
+- Tail wag, blink, bounce, `Zzz` bubbles, droopy ears and tear drops per state
+- Streak counter: counts consecutive days with at least one completed owned task
+- Mascot state updates based on today's tasks and streak health
+- `MascotPainter` uses `CustomPainter` for smooth, lightweight rendering
+
+---
+
 ## V 01.14.01 - Instrument every major flow with logging (2026-08-26)
 
 ### Added in V 01.14.01

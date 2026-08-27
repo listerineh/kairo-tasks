@@ -9,6 +9,7 @@ import '../../../../app/widgets/kairo_header.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../tasks/domain/entities/task_entity.dart';
 import '../../../tasks/presentation/bloc/tasks_bloc.dart';
+import '../widgets/mascot_widget.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -39,6 +40,14 @@ class DashboardPage extends StatelessWidget {
           final timestamp = t.updatedAt ?? t.createdAt;
           return _isSameDay(timestamp, today);
         }).length;
+        final lastCompletionDate = _lastCompletionDate(tasks, userId);
+        final streak = _streak(tasks, today, userId);
+        final mascotState = _mascotState(
+          completedTodayCount: completedTodayCount,
+          todayList: todayList,
+          lastCompletionDate: lastCompletionDate,
+          today: today,
+        );
 
         return Scaffold(
           floatingActionButton: FloatingActionButton.extended(
@@ -74,6 +83,21 @@ class DashboardPage extends StatelessWidget {
                             color: context.appColors.textSecondary,
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.spacing24,
+                    vertical: AppSpacing.spacing8,
+                  ),
+                  sliver: SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: AppSpacing.spacing16),
+                        MascotWidget(state: mascotState, streak: streak),
                       ],
                     ),
                   ),
@@ -522,4 +546,58 @@ String? _sharedByLabel(BuildContext context, TaskEntity task) {
       profile['username'] as String?;
   if (name == null || name.isEmpty) return null;
   return '${context.l10n.sharedBy} $name';
+}
+
+DateTime? _lastCompletionDate(List<TaskEntity> tasks, String? userId) {
+  if (userId == null) return null;
+
+  DateTime? last;
+  for (final t in tasks) {
+    if (t.status != TaskStatus.completed || t.ownerId != userId) continue;
+    final day = _dateOnly(t.updatedAt ?? t.createdAt);
+    if (last == null || day.isAfter(last)) last = day;
+  }
+  return last;
+}
+
+int _streak(List<TaskEntity> tasks, DateTime today, String? userId) {
+  if (userId == null) return 0;
+
+  final days = <DateTime>{};
+  for (final t in tasks) {
+    if (t.status != TaskStatus.completed || t.ownerId != userId) continue;
+    days.add(_dateOnly(t.updatedAt ?? t.createdAt));
+  }
+  if (days.isEmpty) return 0;
+
+  final sorted = days.toList()..sort((a, b) => b.compareTo(a));
+  final yesterday = today.subtract(const Duration(days: 1));
+  if (sorted.first != today && sorted.first != yesterday) return 0;
+
+  var count = 0;
+  var expected = sorted.first;
+  for (final d in sorted) {
+    if (d == expected) {
+      count++;
+      expected = expected.subtract(const Duration(days: 1));
+    } else if (d.isBefore(expected)) {
+      break;
+    }
+  }
+  return count;
+}
+
+MascotState _mascotState({
+  required int completedTodayCount,
+  required List<TaskEntity> todayList,
+  required DateTime? lastCompletionDate,
+  required DateTime today,
+}) {
+  if (completedTodayCount > 0 && todayList.isEmpty) return MascotState.happy;
+  if (todayList.isNotEmpty) return MascotState.normal;
+  if (lastCompletionDate != null &&
+      lastCompletionDate.isBefore(today.subtract(const Duration(days: 1)))) {
+    return MascotState.sad;
+  }
+  return MascotState.sleeping;
 }
