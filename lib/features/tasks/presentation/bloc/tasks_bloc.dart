@@ -256,6 +256,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     try {
       final tasks = await _fetchTasks();
       emit(state.copyWith(status: TasksStatus.loaded, tasks: tasks));
+      await NotificationService.instance.rescheduleMorningSummary(tasks);
 
       // Subscribe to realtime changes on tasks
       await _subscription?.cancel();
@@ -370,6 +371,11 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
         createdAt: DateTime.now(),
       );
       await NotificationService.instance.scheduleTaskReminder(createdTask);
+      await NotificationService.instance.rescheduleInactivityNudge();
+
+      if (createdTask.priority == TaskPriority.urgent) {
+        await NotificationService.instance.showUrgentNotification(createdTask);
+      }
 
       // Realtime stream will update the list automatically
     } catch (e) {

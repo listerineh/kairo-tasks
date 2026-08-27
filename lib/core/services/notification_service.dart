@@ -52,9 +52,30 @@ class NotificationService {
   static const int _kStartReminderOffset = 100000000;
   static const int _kDueSoonOffset = 200000000;
   static const int _kOverdueOffset = 300000000;
+  static const int _kUrgentOffset = 400000000;
+  static const int _kMorningSummaryId = 999999998;
+  static const int _kInactivityNudgeId = 999999999;
 
   int _reminderId(String taskId, int offset) =>
       taskId.hashCode.abs() + offset;
+
+  tz.TZDateTime _next8am() {
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, 8);
+    if (!scheduled.isAfter(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+    return scheduled;
+  }
+
+  tz.TZDateTime _next8pm() {
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, 20);
+    if (!scheduled.isAfter(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+    return scheduled;
+  }
 
   late final _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
   late final FirebaseMessaging? _messaging;
@@ -219,6 +240,22 @@ class NotificationService {
         details,
         androidScheduleMode: AndroidScheduleMode.inexact,
       );
+
+      if (task.priority == TaskPriority.urgent &&
+          dueDate.isAfter(now.add(const Duration(hours: 1)))) {
+        final oneHourReminder = tz.TZDateTime.from(
+          dueDate.subtract(const Duration(hours: 1)).toUtc(),
+          tz.UTC,
+        );
+        await _flutterLocalNotificationsPlugin.zonedSchedule(
+          _reminderId(task.id, _kUrgentOffset),
+          task.title,
+          'Urgent due in 1 hour',
+          oneHourReminder,
+          details,
+          androidScheduleMode: AndroidScheduleMode.inexact,
+        );
+      }
     }
   }
 
@@ -240,6 +277,95 @@ class NotificationService {
     for (final task in tasks) {
       await scheduleTaskReminder(task);
     }
+    await rescheduleMorningSummary(tasks);
+    await rescheduleInactivityNudge();
+  }
+
+  Future<void> rescheduleMorningSummary(List<TaskEntity> tasks) async {
+    await _flutterLocalNotificationsPlugin.cancel(_kMorningSummaryId);
+
+    final now = tz.TZDateTime.now(tz.local);
+    final today = tz.TZDateTime(tz.local, now.year, now.month, now.day);
+
+    var todayCount = 0;
+    var overdueCount = 0;
+    for (final task in tasks) {
+      final dueDate = task.dueDate;
+      if (dueDate == null || task.status == TaskStatus.completed) continue;
+
+      if (dueDate.year == today.year &&
+          dueDate.month == today.month &&
+          dueDate.day == today.day) {
+        todayCount++;
+      } else if (dueDate.isBefore(today)) {
+        overdueCount++;
+      }
+    }
+
+    final String body;
+    if (todayCount == 0 && overdueCount == 0) {
+      body = 'No tienes tareas pendientes';
+    } else if (overdueCount == 0) {
+      body = 'Tienes $todayCount tareas hoy';
+    } else if (todayCount == 0) {
+      body = 'Tienes $overdueCount tareas vencidas';
+    } else {
+      body = 'Tienes $todayCount tareas hoy y $overdueCount vencidas';
+    }
+
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'high_importance_channel',
+        'High Importance Notifications',
+        channelDescription:
+            'This channel is used for important notifications.',
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
+
+    await _flutterLocalNotificationsPlugin.zonedSchedule(
+      _kMorningSummaryId,
+      'KairoTasks',
+      body,
+      _next8am(),
+      details,
+      androidScheduleMode: AndroidScheduleMode.inexact,
+    );
+  }
+
+  Future<void> rescheduleInactivityNudge() async {
+    await _flutterLocalNotificationsPlugin.cancel(_kInactivityNudgeId);
+
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'high_importance_channel',
+        'High Importance Notifications',
+        channelDescription:
+            'This channel is used for important notifications.',
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
+
+    await _flutterLocalNotificationsPlugin.zonedSchedule(
+      _kInactivityNudgeId,
+      'KairoTasks',
+      'No has creado tareas en el día',
+      _next8pm(),
+      details,
+      androidScheduleMode: AndroidScheduleMode.inexact,
+    );
+  }
+
+  Future<void> showUrgentNotification(TaskEntity task) async {
+    await showLocalNotification(
+      title: 'Urgent: ${task.title}',
+      body: task.dueDate != null ? 'Due ${task.dueDate}' : 'High priority task',
+      id: task.id.hashCode.abs() + 500000000,
+    );
   }
 
   Future<void> setFriendActivityEnabled(bool value) async {

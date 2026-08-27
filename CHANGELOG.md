@@ -10,6 +10,24 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.13.00 - More notifications (2026-08-26)
+
+### Added in V 01.13.00
+
+- **Shared task completed** push: `fcm_task_completed` trigger notifies shared users when the owner marks a task completed
+- **Shared task unshared** push: `fcm_shared_task_deleted` trigger notifies a user when a task is no longer shared with them
+- **Urgent task 1-hour reminder**: local notification 1 hour before `due_date` for `urgent` priority tasks
+- **Urgent task created**: immediate local notification when an `urgent` task is created
+- **Morning summary**: local notification at 08:00 with today's task count and overdue count
+- **Inactivity nudge**: local notification at 20:00 if no tasks have been created during the day
+- Creating a task reschedules the inactivity nudge to the next day
+
+### Database
+
+- New migrations `20260826000020_fcm_task_completed.sql` and `20260826000021_fcm_shared_task_unshared.sql`
+
+---
+
 ## V 01.12.00 - Task reminders: start, due, overdue (2026-08-26)
 
 ### Added in V 01.12.00
