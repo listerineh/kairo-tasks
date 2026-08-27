@@ -1,7 +1,7 @@
 name: kairotasks
 description: "Collaborative productivity app that elevates task management with real-time social features, calendar views, and accessibility-first design."
 publish_to: 'none'
-version: 1.13.0+72
+version: 1.14.0+73
 
 environment:
   sdk: ^3.13.1
@@ -46,6 +46,7 @@ dependencies:
 
   # Utils
   package_info_plus: ^8.0.0
+  device_info_plus: ^11.0.0
   url_launcher: ^6.2.5
   intl: ^0.20.2
   dartz: ^0.10.1

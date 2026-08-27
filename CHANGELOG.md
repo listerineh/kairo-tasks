@@ -10,6 +10,24 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.14.00 - Supabase logging and monitoring (2026-08-26)
+
+### Added in V 01.14.00
+
+- New `LoggerService` with `trace`, `debug`, `info`, `warning`, `error`, `fatal` levels
+- Logs include `trace_id`, `device_os`, `device_model`, `device_version`, `app_version`, `user_id` and JSON `data`
+- Global error handlers capture `FlutterError` and platform `onError` and send `error`/`fatal` logs
+- New `supabase/migrations/20260826000022_logs_table.sql` creates `public.logs` table with indexes
+- New Edge Function `logs` validates `x-logs-key` and batch-inserts logs with `service_role`
+- `device_info_plus` and `package_info_plus` are used to collect device context
+
+### Notes
+
+- The `LOGS_API_KEY` is stored in `.env` and in Supabase Secrets. `.env` is gitignored.
+- Logs are queued and flushed every 5 seconds; `error` and `fatal` trigger immediate flush.
+
+---
+
 ## V 01.13.00 - More notifications (2026-08-26)
 
 ### Added in V 01.13.00

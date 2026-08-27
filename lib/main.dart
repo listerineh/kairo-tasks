@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -10,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/app.dart';
 import 'app/di/injection.dart';
 import 'core/constants/app_constants.dart';
+import 'core/services/logger_service.dart';
 import 'core/services/notification_service.dart';
 
 Future<void> main() async {
@@ -39,6 +41,10 @@ Future<void> main() async {
     publishableKey: AppConstants.supabaseAnonKey,
   );
 
+  // Initialize logging
+  await LoggerService.instance.init();
+  LoggerService.instance.info('App started');
+
   // Initialize dependency injection
   await configureDependencies();
 
@@ -55,5 +61,39 @@ Future<void> main() async {
     await NotificationService.instance.registerFcmToken();
   }
 
-  runApp(KairoTasksApp(initialLocation: initialLocation));
+  // Capture Flutter and platform errors
+  FlutterError.onError = (details) {
+    LoggerService.instance.error(
+      'Flutter error',
+      data: <String, dynamic>{
+        'exception': details.exception.toString(),
+        'stack': details.stack.toString(),
+      },
+    );
+    FlutterError.presentError(details);
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    LoggerService.instance.error(
+      'Platform error',
+      data: <String, dynamic>{
+        'error': error.toString(),
+        'stack': stack.toString(),
+      },
+    );
+    return true;
+  };
+
+  runZonedGuarded<void>(
+    () => runApp(KairoTasksApp(initialLocation: initialLocation)),
+    (error, stackTrace) {
+      LoggerService.instance.error(
+        'Uncaught zone error',
+        data: <String, dynamic>{
+          'error': error.toString(),
+          'stack': stackTrace.toString(),
+        },
+      );
+    },
+  );
 }
