@@ -10,6 +10,18 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.15.05 - Cuter mascot matching reference image (2026-08-26)
+
+### Changed in V 01.15.05
+
+- Rewrote `MascotPainter` for a simpler, cuter kitten:
+  - Big round head, wide soft ears, chubby cheeks with blush
+  - Small dot eyes, tiny mouth, whiskers
+  - Simple rounded body, small paws, curled tail
+  - Still only 2 colors and 4 animated states
+
+---
+
 ## V 01.15.04 - English-only docs and hardcoded strings (2026-08-26)
 
 ### Changed in V 01.15.04

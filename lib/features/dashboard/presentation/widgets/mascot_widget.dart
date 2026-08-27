@@ -124,6 +124,11 @@ class MascotPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final baseY = center.dy + 10;
+    final headCenter = Offset(center.dx, baseY - 16);
+    const headRadius = 34.0;
+
     final colorFill = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
@@ -131,43 +136,54 @@ class MascotPainter extends CustomPainter {
     final colorStroke = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.8
+      ..strokeWidth = 3.0
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
+
+    final thinColorStroke = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round;
 
     final detailFill = Paint()
       ..color = detailColor
       ..style = PaintingStyle.fill;
 
     final blushPaint = Paint()
-      ..color = color.withAlpha(50)
+      ..color = color.withAlpha(40)
       ..style = PaintingStyle.fill;
 
     final tailPaint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 7
+      ..strokeWidth = 6.0
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
-
-    final center = size.center(Offset.zero);
-    final baseY = center.dy + 12;
 
     canvas.save();
     _applyBodySway(canvas, center, baseY);
 
-    _drawTail(canvas, size, baseY, tailPaint);
+    _drawTail(canvas, size, baseY, colorFill, tailPaint);
     _drawBody(canvas, center, baseY, detailFill, colorStroke);
     _drawPaws(canvas, center, baseY, detailFill, colorStroke);
-    _drawEars(canvas, center, baseY, colorFill, detailFill);
-    _drawFace(canvas, center, baseY, colorFill, colorStroke, detailFill, blushPaint);
+    _drawEars(canvas, headCenter, colorFill, detailFill);
+    _drawHead(canvas, headCenter, headRadius, detailFill, colorStroke);
+    _drawBlush(canvas, headCenter, blushPaint);
+    _drawFace(
+      canvas,
+      headCenter,
+      colorFill,
+      thinColorStroke,
+      detailFill,
+    );
 
     if (state == MascotState.sleeping) {
-      _drawSnotBubble(canvas, center, baseY, detailFill, colorStroke);
+      _drawSnotBubble(canvas, headCenter, detailFill, thinColorStroke);
     }
 
     if (state == MascotState.sad) {
-      _drawTears(canvas, center, baseY, colorFill);
+      _drawTears(canvas, headCenter, colorFill);
     }
 
     canvas.restore();
@@ -204,9 +220,10 @@ class MascotPainter extends CustomPainter {
     Canvas canvas,
     Size size,
     double baseY,
-    Paint tailPaint,
+    Paint fill,
+    Paint paint,
   ) {
-    final anchor = Offset(size.width * 0.72, baseY + 24);
+    final anchor = Offset(size.width * 0.78, baseY + 10);
     final frequency = switch (state) {
       MascotState.normal => 1.0,
       MascotState.happy => 2.5,
@@ -222,20 +239,20 @@ class MascotPainter extends CustomPainter {
     final angle = math.sin(animation.value * math.pi * 2 * frequency) * amplitude;
 
     final cp1 = anchor + Offset(
-      math.cos(-0.35 + angle) * 14,
-      math.sin(-0.35 + angle) * 14,
+      math.cos(-0.45 + angle) * 12,
+      math.sin(-0.45 + angle) * 12,
     );
     final mid = anchor + Offset(
-      math.cos(-1.0 + angle) * 30,
-      math.sin(-1.0 + angle) * 30,
+      math.cos(-1.1 + angle) * 26,
+      math.sin(-1.1 + angle) * 26,
     );
     final cp2 = mid + Offset(
-      math.cos(-1.6 + angle) * 12,
-      math.sin(-1.6 + angle) * 12,
+      math.cos(-1.7 + angle) * 10,
+      math.sin(-1.7 + angle) * 10,
     );
     final end = mid + Offset(
-      math.cos(-2.2 + angle) * 18,
-      math.sin(-2.2 + angle) * 18,
+      math.cos(-2.4 + angle) * 14,
+      math.sin(-2.4 + angle) * 14,
     );
 
     final path = Path()
@@ -243,12 +260,9 @@ class MascotPainter extends CustomPainter {
       ..quadraticBezierTo(cp1.dx, cp1.dy, mid.dx, mid.dy)
       ..quadraticBezierTo(cp2.dx, cp2.dy, end.dx, end.dy);
 
-    canvas.drawPath(path, tailPaint);
-
-    final tipPaint = Paint()
-      ..color = tailPaint.color
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(end, 4.5, tipPaint);
+    canvas
+      ..drawPath(path, paint)
+      ..drawCircle(end, 3.5, fill);
   }
 
   void _drawBody(
@@ -259,11 +273,11 @@ class MascotPainter extends CustomPainter {
     Paint stroke,
   ) {
     final rect = Rect.fromCenter(
-      center: Offset(center.dx, baseY + 4),
-      width: 74,
-      height: 86,
+      center: Offset(center.dx, baseY + 14),
+      width: 54,
+      height: 34,
     );
-    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(37));
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(22));
 
     canvas
       ..drawRRect(rrect, fill)
@@ -277,154 +291,103 @@ class MascotPainter extends CustomPainter {
     Paint fill,
     Paint stroke,
   ) {
-    final leftPaw = RRect.fromRectAndRadius(
-      Rect.fromCenter(
-        center: Offset(center.dx - 20, baseY + 36),
-        width: 22,
-        height: 16,
-      ),
-      const Radius.circular(8),
-    );
-    final rightPaw = RRect.fromRectAndRadius(
-      Rect.fromCenter(
-        center: Offset(center.dx + 20, baseY + 36),
-        width: 22,
-        height: 16,
-      ),
-      const Radius.circular(8),
-    );
+    final leftPaw = Offset(center.dx - 16, baseY + 24);
+    final rightPaw = Offset(center.dx + 16, baseY + 24);
 
     canvas
-      ..drawRRect(leftPaw, fill)
-      ..drawRRect(leftPaw, stroke)
-      ..drawRRect(rightPaw, fill)
-      ..drawRRect(rightPaw, stroke);
+      ..drawCircle(leftPaw, 6, fill)
+      ..drawCircle(leftPaw, 6, stroke)
+      ..drawCircle(rightPaw, 6, fill)
+      ..drawCircle(rightPaw, 6, stroke);
   }
 
   void _drawEars(
     Canvas canvas,
-    Offset center,
-    double baseY,
-    Paint colorPaint,
-    Paint detailPaint,
+    Offset headCenter,
+    Paint colorFill,
+    Paint detailFill,
   ) {
-    final leftBase = Offset(center.dx - 24, baseY - 32);
-    final rightBase = Offset(center.dx + 24, baseY - 32);
+    final droop = state == MascotState.sad;
+    final earY = headCenter.dy - (droop ? 18 : 32);
 
-    if (state == MascotState.sad) {
-      _drawDroopyEar(canvas, leftBase, -1, colorPaint, detailPaint);
-      _drawDroopyEar(canvas, rightBase, 1, colorPaint, detailPaint);
-    } else {
-      _drawEar(canvas, leftBase, -1, colorPaint, detailPaint);
-      _drawEar(canvas, rightBase, 1, colorPaint, detailPaint);
-    }
+    final leftOuter = Offset(headCenter.dx - 24, earY);
+    final rightOuter = Offset(headCenter.dx + 24, earY);
+    final leftInner = leftOuter + const Offset(0, 3);
+    final rightInner = rightOuter + const Offset(0, 3);
+
+    canvas
+      ..drawOval(
+        Rect.fromCenter(center: leftOuter, width: 28, height: 24),
+        colorFill,
+      )
+      ..drawOval(
+        Rect.fromCenter(center: rightOuter, width: 28, height: 24),
+        colorFill,
+      )
+      ..drawOval(
+        Rect.fromCenter(center: leftInner, width: 15, height: 13),
+        detailFill,
+      )
+      ..drawOval(
+        Rect.fromCenter(center: rightInner, width: 15, height: 13),
+        detailFill,
+      );
   }
 
-  void _drawEar(
+  void _drawHead(
     Canvas canvas,
-    Offset base,
-    double direction,
-    Paint paint,
-    Paint detailPaint,
+    Offset headCenter,
+    double radius,
+    Paint fill,
+    Paint stroke,
   ) {
-    final tip = base + Offset(direction * 12, -20);
-    final left = base + Offset(-10 * direction, 0);
-    final right = base + Offset(8 * direction, 0);
-
-    final outer = Path()
-      ..moveTo(base.dx, base.dy)
-      ..quadraticBezierTo(left.dx, left.dy, tip.dx, tip.dy)
-      ..quadraticBezierTo(right.dx, right.dy, base.dx, base.dy)
-      ..close();
-    canvas.drawPath(outer, paint);
-
-    final innerTip = base + Offset(direction * 8, -12);
-    final innerLeft = base + Offset(-5 * direction, -2);
-    final innerRight = base + Offset(4 * direction, -2);
-
-    final inner = Path()
-      ..moveTo(base.dx, base.dy)
-      ..quadraticBezierTo(innerLeft.dx, innerLeft.dy, innerTip.dx, innerTip.dy)
-      ..quadraticBezierTo(innerRight.dx, innerRight.dy, base.dx, base.dy)
-      ..close();
-    canvas.drawPath(inner, detailPaint);
+    canvas
+      ..drawCircle(headCenter, radius, fill)
+      ..drawCircle(headCenter, radius, stroke);
   }
 
-  void _drawDroopyEar(
-    Canvas canvas,
-    Offset base,
-    double direction,
-    Paint paint,
-    Paint detailPaint,
-  ) {
-    final tip = base + Offset(direction * 14, 16);
-    final left = base + Offset(-9 * direction, 2);
-    final right = base + Offset(7 * direction, 2);
+  void _drawBlush(Canvas canvas, Offset headCenter, Paint paint) {
+    final left = Offset(headCenter.dx - 20, headCenter.dy + 6);
+    final right = Offset(headCenter.dx + 20, headCenter.dy + 6);
 
-    final outer = Path()
-      ..moveTo(base.dx, base.dy)
-      ..quadraticBezierTo(left.dx, left.dy, tip.dx, tip.dy)
-      ..quadraticBezierTo(right.dx, right.dy, base.dx, base.dy)
-      ..close();
-    canvas.drawPath(outer, paint);
-
-    final innerTip = base + Offset(direction * 9, 10);
-    final innerLeft = base + Offset(-4 * direction, 2);
-    final innerRight = base + Offset(3 * direction, 2);
-
-    final inner = Path()
-      ..moveTo(base.dx, base.dy)
-      ..quadraticBezierTo(innerLeft.dx, innerLeft.dy, innerTip.dx, innerTip.dy)
-      ..quadraticBezierTo(innerRight.dx, innerRight.dy, base.dx, base.dy)
-      ..close();
-    canvas.drawPath(inner, detailPaint);
+    canvas
+      ..drawCircle(left, 7, paint)
+      ..drawCircle(right, 7, paint);
   }
 
   void _drawFace(
     Canvas canvas,
-    Offset center,
-    double baseY,
+    Offset headCenter,
     Paint colorFill,
-    Paint colorStroke,
+    Paint thinStroke,
     Paint detailFill,
-    Paint blush,
   ) {
-    final eyeY = baseY - 20;
-    final leftEye = Offset(center.dx - 16, eyeY);
-    final rightEye = Offset(center.dx + 16, eyeY);
-
-    _drawBlush(canvas, leftEye, rightEye, blush);
+    final eyeY = headCenter.dy - 4;
+    final leftEye = Offset(headCenter.dx - 13, eyeY);
+    final rightEye = Offset(headCenter.dx + 13, eyeY);
 
     switch (state) {
       case MascotState.sleeping:
-        _drawClosedEye(canvas, leftEye, colorStroke);
-        _drawClosedEye(canvas, rightEye, colorStroke);
+        _drawClosedEye(canvas, leftEye, thinStroke);
+        _drawClosedEye(canvas, rightEye, thinStroke);
       case MascotState.happy:
-        _drawHappyEye(canvas, leftEye, colorStroke);
-        _drawHappyEye(canvas, rightEye, colorStroke);
+        _drawHappyEye(canvas, leftEye, thinStroke);
+        _drawHappyEye(canvas, rightEye, thinStroke);
       case MascotState.normal:
       case MascotState.sad:
         final blink = _isBlinking;
         if (blink) {
-          _drawClosedEye(canvas, leftEye, colorStroke);
-          _drawClosedEye(canvas, rightEye, colorStroke);
+          _drawClosedEye(canvas, leftEye, thinStroke);
+          _drawClosedEye(canvas, rightEye, thinStroke);
         } else {
           _drawOpenEye(canvas, leftEye, colorFill, detailFill);
           _drawOpenEye(canvas, rightEye, colorFill, detailFill);
         }
     }
 
-    _drawNose(canvas, center, baseY, colorFill);
-    _drawMouth(canvas, center, baseY, colorStroke);
-    _drawWhiskers(canvas, center, baseY, colorStroke);
-  }
-
-  void _drawBlush(Canvas canvas, Offset leftEye, Offset rightEye, Paint paint) {
-    final left = leftEye + const Offset(-8, 8);
-    final right = rightEye + const Offset(8, 8);
-    canvas
-      ..drawCircle(left, 6, paint)
-      ..drawCircle(right, 6, paint);
+    _drawNose(canvas, headCenter, colorFill);
+    _drawMouth(canvas, headCenter, thinStroke, colorFill);
+    _drawWhiskers(canvas, headCenter, thinStroke);
   }
 
   bool get _isBlinking {
@@ -441,8 +404,8 @@ class MascotPainter extends CustomPainter {
 
   void _drawOpenEye(Canvas canvas, Offset c, Paint fill, Paint highlight) {
     canvas
-      ..drawCircle(c, 7, fill)
-      ..drawCircle(c + const Offset(2, -2), 2.2, highlight);
+      ..drawCircle(c, 4.5, fill)
+      ..drawCircle(c + const Offset(1.5, -1.5), 1.2, highlight);
   }
 
   void _drawClosedEye(Canvas canvas, Offset c, Paint paint) {
@@ -454,7 +417,7 @@ class MascotPainter extends CustomPainter {
   }
 
   void _drawHappyEye(Canvas canvas, Offset c, Paint paint) {
-    final rect = Rect.fromCenter(center: c, width: 16, height: 12);
+    final rect = Rect.fromCenter(center: c, width: 14, height: 10);
     canvas.drawArc(
       rect,
       0,
@@ -464,117 +427,89 @@ class MascotPainter extends CustomPainter {
     );
   }
 
-  void _drawNose(Canvas canvas, Offset center, double baseY, Paint paint) {
+  void _drawNose(Canvas canvas, Offset headCenter, Paint paint) {
     final nose = Path()
-      ..moveTo(center.dx, baseY - 18)
-      ..lineTo(center.dx - 5, baseY - 13)
-      ..lineTo(center.dx + 5, baseY - 13)
+      ..moveTo(headCenter.dx, headCenter.dy + 5)
+      ..lineTo(headCenter.dx - 4, headCenter.dy + 10)
+      ..lineTo(headCenter.dx + 4, headCenter.dy + 10)
       ..close();
     canvas.drawPath(nose, paint);
   }
 
-  void _drawMouth(Canvas canvas, Offset center, double baseY, Paint paint) {
-    if (state == MascotState.happy) {
-      final rect = Rect.fromCenter(
-        center: Offset(center.dx, baseY - 10),
-        width: 18,
-        height: 12,
-      );
-      canvas.drawArc(rect, math.pi, math.pi, false, paint);
-      return;
-    }
+  void _drawMouth(
+    Canvas canvas,
+    Offset headCenter,
+    Paint stroke,
+    Paint fill,
+  ) {
+    final center = Offset(headCenter.dx, headCenter.dy + 16);
 
-    final path = Path();
-    if (state == MascotState.sad) {
-      path
-        ..moveTo(center.dx - 6, baseY - 7)
-        ..quadraticBezierTo(center.dx, baseY - 12, center.dx + 6, baseY - 7);
-    } else {
-      path
-        ..moveTo(center.dx - 5, baseY - 9)
-        ..quadraticBezierTo(
-          center.dx - 2,
-          baseY - 6,
-          center.dx,
-          baseY - 8,
-        )
-        ..quadraticBezierTo(
-          center.dx + 2,
-          baseY - 6,
-          center.dx + 5,
-          baseY - 9,
-        );
+    switch (state) {
+      case MascotState.happy:
+        final rect = Rect.fromCenter(center: center, width: 12, height: 9);
+        canvas.drawArc(rect, math.pi, math.pi, false, stroke);
+      case MascotState.sad:
+        final rect = Rect.fromCenter(center: center, width: 10, height: 7);
+        canvas.drawArc(rect, 0, math.pi, false, stroke);
+      case MascotState.normal:
+      case MascotState.sleeping:
+        canvas.drawCircle(center, 2.2, fill);
     }
-    canvas.drawPath(path, paint);
   }
 
-  void _drawWhiskers(Canvas canvas, Offset center, double baseY, Paint paint) {
-    final leftOrigin = Offset(center.dx - 26, baseY - 14);
-    final rightOrigin = Offset(center.dx + 26, baseY - 14);
-    final angles = [-0.05, 0.1, 0.25];
-    final whiskerPaint = Paint()
-      ..color = paint.color
-      ..strokeWidth = 1.2
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+  void _drawWhiskers(Canvas canvas, Offset headCenter, Paint paint) {
+    final leftOrigin = Offset(headCenter.dx - 22, headCenter.dy + 6);
+    final rightOrigin = Offset(headCenter.dx + 22, headCenter.dy + 6);
+    final angles = [-0.08, 0.08, 0.24];
 
     for (final a in angles) {
       canvas
         ..drawLine(
           leftOrigin,
-          leftOrigin + Offset(-math.cos(a) * 14, math.sin(a) * 6),
-          whiskerPaint,
+          leftOrigin + Offset(-math.cos(a) * 12, math.sin(a) * 5),
+          paint,
         )
         ..drawLine(
           rightOrigin,
-          rightOrigin + Offset(math.cos(a) * 14, math.sin(a) * 6),
-          whiskerPaint,
+          rightOrigin + Offset(math.cos(a) * 12, math.sin(a) * 5),
+          paint,
         );
     }
   }
 
   void _drawSnotBubble(
     Canvas canvas,
-    Offset center,
-    double baseY,
+    Offset headCenter,
     Paint fill,
     Paint outline,
   ) {
     final t = animation.value;
-    final scale = 1.0 + math.sin(t * math.pi * 2) * 0.25;
-    final position = Offset(center.dx + 12, baseY - 18);
-    final radius = 5.5 * scale;
+    final scale = 1.0 + math.sin(t * math.pi * 2) * 0.28;
+    final position = Offset(headCenter.dx + 12, headCenter.dy + 4);
+    final radius = 4.5 * scale;
 
     canvas
       ..drawCircle(position, radius, fill)
-      ..drawCircle(
-        position,
-        radius,
-        Paint()
-          ..color = outline.color
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5,
-      );
+      ..drawCircle(position, radius, outline);
   }
 
-  void _drawTears(Canvas canvas, Offset center, double baseY, Paint paint) {
+  void _drawTears(Canvas canvas, Offset headCenter, Paint paint) {
     final drop = animation.value;
-    final leftTear = Offset(center.dx - 16, baseY - 12 + drop * 16);
-    final rightTear =
-        Offset(center.dx + 16, baseY - 12 + ((drop + 0.5) % 1.0) * 16);
-
-    final tearPaint = Paint()
-      ..color = paint.color
-      ..style = PaintingStyle.fill;
+    final eyeY = headCenter.dy - 4;
+    final leftTear = Offset(headCenter.dx - 13, eyeY + 10 + drop * 12);
+    final rightTear = Offset(
+      headCenter.dx + 13,
+      eyeY + 10 + ((drop + 0.5) % 1.0) * 12,
+    );
 
     canvas
       ..drawOval(
-        Rect.fromCenter(center: leftTear, width: 4, height: 6),
-        tearPaint,
+        Rect.fromCenter(center: leftTear, width: 3.5, height: 5),
+        paint,
       )
       ..drawOval(
-        Rect.fromCenter(center: rightTear, width: 4, height: 6),
-        tearPaint,
+        Rect.fromCenter(center: rightTear, width: 3.5, height: 5),
+        paint,
       );
   }
 
