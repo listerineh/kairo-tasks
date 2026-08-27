@@ -95,14 +95,24 @@ class NotificationService {
   }
 
   Future<bool> requestPermission() async {
-    if (_fcmAvailable) {
-      final settings = await _messaging!.requestPermission(
+    if (Platform.isAndroid) {
+      final androidImplementation = _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      final granted =
+          await androidImplementation?.requestNotificationsPermission();
+      return granted ?? true;
+    }
+
+    if (Platform.isIOS) {
+      final settings = await FirebaseMessaging.instance.requestPermission(
         alert: true,
         badge: true,
         sound: true,
       );
       return settings.authorizationStatus == AuthorizationStatus.authorized;
     }
+
     return false;
   }
 

@@ -10,6 +10,16 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.11.04 - Android notification permission (2026-08-26)
+
+### Added in V 01.11.04
+
+- Added `POST_NOTIFICATIONS` permission to `AndroidManifest.xml`
+- `NotificationService.requestPermission()` now uses `AndroidFlutterLocalNotificationsPlugin.requestNotificationsPermission()` on Android 13+
+- iOS keeps using `FirebaseMessaging.instance.requestPermission()`
+
+---
+
 ## V 01.11.03 - Fix pg_net http_post signature (2026-08-26)
 
 ### Fixed in V 01.11.03
