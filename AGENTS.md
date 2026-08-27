@@ -165,7 +165,8 @@ The latest `CHANGELOG.md` entry is the single source of truth for the current ap
 ## Git
 
 - Commits must be made in the user's name only.
-- Do not include `Co-Authored-By: Devin` or any bot attribution in commit messages.
+- Commit messages must contain only the description of the changes.
+- Do not include signatures, footers, `Co-Authored-By`, `Generated with`, or any bot attribution.
 
 ## Contributing
 
