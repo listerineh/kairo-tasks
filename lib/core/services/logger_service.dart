@@ -67,7 +67,7 @@ class LoggerService {
         _deviceInfo['model'] = '';
         _deviceInfo['version'] = '';
       }
-    } on Exception catch (e) {
+    } catch (e) {
       if (kDebugMode) {
         debugPrint('LoggerService device info collection failed: $e');
       }
@@ -112,6 +112,13 @@ class LoggerService {
     Object? data,
     String? traceId,
   }) {
+    String? userId;
+    try {
+      userId = Supabase.instance.client.auth.currentUser?.id;
+    } catch (_) {
+      userId = null;
+    }
+
     final entry = <String, dynamic>{
       'trace_id': traceId ?? _traceId,
       'level': level,
@@ -121,7 +128,7 @@ class LoggerService {
       'device_model': _deviceInfo['model'] as String?,
       'device_version': _deviceInfo['version'] as String?,
       'app_version': _deviceInfo['appVersion'] as String?,
-      'user_id': Supabase.instance.client.auth.currentUser?.id,
+      'user_id': userId,
       'created_at': DateTime.now().toUtc().toIso8601String(),
     };
     _buffer.add(entry);
@@ -147,7 +154,7 @@ class LoggerService {
         body: <String, dynamic>{'logs': batch},
         headers: <String, String>{'x-logs-key': _logsApiKey},
       );
-    } on Exception catch (e) {
+    } catch (e) {
       if (kDebugMode) {
         debugPrint('LoggerService flush failed: $e');
       }
