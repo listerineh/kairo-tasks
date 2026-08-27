@@ -52,7 +52,7 @@ Format: **V xx.yy.zz**
 - **Inactivity nudge**: local notification at 20:00 if no tasks have been created during the day
 - Creating a task reschedules the inactivity nudge to the next day
 
-### Database
+### New migrations
 
 - New migrations `20260826000020_fcm_task_completed.sql` and `20260826000021_fcm_shared_task_unshared.sql`
 
@@ -68,7 +68,7 @@ Format: **V xx.yy.zz**
 - Reminders are cancelled when a task is completed or deleted
 - `fcm_send` no longer sends `Authorization` header, only `x-fcm-internal-key` and `Content-Type`, fixing `pg_net` push failures
 
-### Database
+### Schema change
 
 - New migration `20260826000019_fcm_no_auth_jwt.sql` simplifies `fcm_send` and removes the `auth.jwt()` dependency for the Edge Function call
 
@@ -92,7 +92,7 @@ Format: **V xx.yy.zz**
 - This fixes the `42883` error that aborted `friendships` `INSERT` triggers
 - `pg_net` push calls now enqueue correctly without rolling back the social request
 
-### Database
+### Migration
 
 - New migration `20260826000018_fix_pg_net_signature.sql` replaces `fcm_send` with the correct `net.http_post` call
 
