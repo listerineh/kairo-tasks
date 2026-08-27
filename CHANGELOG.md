@@ -10,6 +10,20 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.15.01 - Gatito mas lindo y preview de estados (2026-08-26)
+
+### Added in V 01.15.01
+
+- Redesigned `MascotPainter` with a cuter kawaii style:
+  - larger round head, flared rounded ears, inner-ear details
+  - big eyes with highlights, tiny nose, small mouth, blush circles, whiskers, paws
+  - thicker curled tail
+- Added `detailColor` from `context.appColors.surface` for eye whites, blush, and highlights
+- New `MascotPreviewPage` showing all 4 states (`normal`, `happy`, `sleeping`, `sad`) in one screen
+- Temporary `/mascot-preview` route and `Preview mascot states` button on the dashboard
+
+---
+
 ## V 01.15.00 - Mascota gatito y racha (2026-08-26)
 
 ### Added in V 01.15.00
