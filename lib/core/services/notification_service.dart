@@ -415,7 +415,7 @@ class NotificationService {
 
     await _flutterLocalNotificationsPlugin.zonedSchedule(
       _kMorningSummaryId,
-      'KairoTasks',
+      'Kairo',
       body,
       _next8am(),
       details,
@@ -440,7 +440,7 @@ class NotificationService {
 
     await _flutterLocalNotificationsPlugin.zonedSchedule(
       _kInactivityNudgeId,
-      'KairoTasks',
+      'Kairo',
       "You haven't created any tasks today",
       _next8pm(),
       details,
@@ -606,7 +606,7 @@ class NotificationService {
       await showLocalNotification(
         title: notification.title ??
             (message.data['title'] as String?) ??
-            'KairoTasks',
+            'Kairo',
         body: notification.body ?? (message.data['body'] as String?) ?? '',
         id: message.messageId?.hashCode ?? 0,
       );

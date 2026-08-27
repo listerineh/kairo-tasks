@@ -1,12 +1,21 @@
 # Changelog
 
-All notable changes to KairoTasks will be documented in this file.
+All notable changes to Kairo will be documented in this file.
 
 Format: **V xx.yy.zz**
 
 - `xx` = Major version (breaking changes, full redesigns)
 - `yy` = New important feature/implementation
 - `zz` = Minor change (individual fix, tweak, or small addition)
+
+---
+
+## V 01.16.01 - Rename app to Kairo (2026-08-27)
+
+### Changed in V 01.16.01
+
+- Renamed app from `KairoTasks` to `Kairo` across the codebase, docs, manifest and localizations
+- Bumped version to `1.16.1+84`
 
 ---
 
@@ -23,7 +32,7 @@ Format: **V xx.yy.zz**
 - `sad` state: slow ear and tail movement, long closed-eyes blink, falling tear that fades out, meowing
 - `sleeping` state: very slow ear and tail movement, breathing snot bubble that pops when meowing and respawns
 - Removed `MascotPreviewPage` and its `/mascot-preview` route from the dashboard
-- Release APKs now named `KairoTasks-{versionName}+{versionCode}-{buildType}.apk`
+- Release APKs now named `Kairo-{versionName}+{versionCode}-{buildType}.apk`
 
 ---
 
@@ -296,12 +305,12 @@ Format: **V xx.yy.zz**
 
 ### Fixed in V 01.07.02
 
-- iOS `CFBundleDisplayName` and `CFBundleName` now show `KairoTasks`
-- Android `android:label` now shows `KairoTasks`
+- iOS `CFBundleDisplayName` and `CFBundleName` now show `Kairo`
+- Android `android:label` now shows `Kairo`
 
 ---
 
-## V 01.07.01 - Unified KairoTasks header (2026-08-26)
+## V 01.07.01 - Unified Kairo header (2026-08-26)
 
 ### Added in V 01.07.01
 
@@ -899,7 +908,7 @@ Format: **V xx.yy.zz**
 ### Added in V 01.02.07
 
 - `ThemeService` singleton using `ValueNotifier` and `SharedPreferences`
-- `KairoTasksApp` reacts to theme changes in real-time
+- `KairoApp` reacts to theme changes in real-time
 - Appearance settings sheet now lets the user pick light/dark/system
 - Theme selection is persisted across app restarts
 

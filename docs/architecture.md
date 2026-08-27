@@ -1,4 +1,4 @@
-# KairoTasks - Architecture
+# Kairo - Architecture
 
 > Clean Architecture with BLoC pattern, feature-first organization.
 
@@ -307,7 +307,7 @@ The app uses Flutter's `flutter_localizations` with ARB files and code generatio
 - All UI strings are accessed via `context.l10n` (an extension on `BuildContext`)
 - Spanish (`es`) remains the default; the user can override the in-app locale from `ProfilePage`
 - `LocaleService` (in `lib/app/locale/locale_service.dart`) manages and persists the selected `Locale` in `SharedPreferences` under the key `app_locale`
-- `KairoTasksApp` wraps the `MaterialApp` in a `ValueListenableBuilder<Locale>` that rebuilds from `LocaleService.instance.locale`
+- `KairoApp` wraps the `MaterialApp` in a `ValueListenableBuilder<Locale>` that rebuilds from `LocaleService.instance.locale`
 - The language switcher in `ProfilePage` calls `LocaleService.instance.setLocale(...)` and applies the change immediately, without a restart
 - Adding a new string requires updating both ARB files and regenerating localizations
 

@@ -43,7 +43,7 @@ android {
         outputs.all {
             val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
             output.outputFileName =
-                "KairoTasks-${defaultConfig.versionName.orEmpty()}+${defaultConfig.versionCode ?: 0}-${variant.buildType.name}.apk"
+                "Kairo-${defaultConfig.versionName.orEmpty()}+${defaultConfig.versionCode ?: 0}-${variant.buildType.name}.apk"
         }
     }
 }

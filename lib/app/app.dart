@@ -11,16 +11,16 @@ import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_service.dart';
 
-class KairoTasksApp extends StatefulWidget {
-  const KairoTasksApp({required this.initialLocation, super.key});
+class KairoApp extends StatefulWidget {
+  const KairoApp({required this.initialLocation, super.key});
 
   final String initialLocation;
 
   @override
-  State<KairoTasksApp> createState() => _KairoTasksAppState();
+  State<KairoApp> createState() => _KairoAppState();
 }
 
-class _KairoTasksAppState extends State<KairoTasksApp> {
+class _KairoAppState extends State<KairoApp> {
   @override
   void initState() {
     super.initState();
@@ -63,7 +63,7 @@ class _KairoTasksAppState extends State<KairoTasksApp> {
               context.read<TasksBloc>().add(const TasksClearStreakCelebration());
             },
             child: MaterialApp.router(
-              title: 'KairoTasks',
+              title: 'Kairo',
               debugShowCheckedModeBanner: false,
               theme: AppTheme.light,
               darkTheme: AppTheme.dark,

@@ -85,7 +85,7 @@ Future<void> main() async {
   };
 
   runZonedGuarded<void>(
-    () => runApp(KairoTasksApp(initialLocation: initialLocation)),
+    () => runApp(KairoApp(initialLocation: initialLocation)),
     (error, stackTrace) {
       LoggerService.instance.error(
         'Uncaught zone error',

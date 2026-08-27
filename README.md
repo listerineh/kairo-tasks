@@ -1,12 +1,12 @@
-# KairoTasks
+# Kairo
 
 <p align="center">
-  <img src="assets/icons/app_icon.svg" alt="KairoTasks logo" width="120" height="120">
+  <img src="assets/icons/app_icon.svg" alt="Kairo logo" width="120" height="120">
 </p>
 
 > A collaborative productivity app that elevates the classic todo list with real-time social features, calendar views, and accessibility-first design.
 
-**KairoTasks** (from Greek *kairos* - "the opportune moment") helps you manage tasks while staying connected with friends and teammates. See each other's availability, share tasks, and collaborate in real-time.
+**Kairo** (from Greek *kairos* - "the opportune moment") helps you manage tasks while staying connected with friends and teammates. See each other's availability, share tasks, and collaborate in real-time.
 
 ---
 

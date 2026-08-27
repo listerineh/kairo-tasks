@@ -1,4 +1,4 @@
-# KairoTasks - Project Guidelines
+# Kairo - Project Guidelines
 
 > Collaborative productivity app built with Flutter + Supabase. "Kairo" comes from the Greek concept of the opportune moment.
 
@@ -6,7 +6,7 @@
 
 ## Project Overview
 
-KairoTasks is a mobile-first collaborative task management app with:
+Kairo is a mobile-first collaborative task management app with:
 - Real-time task synchronization between users
 - Calendar and priority views
 - Social features (friends, shared calendars, shared tasks)

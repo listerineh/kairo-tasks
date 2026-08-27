@@ -1,4 +1,4 @@
-# KairoTasks - Design System
+# Kairo - Design System
 
 > Zen/Calm Editorial design language with accessibility-first principles.
 

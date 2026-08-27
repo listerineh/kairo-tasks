@@ -1,7 +1,7 @@
 class AppConstants {
   AppConstants._();
 
-  static const String appName = 'KairoTasks';
+  static const String appName = 'Kairo';
   static const String appTagline = 'Your collaborative moment';
 
   // Supabase - injected via --dart-define-from-file=.env
