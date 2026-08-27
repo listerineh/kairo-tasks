@@ -17,6 +17,7 @@ Format: **V xx.yy.zz**
 - Translated all recent `CHANGELOG` entries and strings to English
 - Hardcoded Spanish text in `streak_celebration.dart` and `notification_service.dart` is now English
 - `app_es.arb` remains the Spanish locale resource file
+- Re-enabled `Preview mascot states` button on the dashboard
 
 ---
 

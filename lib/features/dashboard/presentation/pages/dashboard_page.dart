@@ -98,6 +98,11 @@ class DashboardPage extends StatelessWidget {
                       children: [
                         const SizedBox(height: AppSpacing.spacing16),
                         MascotWidget(state: mascotState, streak: streak),
+                        const SizedBox(height: AppSpacing.spacing8),
+                        TextButton(
+                          onPressed: () => context.go('/mascot-preview'),
+                          child: const Text('Preview mascot states'),
+                        ),
                       ],
                     ),
                   ),
