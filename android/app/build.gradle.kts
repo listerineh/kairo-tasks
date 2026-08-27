@@ -37,6 +37,15 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            output.outputFileName =
+                "KairoTasks-${defaultConfig.versionName.orEmpty()}+${defaultConfig.versionCode ?: 0}-${variant.buildType.name}.apk"
+        }
+    }
 }
 
 kotlin {

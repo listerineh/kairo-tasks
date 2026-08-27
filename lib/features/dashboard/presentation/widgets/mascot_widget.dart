@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -22,22 +23,57 @@ class MascotWidget extends StatefulWidget {
 }
 
 class _MascotWidgetState extends State<MascotWidget>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _controller;
+  late final AnimationController _meowController;
+  late final math.Random _random;
+  Timer? _meowTimer;
+  String? _meowText;
 
   @override
   void initState() {
     super.initState();
+    _random = math.Random();
     _controller = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     )..repeat();
+    _meowController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..addStatusListener((status) {
+        if (status == AnimationStatus.completed && mounted) {
+          setState(() => _meowText = null);
+        }
+      });
+    _scheduleMeow();
   }
 
   @override
   void dispose() {
+    _meowTimer?.cancel();
+    _meowController.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _scheduleMeow() {
+    _meowTimer?.cancel();
+    if (widget.state != MascotState.normal &&
+        widget.state != MascotState.happy &&
+        widget.state != MascotState.sad &&
+        widget.state != MascotState.sleeping) {
+      _meowText = null;
+      return;
+    }
+    final delay = Duration(seconds: 5 + _random.nextInt(26));
+    _meowTimer = Timer(delay, () {
+      if (!mounted) return;
+      final aCount = 1 + _random.nextInt(5);
+      setState(() => _meowText = 'M${'A' * aCount}U');
+      _meowController.forward(from: 0);
+      _scheduleMeow();
+    });
   }
 
   @override
@@ -50,13 +86,29 @@ class _MascotWidgetState extends State<MascotWidget>
         SizedBox(
           width: 120,
           height: 120,
-          child: CustomPaint(
-            painter: MascotPainter(
-              state: widget.state,
-              animation: _controller,
-              color: color,
-            ),
-            size: const Size(120, 120),
+          child: Stack(
+            children: [
+              CustomPaint(
+                painter: MascotPainter(
+                  state: widget.state,
+                  animation: _controller,
+                  color: color,
+                  meowAnimation: _meowController,
+                  isMeowing: _meowText != null,
+                ),
+                size: const Size(120, 120),
+              ),
+              if (_meowText != null)
+                Positioned.fill(
+                  child: Align(
+                    alignment: const Alignment(0, 0.1),
+                    child: _MeowParticle(
+                      text: _meowText!,
+                      animation: _meowController,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
         const SizedBox(height: AppSpacing.spacing8),
@@ -66,16 +118,66 @@ class _MascotWidgetState extends State<MascotWidget>
   }
 }
 
+class _MeowParticle extends StatelessWidget {
+  const _MeowParticle({
+    required this.text,
+    required this.animation,
+  });
+
+  final String text;
+  final Animation<double> animation;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        final t = animation.value;
+        final opacity = 1.0 - t;
+        final scale = 0.5 + 1.5 * t;
+        final dx = 55.0 * t;
+        final dy = -50.0 * t;
+        return Opacity(
+          opacity: opacity,
+          child: Transform.translate(
+            offset: Offset(dx, dy),
+            child: Transform.scale(
+              scale: scale,
+              alignment: Alignment.center,
+              child: Text(
+                text,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class MascotPainter extends CustomPainter {
   MascotPainter({
     required this.state,
     required this.animation,
     required this.color,
-  }) : super(repaint: animation);
+    this.meowAnimation,
+    this.isMeowing = false,
+  }) : super(
+          repaint: Listenable.merge(
+            [animation, if (meowAnimation != null) meowAnimation],
+          ),
+        );
 
   final MascotState state;
   final Animation<double> animation;
   final Color color;
+  final Animation<double>? meowAnimation;
+  final bool isMeowing;
   static const double _viewBox = 400;
   static const Color _strokeColor = Color(0xFF141414);
 
@@ -118,8 +220,19 @@ class MascotPainter extends CustomPainter {
       ..scale(s * bodyScale);
 
     // Tail (drawn first so it appears behind the body).
-    if (state == MascotState.normal) {
-      final tailAngle = math.sin(t * math.pi * 2) * 0.15;
+    if (state == MascotState.normal ||
+        state == MascotState.happy ||
+        state == MascotState.sad ||
+        state == MascotState.sleeping) {
+      final (tailSpeed, tailAmp) = switch (state) {
+        MascotState.sad => (math.pi, 0.04),
+        MascotState.sleeping => (math.pi, 0.0),
+        _ => (math.pi * 2, 0.06),
+      };
+      final tailAngle = switch (state) {
+        MascotState.sleeping => -0.08 + 0.06 * math.sin(t * math.pi),
+        _ => math.sin(t * tailSpeed) * tailAmp,
+      };
       canvas
         ..save()
         ..translate(-300, -310)
@@ -132,11 +245,22 @@ class MascotPainter extends CustomPainter {
     }
 
     _drawBackLegs(canvas, fillPaint, strokePaint);
-    _drawEars(canvas, fillPaint, strokePaint);
+
+    final earShift = switch (state) {
+      MascotState.happy => math.sin(t * math.pi * 3) * 6,
+      MascotState.normal => math.sin(t * math.pi * 2) * 6,
+      MascotState.sad => math.sin(t * math.pi) * 4,
+      MascotState.sleeping => math.sin(t * math.pi) * 2,
+    };
+    canvas..save()..translate(-earShift, 0);
+    _drawLeftEar(canvas, fillPaint, strokePaint);
+    canvas..restore()..save()..translate(earShift, 0);
+    _drawRightEar(canvas, fillPaint, strokePaint);
+    canvas.restore();
     _drawBody(canvas, fillPaint, strokePaint);
     _drawWhiskers(canvas, strokePaint);
     _drawFace(canvas, blackFill, strokePaint);
-    _drawFrontPaws(canvas, fillPaint, strokePaint);
+    _drawFrontPaws(canvas, strokePaint);
 
     canvas.restore();
   }
@@ -165,18 +289,22 @@ class MascotPainter extends CustomPainter {
     canvas..drawPath(left, fill)..drawPath(left, stroke)..drawPath(right, fill)..drawPath(right, stroke);
   }
 
-  void _drawEars(Canvas canvas, Paint fill, Paint stroke) {
+  void _drawLeftEar(Canvas canvas, Paint fill, Paint stroke) {
     final left = Path()
       ..moveTo(102, 145)
       ..cubicTo(75, 75, 92, 48, 132, 45)
       ..cubicTo(165, 43, 172, 85, 176, 115)
       ..close();
+    canvas..drawPath(left, fill)..drawPath(left, stroke);
+  }
+
+  void _drawRightEar(Canvas canvas, Paint fill, Paint stroke) {
     final right = Path()
       ..moveTo(298, 145)
       ..cubicTo(325, 75, 308, 48, 268, 45)
       ..cubicTo(235, 43, 228, 85, 224, 115)
       ..close();
-    canvas..drawPath(left, fill)..drawPath(left, stroke)..drawPath(right, fill)..drawPath(right, stroke);
+    canvas..drawPath(right, fill)..drawPath(right, stroke);
   }
 
   void _drawBody(Canvas canvas, Paint fill, Paint stroke) {
@@ -199,34 +327,58 @@ class MascotPainter extends CustomPainter {
   }
 
   void _drawWhiskers(Canvas canvas, Paint stroke) {
-    final left = Path()
-      ..moveTo(88, 244)
-      ..cubicTo(98, 254, 110, 258, 122, 260);
-    final right = Path()
-      ..moveTo(312, 244)
-      ..cubicTo(302, 254, 290, 258, 278, 260);
-    canvas..drawPath(left, stroke)..drawPath(right, stroke);
+    // Whiskers intentionally left empty for now.
   }
 
   void _drawFace(Canvas canvas, Paint blackFill, Paint stroke) {
+    final meowProgress =
+        isMeowing && meowAnimation != null ? meowAnimation!.value : 0.0;
     switch (state) {
       case MascotState.normal:
-        _drawOpenEyes(canvas, blackFill);
-        _drawNose(canvas, blackFill);
+        _drawOpenEyes(canvas, blackFill, stroke);
+        if (meowProgress > 0) {
+          _drawMeowingMouth(canvas, blackFill, meowProgress);
+        } else {
+          _drawMouth(canvas, stroke, isSmile: true, isTiny: true);
+        }
       case MascotState.happy:
-        _drawOpenEyes(canvas, blackFill);
-        _drawMouth(canvas, stroke, isSmile: true);
+        _drawOpenEyes(canvas, blackFill, stroke);
+        if (meowProgress > 0) {
+          _drawMeowingMouth(canvas, blackFill, meowProgress);
+        } else {
+          _drawHappyMouth(canvas, blackFill);
+        }
       case MascotState.sad:
-        _drawOpenEyes(canvas, blackFill);
-        _drawMouth(canvas, stroke, isSmile: false);
-        _drawTear(canvas, blackFill);
+        _drawOpenEyes(canvas, blackFill, stroke);
+        if (meowProgress > 0) {
+          _drawMeowingMouth(canvas, blackFill, meowProgress);
+        } else {
+          _drawMouth(canvas, stroke, isSmile: false, isTiny: false);
+        }
+        _drawTear(canvas);
       case MascotState.sleeping:
         _drawClosedEyes(canvas, stroke);
-        _drawSnotBubble(canvas);
+        if (meowProgress > 0) {
+          _drawMeowingMouth(canvas, blackFill, meowProgress);
+        } else {
+          _drawMouth(canvas, stroke, isSmile: false, isTiny: true);
+        }
+        _drawSnotBubble(canvas, meowProgress);
     }
   }
 
-  void _drawOpenEyes(Canvas canvas, Paint blackFill) {
+  void _drawOpenEyes(Canvas canvas, Paint blackFill, Paint stroke) {
+    final t = animation.value;
+    final isBlinking = switch (state) {
+      MascotState.normal => (t > 0.92 && t < 0.96),
+      MascotState.happy => (t > 0.90 && t < 0.96),
+      MascotState.sad => (t > 0.70 && t < 0.95),
+      _ => false,
+    };
+    if (isBlinking) {
+      _drawClosedEyes(canvas, stroke);
+      return;
+    }
     canvas
       ..drawOval(
         Rect.fromCenter(center: const Offset(166, 180), width: 24, height: 28),
@@ -238,28 +390,58 @@ class MascotPainter extends CustomPainter {
       );
   }
 
-  void _drawNose(Canvas canvas, Paint blackFill) {
-    final nose = Path()
-      ..moveTo(200, 205)
-      ..lineTo(195, 215)
-      ..lineTo(205, 215)
-      ..close();
-    canvas.drawPath(nose, blackFill);
-  }
-
-  void _drawMouth(Canvas canvas, Paint stroke, {required bool isSmile}) {
+  void _drawMouth(
+    Canvas canvas,
+    Paint stroke, {
+    required bool isSmile,
+    bool isTiny = false,
+  }) {
+    final controlY = isSmile
+        ? (isTiny ? 230.0 : 235.0)
+        : 215.0;
+    final width = isTiny ? 8.0 : 10.0;
     final mouth = Path()
-      ..moveTo(190, 225)
-      ..quadraticBezierTo(200, isSmile ? 215 : 235, 210, 225);
+      ..moveTo(200 - width, 225)
+      ..quadraticBezierTo(200, controlY, 200 + width, 225);
     canvas.drawPath(mouth, stroke);
   }
 
-  void _drawTear(Canvas canvas, Paint blackFill) {
+  void _drawMeowingMouth(
+    Canvas canvas,
+    Paint blackFill,
+    double meowProgress,
+  ) {
+    final open = math.sin(meowProgress * math.pi).clamp(0.0, 1.0);
+    final h = 4.0 + 10.0 * open;
+    canvas.drawOval(
+      Rect.fromCenter(center: const Offset(200, 228), width: 14, height: h),
+      blackFill,
+    );
+  }
+
+  void _drawHappyMouth(Canvas canvas, Paint blackFill) {
     final t = animation.value;
-    final y = 200 + (t * 25) % 25;
+    final open = (0.5 + 0.5 * math.sin(t * math.pi * 4)).clamp(0.0, 1.0);
+    final w = 22.0 + 6.0 * open;
+    final h = 16.0 + 10.0 * open;
+    const top = 222.0;
+    final bottom = top + h;
+    final mouth = Path()
+      ..moveTo(200 - w, top)
+      ..cubicTo(200 - w, bottom, 200 + w, bottom, 200 + w, top)
+      ..close();
+    canvas.drawPath(mouth, blackFill);
+  }
+
+  void _drawTear(Canvas canvas) {
+    final t = animation.value;
+    final y = 200.0 + t * 35.0;
+    final opacity = (1.0 - t).clamp(0.0, 1.0);
+    final tearPaint = Paint()
+      ..color = _strokeColor.withValues(alpha: opacity);
     canvas.drawOval(
       Rect.fromCenter(center: Offset(166, y), width: 6, height: 9),
-      blackFill,
+      tearPaint,
     );
   }
 
@@ -269,9 +451,11 @@ class MascotPainter extends CustomPainter {
       ..drawLine(const Offset(222, 180), const Offset(246, 180), stroke);
   }
 
-  void _drawSnotBubble(Canvas canvas) {
+  void _drawSnotBubble(Canvas canvas, double meowProgress) {
     final t = animation.value;
-    final radius = 6 + 2 * math.sin(t * math.pi * 2);
+    final baseRadius = 6.0 + 4.0 * math.sin(t * math.pi);
+    final radius =
+        meowProgress > 0 ? baseRadius * (1.0 - meowProgress) : baseRadius;
     final bubblePaint = Paint()
       ..color = _strokeColor
       ..style = PaintingStyle.stroke
@@ -279,18 +463,14 @@ class MascotPainter extends CustomPainter {
     canvas.drawCircle(const Offset(235, 205), radius, bubblePaint);
   }
 
-  void _drawFrontPaws(Canvas canvas, Paint fill, Paint stroke) {
+  void _drawFrontPaws(Canvas canvas, Paint stroke) {
     final left = Path()
-      ..moveTo(148, 290)
-      ..cubicTo(146, 322, 148, 354, 172, 354)
-      ..cubicTo(188, 354, 192, 334, 192, 292)
-      ..close();
+      ..moveTo(145, 310)
+      ..cubicTo(145, 360, 185, 360, 185, 310);
     final right = Path()
-      ..moveTo(252, 290)
-      ..cubicTo(254, 322, 252, 354, 228, 354)
-      ..cubicTo(212, 354, 208, 334, 208, 292)
-      ..close();
-    canvas..drawPath(left, fill)..drawPath(left, stroke)..drawPath(right, fill)..drawPath(right, stroke);
+      ..moveTo(215, 310)
+      ..cubicTo(215, 360, 255, 360, 255, 310);
+    canvas..drawPath(left, stroke)..drawPath(right, stroke);
   }
 
   @override

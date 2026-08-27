@@ -10,6 +10,23 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.16.00 - Mascot states, MIAU and release APK naming (2026-08-27)
+
+### Changed in V 01.16.00
+
+- Added animated `MIAU` speech to the mascot for all four states (`normal`, `happy`, `sad`, `sleeping`)
+  - Random `MIAU` variants with 1-5 `A`s (`MIAU`, `MIAAU`, `MIAAAU`, etc.)
+  - Triggered at random intervals between 5 and 30 seconds
+  - Animated mouth opening and particle text that grows, fades and moves toward the upper-right
+- `normal` state: tail wag, blinking, small smile and meowing
+- `happy` state: big `:D` smile, faster ear wiggle, tail wag, longer blink and meowing
+- `sad` state: slow ear and tail movement, long closed-eyes blink, falling tear that fades out, meowing
+- `sleeping` state: very slow ear and tail movement, breathing snot bubble that pops when meowing and respawns
+- Removed `MascotPreviewPage` and its `/mascot-preview` route from the dashboard
+- Release APKs now named `KairoTasks-{versionName}+{versionCode}-{buildType}.apk`
+
+---
+
 ## V 01.15.06 - MascotPainter from original SVG (2026-08-26)
 
 ### Changed in V 01.15.06

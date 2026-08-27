@@ -58,6 +58,12 @@
 - 4-step first-launch tour with Skip/Get started
 - Only shown once; stored in `SharedPreferences`
 
+### Mascot
+- A custom `CustomPainter` cat that reflects your daily momentum
+- States: `normal` (pending tasks), `happy` (done for the day), `sad` (no recent progress), `sleeping` (rest day)
+- Subtle animations: tail wag, blinking, ear wiggles, falling tear, breathing snot bubble
+- Random `MIAU` speech with an animated mouth and particle text
+
 ### Internationalization
 - Bilingual English/Spanish support using Flutter ARB files (`lib/l10n/app_en.arb`, `lib/l10n/app_es.arb`)
 - Generated `AppLocalizations` accessible via `context.l10n`

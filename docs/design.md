@@ -96,6 +96,16 @@ Each day/week task block communicates ownership, priority, and sharing at a glan
 - Tapping the chip opens a color picker to change the friend's calendar color
 - Colors are stored per-side (`requester_color` / `addressee_color`) so each user can customize their own view
 
+### Mascot
+- A chubby, tender cat rendered entirely with `CustomPainter` (`MascotPainter`)
+- Only two colors: the app `accent` fill and `Color(0xFF141414)` for strokes and eyes
+- Four emotional states driven by the user's daily task progress:
+  - `normal`: small smile, blinking, tail wag
+  - `happy`: big `:D` smile, fast ear wiggle, jumping, meowing
+  - `sad`: droopy ears, slow tail, long closed-eye blinks, falling tear
+  - `sleeping`: closed eyes, slow breathing snot bubble, meowing pops the bubble
+- Occasional `MIAU` text with 1-5 `A`s, animated from the mouth to the upper-right
+
 ---
 
 ## Typography
