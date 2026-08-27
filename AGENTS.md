@@ -162,6 +162,11 @@ The latest `CHANGELOG.md` entry is the single source of truth for the current ap
 2. Use the latest changelog version when naming APKs, referencing releases, or communicating the current version.
 3. Keep `CHANGELOG.md` in sync with shipped features, fixes, and migrations.
 
+## Git
+
+- Commits must be made in the user's name only.
+- Do not include `Co-Authored-By: Devin` or any bot attribution in commit messages.
+
 ## Contributing
 
 See [README.md](README.md) for contribution guidelines.
