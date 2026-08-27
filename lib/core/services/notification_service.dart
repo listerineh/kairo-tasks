@@ -13,6 +13,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../../app/router/app_router.dart';
 import '../../features/tasks/domain/entities/task_entity.dart';
+import 'logger_service.dart';
 
 // ignore_for_file: avoid_positional_boolean_parameters
 
@@ -86,50 +87,96 @@ class NotificationService {
       Firebase.apps.isNotEmpty;
 
   Future<void> initialize() async {
-    _prefs = await SharedPreferences.getInstance();
-
-    tz.initializeTimeZones();
-
-    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const darwinInit = DarwinInitializationSettings();
-    const initSettings = InitializationSettings(
-      android: androidInit,
-      iOS: darwinInit,
+    LoggerService.instance.info(
+      'Initializing notification service',
+      data: {'operation': 'notification.initialize'},
     );
-    await _flutterLocalNotificationsPlugin.initialize(initSettings);
 
-    const androidChannel = AndroidNotificationChannel(
-      'high_importance_channel',
-      'High Importance Notifications',
-      description: 'This channel is used for important notifications.',
-      importance: Importance.high,
-    );
-    await _flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(androidChannel);
+    try {
+      _prefs = await SharedPreferences.getInstance();
 
-    if (_fcmAvailable) {
-      _messaging = FirebaseMessaging.instance;
-      FirebaseMessaging.onBackgroundMessage(
-        _firebaseMessagingBackgroundHandler,
+      tz.initializeTimeZones();
+
+      const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const darwinInit = DarwinInitializationSettings();
+      const initSettings = InitializationSettings(
+        android: androidInit,
+        iOS: darwinInit,
       );
-      FirebaseMessaging.onMessage.listen(_onForegroundMessage);
-      FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpened);
-      _messaging!.onTokenRefresh.listen(_onTokenRefresh);
-      final initial = await _messaging.getInitialMessage();
-      if (initial != null) _navigateFromMessage(initial);
+      await _flutterLocalNotificationsPlugin.initialize(initSettings);
+
+      const androidChannel = AndroidNotificationChannel(
+        'high_importance_channel',
+        'High Importance Notifications',
+        description: 'This channel is used for important notifications.',
+        importance: Importance.high,
+      );
+      await _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(androidChannel);
+
+      LoggerService.instance.info(
+        'Local notifications initialized',
+        data: {'operation': 'notification.initialize'},
+      );
+
+      if (_fcmAvailable) {
+        LoggerService.instance.info(
+          'FCM is available',
+          data: {'operation': 'notification.initialize'},
+        );
+        _messaging = FirebaseMessaging.instance;
+        FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler,
+        );
+        FirebaseMessaging.onMessage.listen(_onForegroundMessage);
+        FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpened);
+        _messaging!.onTokenRefresh.listen(_onTokenRefresh);
+        final initial = await _messaging.getInitialMessage();
+        if (initial != null) _navigateFromMessage(initial);
+      } else {
+        LoggerService.instance.info(
+          'FCM is unavailable',
+          data: {'operation': 'notification.initialize'},
+        );
+        _messaging = null;
+      }
+    } on Exception catch (e) {
+      LoggerService.instance.error(
+        'Notification service initialization failed',
+        data: {'operation': 'notification.initialize', 'error': e.toString()},
+      );
     }
   }
 
   Future<bool> requestPermission() async {
+    final platform = Platform.isAndroid
+        ? 'android'
+        : Platform.isIOS
+            ? 'ios'
+            : 'unknown';
+    LoggerService.instance.info(
+      'Requesting notification permission',
+      data: {'operation': 'notification.requestPermission', 'platform': platform},
+    );
+
     if (Platform.isAndroid) {
       final androidImplementation = _flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
       final granted =
           await androidImplementation?.requestNotificationsPermission();
-      return granted ?? true;
+      final result = granted ?? true;
+      LoggerService.instance.info(
+        'Notification permission result',
+        data: {
+          'operation': 'notification.requestPermission',
+          'platform': platform,
+          'granted': result,
+        },
+      );
+      return result;
     }
 
     if (Platform.isIOS) {
@@ -138,20 +185,58 @@ class NotificationService {
         badge: true,
         sound: true,
       );
-      return settings.authorizationStatus == AuthorizationStatus.authorized;
+      final granted =
+          settings.authorizationStatus == AuthorizationStatus.authorized;
+      LoggerService.instance.info(
+        'Notification permission result',
+        data: {
+          'operation': 'notification.requestPermission',
+          'platform': platform,
+          'granted': granted,
+        },
+      );
+      return granted;
     }
 
+    LoggerService.instance.info(
+      'Notification permission not supported on this platform',
+      data: {'operation': 'notification.requestPermission', 'platform': platform},
+    );
     return false;
   }
 
   Future<void> registerFcmToken() async {
-    if (!_fcmAvailable) return;
+    if (!_fcmAvailable) {
+      LoggerService.instance.info(
+        'FCM token registration skipped, FCM unavailable',
+        data: {'operation': 'notification.registerFcmToken'},
+      );
+      return;
+    }
 
     final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      LoggerService.instance.info(
+        'FCM token registration skipped, no authenticated user',
+        data: {'operation': 'notification.registerFcmToken'},
+      );
+      return;
+    }
+
+    LoggerService.instance.info(
+      'Registering FCM token',
+      data: {'operation': 'notification.registerFcmToken'},
+    );
 
     try {
       final token = await _messaging!.getToken();
+      LoggerService.instance.info(
+        'FCM token retrieved',
+        data: {
+          'operation': 'notification.registerFcmToken',
+          'token_length': token?.length,
+        },
+      );
       if (token == null) return;
 
       await Supabase.instance.client
@@ -159,9 +244,10 @@ class NotificationService {
           .update({'fcm_token': token})
           .eq('id', user.id);
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('FCM token registration failed: $e');
-      }
+      LoggerService.instance.error(
+        'FCM token registration failed',
+        data: {'operation': 'notification.registerFcmToken', 'error': e.toString()},
+      );
     }
   }
 
@@ -397,22 +483,43 @@ class NotificationService {
     required String body,
     int id = 0,
   }) async {
-    await _flutterLocalNotificationsPlugin.show(
-      id,
-      title,
-      body,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'high_importance_channel',
-          'High Importance Notifications',
-          channelDescription:
-              'This channel is used for important notifications.',
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-        iOS: DarwinNotificationDetails(),
-      ),
+    LoggerService.instance.info(
+      'Showing local notification',
+      data: {
+        'operation': 'notification.showLocalNotification',
+        'title': title,
+        'id': id,
+      },
     );
+
+    try {
+      await _flutterLocalNotificationsPlugin.show(
+        id,
+        title,
+        body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'high_importance_channel',
+            'High Importance Notifications',
+            channelDescription:
+                'This channel is used for important notifications.',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+      );
+    } catch (e) {
+      LoggerService.instance.error(
+        'Failed to show local notification',
+        data: {
+          'operation': 'notification.showLocalNotification',
+          'title': title,
+          'id': id,
+          'error': e.toString(),
+        },
+      );
+    }
   }
 
   Future<void> _onForegroundMessage(RemoteMessage message) async {
@@ -421,31 +528,66 @@ class NotificationService {
     final notification = message.notification;
     if (notification == null) return;
 
-    await showLocalNotification(
-      title: notification.title ??
-          (message.data['title'] as String?) ??
-          'KairoTasks',
-      body: notification.body ?? (message.data['body'] as String?) ?? '',
-      id: message.messageId?.hashCode ?? 0,
+    LoggerService.instance.info(
+      'FCM foreground message received',
+      data: {
+        'operation': 'notification.onForegroundMessage',
+        'message_id': message.messageId,
+        'title': notification.title,
+      },
     );
+
+    try {
+      await showLocalNotification(
+        title: notification.title ??
+            (message.data['title'] as String?) ??
+            'KairoTasks',
+        body: notification.body ?? (message.data['body'] as String?) ?? '',
+        id: message.messageId?.hashCode ?? 0,
+      );
+    } catch (e) {
+      LoggerService.instance.error(
+        'Failed to show foreground notification',
+        data: {
+          'operation': 'notification.onForegroundMessage',
+          'message_id': message.messageId,
+          'error': e.toString(),
+        },
+      );
+    }
   }
 
   void _onMessageOpened(RemoteMessage message) {
+    final type = message.data['type'] as String? ?? '';
+    LoggerService.instance.info(
+      'Notification opened from background',
+      data: {'operation': 'notification.onMessageOpened', 'type': type},
+    );
     _navigateFromMessage(message);
   }
 
   Future<void> _onTokenRefresh(String token) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
+
+    LoggerService.instance.info(
+      'FCM token refreshed',
+      data: {
+        'operation': 'notification.onTokenRefresh',
+        'token_length': token.length,
+      },
+    );
+
     try {
       await Supabase.instance.client
           .from('profiles')
           .update({'fcm_token': token})
           .eq('id', user.id);
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('FCM token refresh update failed: $e');
-      }
+      LoggerService.instance.error(
+        'FCM token refresh update failed',
+        data: {'operation': 'notification.onTokenRefresh', 'error': e.toString()},
+      );
     }
   }
 

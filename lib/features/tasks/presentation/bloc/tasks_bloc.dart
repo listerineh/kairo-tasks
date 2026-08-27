@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/services/logger_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../domain/entities/task_entity.dart';
 
@@ -251,11 +252,19 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     TasksLoadRequested event,
     Emitter<TasksState> emit,
   ) async {
+    LoggerService.instance.info(
+      'Loading tasks',
+      data: {'operation': 'tasks.loadTasks'},
+    );
     emit(state.copyWith(status: TasksStatus.loading));
 
     try {
       final tasks = await _fetchTasks();
       emit(state.copyWith(status: TasksStatus.loaded, tasks: tasks));
+      LoggerService.instance.info(
+        'Tasks loaded',
+        data: {'operation': 'tasks.loadTasks', 'count': tasks.length},
+      );
       await NotificationService.instance.rescheduleMorningSummary(tasks);
 
       // Subscribe to realtime changes on tasks
@@ -278,6 +287,10 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
           .order('created_at', ascending: false)
           .listen((_) => add(const _TasksReloadFromStream()));
     } catch (e) {
+      LoggerService.instance.error(
+        'Failed to load tasks',
+        data: {'operation': 'tasks.loadTasks', 'error': e.toString()},
+      );
       emit(
         state.copyWith(
           status: TasksStatus.error,
@@ -326,6 +339,16 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     TaskCreateRequested event,
     Emitter<TasksState> emit,
   ) async {
+    LoggerService.instance.info(
+      'Creating task',
+      data: {
+        'operation': 'tasks.createTask',
+        'title': event.title,
+        'priority': event.priority.name,
+        'status': 'pending',
+      },
+    );
+
     try {
       final result = await _client
           .from('tasks')
@@ -379,6 +402,16 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
 
       // Realtime stream will update the list automatically
     } catch (e) {
+      LoggerService.instance.error(
+        'Failed to create task',
+        data: {
+          'operation': 'tasks.createTask',
+          'title': event.title,
+          'priority': event.priority.name,
+          'status': 'pending',
+          'error': e.toString(),
+        },
+      );
       emit(state.copyWith(errorMessage: 'Failed to create task: $e'));
     }
   }
@@ -387,6 +420,11 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     TaskEditRequested event,
     Emitter<TasksState> emit,
   ) async {
+    LoggerService.instance.info(
+      'Editing task',
+      data: {'operation': 'tasks.editTask', 'task_id': event.taskId},
+    );
+
     try {
       await _client.from('tasks').update({
         'title': event.title,
@@ -435,6 +473,14 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
         }
       }
     } catch (e) {
+      LoggerService.instance.error(
+        'Failed to edit task',
+        data: {
+          'operation': 'tasks.editTask',
+          'task_id': event.taskId,
+          'error': e.toString(),
+        },
+      );
       emit(state.copyWith(errorMessage: 'Failed to edit task: $e'));
     }
   }
@@ -447,6 +493,15 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     final newStatus =
         task.status == TaskStatus.completed ? 'pending' : 'completed';
 
+    LoggerService.instance.info(
+      'Toggling task status',
+      data: {
+        'operation': 'tasks.toggleStatus',
+        'task_id': event.taskId,
+        'new_status': newStatus,
+      },
+    );
+
     try {
       await _client
           .from('tasks')
@@ -456,6 +511,15 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
         await NotificationService.instance.cancelTaskReminder(event.taskId);
       }
     } catch (e) {
+      LoggerService.instance.error(
+        'Failed to toggle task status',
+        data: {
+          'operation': 'tasks.toggleStatus',
+          'task_id': event.taskId,
+          'new_status': newStatus,
+          'error': e.toString(),
+        },
+      );
       emit(state.copyWith(errorMessage: 'Failed to update task: $e'));
     }
   }
@@ -464,10 +528,23 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     TaskDeleted event,
     Emitter<TasksState> emit,
   ) async {
+    LoggerService.instance.info(
+      'Deleting task',
+      data: {'operation': 'tasks.deleteTask', 'task_id': event.taskId},
+    );
+
     try {
       await _client.from('tasks').delete().eq('id', event.taskId);
       await NotificationService.instance.cancelTaskReminder(event.taskId);
     } catch (e) {
+      LoggerService.instance.error(
+        'Failed to delete task',
+        data: {
+          'operation': 'tasks.deleteTask',
+          'task_id': event.taskId,
+          'error': e.toString(),
+        },
+      );
       emit(state.copyWith(errorMessage: 'Failed to delete task: $e'));
     }
   }

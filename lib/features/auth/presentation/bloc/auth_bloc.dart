@@ -9,6 +9,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/services/logger_service.dart';
+
 // Events
 abstract class AuthEvent extends Equatable {
   const AuthEvent();
@@ -122,6 +124,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthSignInRequested event,
     Emitter<AuthState> emit,
   ) async {
+    LoggerService.instance.info(
+      'Signing in',
+      data: {'operation': 'auth.signIn', 'provider': 'email'},
+    );
     emit(state.copyWith(status: AuthStatus.loading));
     try {
       final response = await _client.auth.signInWithPassword(
@@ -134,7 +140,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           user: response.user,
         ),
       );
+      LoggerService.instance.info(
+        'Sign in successful',
+        data: {
+          'operation': 'auth.signIn',
+          'provider': 'email',
+          'user_id': response.user?.id,
+        },
+      );
     } on AuthException catch (e) {
+      LoggerService.instance.error(
+        'Sign in failed',
+        data: {
+          'operation': 'auth.signIn',
+          'provider': 'email',
+          'error': e.message,
+        },
+      );
       emit(
         state.copyWith(
           status: AuthStatus.error,
@@ -148,6 +170,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthSignUpRequested event,
     Emitter<AuthState> emit,
   ) async {
+    LoggerService.instance.info(
+      'Signing up',
+      data: {'operation': 'auth.signUp', 'provider': 'email'},
+    );
     emit(state.copyWith(status: AuthStatus.loading));
     try {
       final response = await _client.auth.signUp(
@@ -165,6 +191,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             user: response.user,
           ),
         );
+        LoggerService.instance.info(
+          'Sign up successful',
+          data: {
+            'operation': 'auth.signUp',
+            'provider': 'email',
+            'user_id': response.user?.id,
+          },
+        );
       } else {
         // Email confirmation required
         emit(
@@ -175,6 +209,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
       }
     } on AuthException catch (e) {
+      LoggerService.instance.error(
+        'Sign up failed',
+        data: {
+          'operation': 'auth.signUp',
+          'provider': 'email',
+          'error': e.message,
+        },
+      );
       emit(
         state.copyWith(
           status: AuthStatus.error,
@@ -188,6 +230,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthGoogleSignInRequested event,
     Emitter<AuthState> emit,
   ) async {
+    LoggerService.instance.info(
+      'Signing in with Google',
+      data: {'operation': 'auth.signIn', 'provider': 'google'},
+    );
     emit(state.copyWith(status: AuthStatus.loading));
     try {
       const webClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
@@ -253,7 +299,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           user: response.user,
         ),
       );
+      LoggerService.instance.info(
+        'Google sign in successful',
+        data: {
+          'operation': 'auth.signIn',
+          'provider': 'google',
+          'user_id': response.user?.id,
+        },
+      );
     } on AuthException catch (e) {
+      LoggerService.instance.error(
+        'Google sign in failed',
+        data: {
+          'operation': 'auth.signIn',
+          'provider': 'google',
+          'error': e.message,
+        },
+      );
       emit(
         state.copyWith(
           status: AuthStatus.error,
@@ -261,6 +323,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
     } on Exception catch (e) {
+      LoggerService.instance.error(
+        'Google sign in failed',
+        data: {
+          'operation': 'auth.signIn',
+          'provider': 'google',
+          'error': e.toString(),
+        },
+      );
       emit(
         state.copyWith(
           status: AuthStatus.error,
@@ -274,6 +344,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthAppleSignInRequested event,
     Emitter<AuthState> emit,
   ) async {
+    LoggerService.instance.info(
+      'Signing in with Apple',
+      data: {'operation': 'auth.signIn', 'provider': 'apple'},
+    );
     emit(state.copyWith(status: AuthStatus.loading));
     try {
       // Generate a secure nonce for Apple sign-in
@@ -311,10 +385,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           user: response.user,
         ),
       );
+      LoggerService.instance.info(
+        'Apple sign in successful',
+        data: {
+          'operation': 'auth.signIn',
+          'provider': 'apple',
+          'user_id': response.user?.id,
+        },
+      );
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) {
         emit(state.copyWith(status: AuthStatus.unauthenticated));
       } else {
+        LoggerService.instance.error(
+          'Apple sign in failed',
+          data: {
+            'operation': 'auth.signIn',
+            'provider': 'apple',
+            'error': e.message,
+          },
+        );
         emit(
           state.copyWith(
             status: AuthStatus.error,
@@ -323,6 +413,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
       }
     } on AuthException catch (e) {
+      LoggerService.instance.error(
+        'Apple sign in failed',
+        data: {
+          'operation': 'auth.signIn',
+          'provider': 'apple',
+          'error': e.message,
+        },
+      );
       emit(
         state.copyWith(
           status: AuthStatus.error,
@@ -330,6 +428,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
     } catch (e) {
+      LoggerService.instance.error(
+        'Apple sign in failed',
+        data: {
+          'operation': 'auth.signIn',
+          'provider': 'apple',
+          'error': e.toString(),
+        },
+      );
       emit(
         state.copyWith(
           status: AuthStatus.error,
@@ -343,8 +449,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthSignOutRequested event,
     Emitter<AuthState> emit,
   ) async {
+    LoggerService.instance.info(
+      'Signing out',
+      data: {'operation': 'auth.signOut'},
+    );
     await _client.auth.signOut();
     emit(const AuthState(status: AuthStatus.unauthenticated));
+    LoggerService.instance.info(
+      'Sign out successful',
+      data: {'operation': 'auth.signOut'},
+    );
   }
 
   String _generateNonce([int length = 32]) {

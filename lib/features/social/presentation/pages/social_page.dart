@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../../core/services/logger_service.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/widgets/kairo_header.dart';
@@ -75,6 +76,10 @@ class _SocialPageState extends State<SocialPage>
   }
 
   Future<void> _loadSocialData() async {
+    LoggerService.instance.info(
+      'Loading social data',
+      data: {'operation': 'social.loadSocialData'},
+    );
     setState(() => _isLoading = true);
     try {
       final userId = Supabase.instance.client.auth.currentUser?.id;
@@ -166,13 +171,30 @@ class _SocialPageState extends State<SocialPage>
         }).toList();
         _isLoading = false;
       });
+      LoggerService.instance.info(
+        'Social data loaded',
+        data: {
+          'operation': 'social.loadSocialData',
+          'friend_count': _friends.length,
+          'pending_count': _pendingRequests.length,
+        },
+      );
     } catch (e) {
+      LoggerService.instance.error(
+        'Failed to load social data',
+        data: {'operation': 'social.loadSocialData', 'error': e.toString()},
+      );
       setState(() => _isLoading = false);
       _showError('Could not load social data: $e');
     }
   }
 
   Future<void> _searchUsers(String query) async {
+    LoggerService.instance.info(
+      'Searching users',
+      data: {'operation': 'social.searchUsers', 'query': query},
+    );
+
     if (query.isEmpty) {
       setState(() => _searchResults = []);
       return;
@@ -200,6 +222,14 @@ class _SocialPageState extends State<SocialPage>
         }).toList();
       });
     } catch (e) {
+      LoggerService.instance.error(
+        'User search failed',
+        data: {
+          'operation': 'social.searchUsers',
+          'query': query,
+          'error': e.toString(),
+        },
+      );
       debugPrint(e.toString());
       setState(() => _searchResults = []);
       _showError('Could not search users: $e');
@@ -209,6 +239,11 @@ class _SocialPageState extends State<SocialPage>
   Future<void> _sendRequest(String addresseeId) async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return;
+
+    LoggerService.instance.info(
+      'Sending friend request',
+      data: {'operation': 'social.sendRequest', 'addressee_id': addresseeId},
+    );
 
     final l10n = context.l10n;
     try {
@@ -222,12 +257,29 @@ class _SocialPageState extends State<SocialPage>
       await _searchUsers(_searchController.text.trim());
       await _loadSocialData();
     } catch (e) {
+      LoggerService.instance.error(
+        'Failed to send friend request',
+        data: {
+          'operation': 'social.sendRequest',
+          'addressee_id': addresseeId,
+          'error': e.toString(),
+        },
+      );
       debugPrint(e.toString());
       _showError('Could not send request: $e');
     }
   }
 
   Future<void> _respondRequest(String requestId, String status) async {
+    LoggerService.instance.info(
+      'Responding to friend request',
+      data: {
+        'operation': 'social.respondRequest',
+        'friendship_id': requestId,
+        'status': status,
+      },
+    );
+
     final l10n = context.l10n;
     try {
       await Supabase.instance.client
@@ -241,12 +293,26 @@ class _SocialPageState extends State<SocialPage>
       await _loadSocialData();
       await _searchUsers(_searchController.text.trim());
     } catch (e) {
+      LoggerService.instance.error(
+        'Failed to respond to friend request',
+        data: {
+          'operation': 'social.respondRequest',
+          'friendship_id': requestId,
+          'status': status,
+          'error': e.toString(),
+        },
+      );
       debugPrint(e.toString());
       _showError('Could not respond to request: $e');
     }
   }
 
   Future<void> _removeFriend(String friendshipId) async {
+    LoggerService.instance.info(
+      'Removing friend',
+      data: {'operation': 'social.removeFriend', 'friendship_id': friendshipId},
+    );
+
     final l10n = context.l10n;
     try {
       await Supabase.instance.client
@@ -257,6 +323,14 @@ class _SocialPageState extends State<SocialPage>
       await _loadSocialData();
       await _searchUsers(_searchController.text.trim());
     } catch (e) {
+      LoggerService.instance.error(
+        'Failed to remove friend',
+        data: {
+          'operation': 'social.removeFriend',
+          'friendship_id': friendshipId,
+          'error': e.toString(),
+        },
+      );
       debugPrint(e.toString());
       _showError('Could not remove friend: $e');
     }
@@ -267,6 +341,15 @@ class _SocialPageState extends State<SocialPage>
     String color, {
     required bool isRequester,
   }) async {
+    LoggerService.instance.info(
+      'Updating friend color',
+      data: {
+        'operation': 'social.updateFriendColor',
+        'friendship_id': friendshipId,
+        'color': color,
+      },
+    );
+
     try {
       await Supabase.instance.client
           .from('friendships')
@@ -278,6 +361,15 @@ class _SocialPageState extends State<SocialPage>
       _showSuccess('Color saved');
       await _loadSocialData();
     } catch (e) {
+      LoggerService.instance.error(
+        'Failed to update friend color',
+        data: {
+          'operation': 'social.updateFriendColor',
+          'friendship_id': friendshipId,
+          'color': color,
+          'error': e.toString(),
+        },
+      );
       debugPrint(e.toString());
       _showError('Could not save color: $e');
     }

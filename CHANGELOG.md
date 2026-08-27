@@ -10,6 +10,18 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.14.01 - Instrument every major flow with logging (2026-08-26)
+
+### Added in V 01.14.01
+
+- `NotificationService` logs init, permission, FCM token registration, foreground messages and errors
+- `SocialPage` logs social load, search, send/accept/reject/remove friend and color updates
+- `TasksBloc` logs load, create, edit, status toggle and delete
+- `AuthBloc` logs sign-in/sign-up with email, Google and Apple, plus sign-out
+- Every caught error is sent to `LoggerService` with the operation name and relevant context
+
+---
+
 ## V 01.14.00 - Supabase logging and monitoring (2026-08-26)
 
 ### Added in V 01.14.00
