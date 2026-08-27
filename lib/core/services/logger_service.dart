@@ -37,10 +37,10 @@ class LoggerService {
   /// Generates a new trace id and returns it.
   String newTrace() => _traceId = _uuid.v4();
 
-  /// Collects device info and starts the periodic flush timer.
+  /// Starts device info collection in the background and the periodic flush timer.
   Future<void> init() async {
-    await _collectDeviceInfo();
     _traceId = _uuid.v4();
+    unawaited(_collectDeviceInfo());
     _flushTimer = Timer.periodic(
       const Duration(seconds: 5),
       (_) { flush(); },
