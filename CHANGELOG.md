@@ -10,7 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
-## V 01.15.03 - Redisenio del gatito (2026-08-26)
+## V 01.15.04 - English-only docs and hardcoded strings (2026-08-26)
+
+### Changed in V 01.15.04
+
+- Translated all recent `CHANGELOG` entries and strings to English
+- Hardcoded Spanish text in `streak_celebration.dart` and `notification_service.dart` is now English
+- `app_es.arb` remains the Spanish locale resource file
+
+---
+
+## V 01.15.03 - Mascot redesign (2026-08-26)
 
 ### Changed in V 01.15.03
 
@@ -26,20 +36,20 @@ Format: **V xx.yy.zz**
 
 ---
 
-## V 01.15.02 - Celebracion de racha y recordatorio 23:00 (2026-08-26)
+## V 01.15.02 - Streak celebration and 23:00 reminder (2026-08-26)
 
 ### Added in V 01.15.02
 
 - `TasksBloc` detects the first owned task completed each day and emits `streakToCelebrate`
-- `StreakCelebration` overlay shows the happy mascot, `+1 día de racha` and falling confetti for 2.5 seconds
-- New `NotificationService.showStreakNotification(int streak)` for instant `+1 día` push
+- `StreakCelebration` overlay shows the happy mascot, `+1 streak day` and falling confetti for 2.5 seconds
+- New `NotificationService.showStreakNotification(int streak)` for instant `+1 streak day` push
 - New `NotificationService.rescheduleStreakReminder({required bool hasCompletedToday})` that schedules a local notification at 23:00 if no task completed
 - The 23:00 reminder is cancelled/rescheduled automatically on task completion
 - Removed temporary `Preview mascot states` button from dashboard
 
 ---
 
-## V 01.15.01 - Gatito mas lindo y preview de estados (2026-08-26)
+## V 01.15.01 - Cuter mascot and state preview (2026-08-26)
 
 ### Added in V 01.15.01
 
@@ -53,7 +63,7 @@ Format: **V xx.yy.zz**
 
 ---
 
-## V 01.15.00 - Mascota gatito y racha (2026-08-26)
+## V 01.15.00 - Mascot cat and streak (2026-08-26)
 
 ### Added in V 01.15.00
 
@@ -235,7 +245,7 @@ Format: **V xx.yy.zz**
 ### Added in V 01.08.00
 
 - `LocaleService` to persist and apply app language
-- Language selector in Profile (Español / English)
+- Language selector in Profile (Spanish / English)
 - App locale updates immediately when selected
 - New `language`, `spanish`, `english` l10n keys
 

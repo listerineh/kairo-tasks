@@ -441,7 +441,7 @@ class NotificationService {
     await _flutterLocalNotificationsPlugin.zonedSchedule(
       _kInactivityNudgeId,
       'KairoTasks',
-      'No has creado tareas en el día',
+      "You haven't created any tasks today",
       _next8pm(),
       details,
       androidScheduleMode: AndroidScheduleMode.inexact,
@@ -451,8 +451,8 @@ class NotificationService {
   Future<void> showStreakNotification(int streak) async {
     await showLocalNotification(
       id: _kStreakId,
-      title: '¡+1 día de racha!',
-      body: 'Llevas $streak días seguidos completando tareas',
+      title: '+1 streak day!',
+      body: 'You have $streak consecutive days completing tasks',
     );
   }
 
@@ -490,8 +490,8 @@ class NotificationService {
 
     await _flutterLocalNotificationsPlugin.zonedSchedule(
       _kStreakReminderId,
-      '¡No pierdas tu racha!',
-      'Es casi medianoche y aún no completaste una tarea hoy',
+      "Don't lose your streak!",
+      "It's almost midnight and you still haven't completed a task today",
       scheduleDate,
       details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,

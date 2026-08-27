@@ -82,7 +82,7 @@ class _StreakCelebrationState extends State<StreakCelebration>
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      '¡+1 día de racha!',
+                      '+1 streak day!',
                       style: context.textTheme.headlineSmall?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -90,7 +90,7 @@ class _StreakCelebrationState extends State<StreakCelebration>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Llevas ${widget.streak} días seguidos',
+                      'You have ${widget.streak} consecutive days',
                       style: context.textTheme.titleMedium?.copyWith(
                         color: Colors.white,
                       ),
