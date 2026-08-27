@@ -10,6 +10,22 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.15.03 - Redisenio del gatito (2026-08-26)
+
+### Changed in V 01.15.03
+
+- Redesigned `MascotPainter` to look like the reference chubby cat:
+  - Single round head+body, small rounded paws, tiny ears with colored outer and body-colored inner
+  - Two big round eyes with highlights, small nose, mouth, whiskers, blush
+  - Only 2 colors: `context.appColors.accent` and `Colors.white` (light) / `Colors.black` (dark)
+  - `normal`: tail wag and blink
+  - `happy`: jumps, smiling eyes, fast tail wag
+  - `sleeping`: closed eyes, growing/shrinking snot bubble
+  - `sad`: droopy ears, falling tears, frown
+- `StreakCelebration` uses white `detailColor` so the mascot is visible on the dark overlay
+
+---
+
 ## V 01.15.02 - Celebracion de racha y recordatorio 23:00 (2026-08-26)
 
 ### Added in V 01.15.02

@@ -77,7 +77,7 @@ class _StreakCelebrationState extends State<StreakCelebration>
                         state: MascotState.happy,
                         animation: _controller,
                         color: context.appColors.accent,
-                        detailColor: context.appColors.surface,
+                        detailColor: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 24),
