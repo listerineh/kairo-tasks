@@ -49,6 +49,13 @@ class NotificationService {
   static const String kFriendActivity = 'friend_activity_enabled';
   static const String kSharedTaskUpdates = 'shared_task_updates_enabled';
 
+  static const int _kStartReminderOffset = 100000000;
+  static const int _kDueSoonOffset = 200000000;
+  static const int _kOverdueOffset = 300000000;
+
+  int _reminderId(String taskId, int offset) =>
+      taskId.hashCode.abs() + offset;
+
   late final _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
   late final FirebaseMessaging? _messaging;
   late SharedPreferences? _prefs;
@@ -153,39 +160,75 @@ class NotificationService {
   }
 
   Future<void> scheduleTaskReminder(TaskEntity task) async {
-    if (task.dueDate == null) return;
-
-    final dueDate = task.dueDate!;
-    if (!dueDate.isAfter(DateTime.now())) return;
+    if (task.status == TaskStatus.completed) return;
     if (!await getTaskRemindersEnabled()) return;
 
-    final scheduledDate = tz.TZDateTime.from(
-      dueDate.subtract(const Duration(minutes: 15)).toUtc(),
-      tz.UTC,
+    await cancelTaskReminder(task.id);
+
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'high_importance_channel',
+        'High Importance Notifications',
+        channelDescription:
+            'This channel is used for important notifications.',
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
     );
 
-    await _flutterLocalNotificationsPlugin.zonedSchedule(
-      task.id.hashCode.abs(),
-      task.title,
-      'Due soon',
-      scheduledDate,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'high_importance_channel',
-          'High Importance Notifications',
-          channelDescription:
-              'This channel is used for important notifications.',
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-        iOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: AndroidScheduleMode.inexact,
-    );
+    final now = DateTime.now();
+
+    final startDate = task.startDate;
+    if (startDate != null && startDate.isAfter(now)) {
+      final startReminder = tz.TZDateTime.from(
+        startDate.subtract(const Duration(minutes: 5)).toUtc(),
+        tz.UTC,
+      );
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        _reminderId(task.id, _kStartReminderOffset),
+        task.title,
+        'Starts in 5 minutes',
+        startReminder,
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexact,
+      );
+    }
+
+    final dueDate = task.dueDate;
+    if (dueDate != null && dueDate.isAfter(now)) {
+      final dueSoon = tz.TZDateTime.from(
+        dueDate.subtract(const Duration(minutes: 15)).toUtc(),
+        tz.UTC,
+      );
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        _reminderId(task.id, _kDueSoonOffset),
+        task.title,
+        'Due soon',
+        dueSoon,
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexact,
+      );
+
+      final overdue = tz.TZDateTime.from(dueDate.toUtc(), tz.UTC);
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        _reminderId(task.id, _kOverdueOffset),
+        task.title,
+        'This task is overdue',
+        overdue,
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexact,
+      );
+    }
   }
 
   Future<void> cancelTaskReminder(String taskId) async {
-    await _flutterLocalNotificationsPlugin.cancel(taskId.hashCode.abs());
+    await _flutterLocalNotificationsPlugin
+        .cancel(_reminderId(taskId, _kStartReminderOffset));
+    await _flutterLocalNotificationsPlugin
+        .cancel(_reminderId(taskId, _kDueSoonOffset));
+    await _flutterLocalNotificationsPlugin
+        .cancel(_reminderId(taskId, _kOverdueOffset));
   }
 
   Future<void> cancelAllTaskReminders() async {

@@ -10,6 +10,22 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.12.00 - Task reminders: start, due, overdue (2026-08-26)
+
+### Added in V 01.12.00
+
+- Task start reminder: local notification 5 minutes before `start_date`
+- Task due reminder: local notification 15 minutes before `due_date` (existing)
+- Task overdue reminder: local notification at `due_date` when not completed
+- Reminders are cancelled when a task is completed or deleted
+- `fcm_send` no longer sends `Authorization` header, only `x-fcm-internal-key` and `Content-Type`, fixing `pg_net` push failures
+
+### Database
+
+- New migration `20260826000019_fcm_no_auth_jwt.sql` simplifies `fcm_send` and removes the `auth.jwt()` dependency for the Edge Function call
+
+---
+
 ## V 01.11.04 - Android notification permission (2026-08-26)
 
 ### Added in V 01.11.04

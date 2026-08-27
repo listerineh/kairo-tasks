@@ -446,6 +446,9 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
           .from('tasks')
           .update({'status': newStatus})
           .eq('id', event.taskId);
+      if (newStatus == 'completed') {
+        await NotificationService.instance.cancelTaskReminder(event.taskId);
+      }
     } catch (e) {
       emit(state.copyWith(errorMessage: 'Failed to update task: $e'));
     }
@@ -457,6 +460,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
   ) async {
     try {
       await _client.from('tasks').delete().eq('id', event.taskId);
+      await NotificationService.instance.cancelTaskReminder(event.taskId);
     } catch (e) {
       emit(state.copyWith(errorMessage: 'Failed to delete task: $e'));
     }
