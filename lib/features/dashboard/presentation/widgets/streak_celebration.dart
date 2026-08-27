@@ -77,7 +77,6 @@ class _StreakCelebrationState extends State<StreakCelebration>
                       child: MascotWidget(
                         state: MascotState.happy,
                         streak: widget.streak,
-                        detailColor: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 24),

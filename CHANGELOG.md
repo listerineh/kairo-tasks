@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.15.06 - MascotPainter from original SVG (2026-08-26)
+
+### Changed in V 01.15.06
+
+- Reverted `MascotWidget` to `CustomPaint` + `MascotPainter`
+- `MascotPainter` draws the original SVG paths using `context.appColors.accent` as fill and `Color(0xFF141414)` for strokes and eyes
+- Removed `assets/mascot/` SVG files; they are no longer used
+- Kept `flutter_svg` in `pubspec.yaml` for other SVG icons
+
+---
+
 ## V 01.15.05 - SVG mascot (2026-08-26)
 
 ### Changed in V 01.15.05
