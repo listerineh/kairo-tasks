@@ -10,9 +10,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/app.dart';
 import 'app/di/injection.dart';
+import 'app/locale/locale_service.dart';
 import 'core/constants/app_constants.dart';
 import 'core/services/logger_service.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/notification_store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +35,8 @@ Future<void> main() async {
       debugPrint('Firebase not configured, remote push disabled: $e');
     }
   }
+
+  await LocaleService.instance.init();
   await NotificationService.instance.initialize();
 
   // Initialize Supabase
@@ -44,6 +48,8 @@ Future<void> main() async {
   // Initialize logging
   await LoggerService.instance.init();
   LoggerService.instance.info('App started');
+
+  await NotificationStore.instance.load();
 
   // Initialize dependency injection
   await configureDependencies();

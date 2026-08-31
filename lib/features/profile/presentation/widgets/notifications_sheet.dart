@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../app/theme/app_spacing.dart';
@@ -113,6 +114,15 @@ class _NotificationsSheetState extends State<NotificationsSheet> {
               ),
             ],
             const SizedBox(height: AppSpacing.spacing16),
+            ListTile(
+              title: const Text('View notification history'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.push('/notifications');
+              },
+            ),
+            const SizedBox(height: AppSpacing.spacing8),
           ],
         ),
       ),

@@ -6,16 +6,21 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../../app/locale/locale_service.dart';
 import '../../app/router/app_router.dart';
+import '../../generated/app_localizations.dart';
 import '../../features/tasks/domain/entities/task_entity.dart';
 import 'logger_service.dart';
+import 'notification_store.dart';
 
-// ignore_for_file: avoid_positional_boolean_parameters
+// ignore_for_file: avoid_positional_boolean_parameters, directives_ordering
 
 /// Top-level background message handler for Firebase Cloud Messaging.
 /// It is executed in its own isolate and must be a top-level function.
@@ -62,6 +67,9 @@ class NotificationService {
   int _reminderId(String taskId, int offset) =>
       taskId.hashCode.abs() + offset;
 
+  AppLocalizations _l10n() =>
+      lookupAppLocalizations(LocaleService.instance.locale.value);
+
   tz.TZDateTime _next8am() {
     final now = tz.TZDateTime.now(tz.local);
     var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, 8);
@@ -98,6 +106,15 @@ class NotificationService {
       _prefs = await SharedPreferences.getInstance();
 
       tz.initializeTimeZones();
+      try {
+        final localInfo = await FlutterTimezone.getLocalTimezone();
+        final location = tz.getLocation(localInfo.identifier);
+        tz.setLocalLocation(location);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('Failed to set local timezone, falling back to UTC: $e');
+        }
+      }
 
       const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
       const darwinInit = DarwinInitializationSettings();
@@ -287,6 +304,7 @@ class NotificationService {
     );
 
     final now = DateTime.now();
+    final l10n = _l10n();
 
     final startDate = task.startDate;
     if (startDate != null && startDate.isAfter(now)) {
@@ -297,7 +315,7 @@ class NotificationService {
       await _flutterLocalNotificationsPlugin.zonedSchedule(
         _reminderId(task.id, _kStartReminderOffset),
         task.title,
-        'Starts in 5 minutes',
+        l10n.notificationTaskStartsSoon,
         startReminder,
         details,
         androidScheduleMode: AndroidScheduleMode.inexact,
@@ -313,7 +331,7 @@ class NotificationService {
       await _flutterLocalNotificationsPlugin.zonedSchedule(
         _reminderId(task.id, _kDueSoonOffset),
         task.title,
-        'Due soon',
+        l10n.notificationTaskDueSoon,
         dueSoon,
         details,
         androidScheduleMode: AndroidScheduleMode.inexact,
@@ -323,7 +341,7 @@ class NotificationService {
       await _flutterLocalNotificationsPlugin.zonedSchedule(
         _reminderId(task.id, _kOverdueOffset),
         task.title,
-        'This task is overdue',
+        l10n.notificationTaskOverdue,
         overdue,
         details,
         androidScheduleMode: AndroidScheduleMode.inexact,
@@ -337,8 +355,8 @@ class NotificationService {
         );
         await _flutterLocalNotificationsPlugin.zonedSchedule(
           _reminderId(task.id, _kUrgentOffset),
-          task.title,
-          'Urgent due in 1 hour',
+          l10n.notificationUrgentTitle(task.title),
+          l10n.notificationTaskUrgentOneHour,
           oneHourReminder,
           details,
           androidScheduleMode: AndroidScheduleMode.inexact,
@@ -390,15 +408,19 @@ class NotificationService {
       }
     }
 
+    final l10n = _l10n();
     final String body;
     if (todayCount == 0 && overdueCount == 0) {
-      body = 'No tienes tareas pendientes';
+      body = l10n.notificationMorningNoPending;
     } else if (overdueCount == 0) {
-      body = 'Tienes $todayCount tareas hoy';
+      body = l10n.notificationMorningTodayCount(todayCount);
     } else if (todayCount == 0) {
-      body = 'Tienes $overdueCount tareas vencidas';
+      body = l10n.notificationMorningOverdueCount(overdueCount);
     } else {
-      body = 'Tienes $todayCount tareas hoy y $overdueCount vencidas';
+      body = l10n.notificationMorningTodayAndOverdueCount(
+        todayCount,
+        overdueCount,
+      );
     }
 
     const details = NotificationDetails(
@@ -415,7 +437,7 @@ class NotificationService {
 
     await _flutterLocalNotificationsPlugin.zonedSchedule(
       _kMorningSummaryId,
-      'Kairo',
+      l10n.kairoTasks,
       body,
       _next8am(),
       details,
@@ -438,10 +460,11 @@ class NotificationService {
       iOS: DarwinNotificationDetails(),
     );
 
+    final l10n = _l10n();
     await _flutterLocalNotificationsPlugin.zonedSchedule(
       _kInactivityNudgeId,
-      'Kairo',
-      "You haven't created any tasks today",
+      l10n.kairoTasks,
+      l10n.notificationInactivityBody,
       _next8pm(),
       details,
       androidScheduleMode: AndroidScheduleMode.inexact,
@@ -449,10 +472,11 @@ class NotificationService {
   }
 
   Future<void> showStreakNotification(int streak) async {
+    final l10n = _l10n();
     await showLocalNotification(
       id: _kStreakId,
-      title: '+1 streak day!',
-      body: 'You have $streak consecutive days completing tasks',
+      title: l10n.notificationStreakEarnedTitle,
+      body: l10n.notificationStreakEarnedBody(streak),
     );
   }
 
@@ -488,13 +512,14 @@ class NotificationService {
       iOS: DarwinNotificationDetails(),
     );
 
+    final l10n = _l10n();
     await _flutterLocalNotificationsPlugin.zonedSchedule(
       _kStreakReminderId,
-      "Don't lose your streak!",
-      "It's almost midnight and you still haven't completed a task today",
+      l10n.notificationStreakTitle,
+      l10n.notificationStreakBody,
       scheduleDate,
       details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
     );
 
@@ -512,9 +537,15 @@ class NotificationService {
   }
 
   Future<void> showUrgentNotification(TaskEntity task) async {
+    final l10n = _l10n();
+    final dueText = task.dueDate != null
+        ? DateFormat('yyyy-MM-dd HH:mm').format(task.dueDate!)
+        : '';
     await showLocalNotification(
-      title: 'Urgent: ${task.title}',
-      body: task.dueDate != null ? 'Due ${task.dueDate}' : 'High priority task',
+      title: l10n.notificationUrgentTitle(task.title),
+      body: dueText.isNotEmpty
+          ? l10n.notificationUrgentBody(dueText)
+          : 'High priority task',
       id: task.id.hashCode.abs() + 500000000,
     );
   }
@@ -547,6 +578,8 @@ class NotificationService {
     required String title,
     required String body,
     int id = 0,
+    String type = 'local',
+    String? storeId,
   }) async {
     LoggerService.instance.info(
       'Showing local notification',
@@ -555,6 +588,15 @@ class NotificationService {
         'title': title,
         'id': id,
       },
+    );
+
+    unawaited(
+      NotificationStore.instance.add(
+        title: title,
+        body: body,
+        type: type,
+        id: storeId,
+      ),
     );
 
     try {
@@ -603,12 +645,15 @@ class NotificationService {
     );
 
     try {
+      final l10n = _l10n();
       await showLocalNotification(
         title: notification.title ??
             (message.data['title'] as String?) ??
-            'Kairo',
+            l10n.kairoTasks,
         body: notification.body ?? (message.data['body'] as String?) ?? '',
         id: message.messageId?.hashCode ?? 0,
+        type: 'push',
+        storeId: message.messageId,
       );
     } catch (e) {
       LoggerService.instance.error(
@@ -628,6 +673,24 @@ class NotificationService {
       'Notification opened from background',
       data: {'operation': 'notification.onMessageOpened', 'type': type},
     );
+
+    final title = message.notification?.title ??
+        (message.data['title'] as String?) ??
+        '';
+    final body = message.notification?.body ??
+        (message.data['body'] as String?) ??
+        '';
+    if (title.isNotEmpty) {
+      unawaited(
+        NotificationStore.instance.add(
+          title: title,
+          body: body,
+          type: 'push',
+          id: message.messageId,
+        ),
+      );
+    }
+
     _navigateFromMessage(message);
   }
 

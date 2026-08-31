@@ -10,6 +10,19 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.17.00 - Notification timezone, i18n and in-app inbox (2026-08-27)
+
+### Changed in V 01.17.00
+
+- Use the device timezone for every local notification so daily, morning and streak reminders fire at the correct local time for any region.
+- Localize all notification strings from the user's selected language.
+- Persist language preference to `profiles.language` so server-side push content can match the app language.
+- Add Android notification permissions: `WAKE_LOCK`, `SCHEDULE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`.
+- Add in-app notification history page (`/notifications`) with read/unread state.
+- Bumped version to `1.17.0+85`.
+
+---
+
 ## V 01.16.01 - Rename app to Kairo (2026-08-27)
 
 ### Changed in V 01.16.01
