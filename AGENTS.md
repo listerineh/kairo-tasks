@@ -154,6 +154,51 @@ REVERSED_GOOGLE_CLIENT_ID=com.googleusercontent.apps.<YOUR_IOS_CLIENT_ID>
 4. Trust the developer on iPhone (Settings → General → VPN & Device Management)
 5. Certificate expires every 7 days - re-sign when needed
 
+### Install a release build on a physical iPhone with `ios-deploy`
+
+This is the preferred way to install a release build on Sebastian's iPhone without going through the App Store.
+
+Prerequisites:
+- iPhone connected via USB
+- `ios-deploy` installed (`brew install ios-deploy`)
+- Xcode configured with a signing team for `Runner`
+
+Steps:
+
+1. Build the release `.app` bundle:
+
+```bash
+flutter build ios --release
+```
+
+2. Find the device ID:
+
+```bash
+flutter devices
+```
+
+Look for the iOS device entry, e.g.:
+
+```
+iPhone de Sebastian (mobile) • 00008140-000565982EC0801C • ios • iOS 26.6.1 23G83
+```
+
+3. Install using `ios-deploy` (use `--nostart` to avoid the debug/launch phase and exit cleanly after installation):
+
+```bash
+ios-deploy \
+  --bundle build/ios/iphoneos/Runner.app \
+  --id 00008140-000565982EC0801C \
+  --nostart \
+  --no-wifi
+```
+
+4. The app will appear on the home screen. If it does not open, trust the developer profile first (Settings → General → VPN & Device Management → Developer App → Trust).
+
+Notes:
+- The `--nostart` flag installs without trying to launch/debug. If you want `ios-deploy` to also launch the app, use `--justlaunch` instead, but it requires Xcode's `DeveloperDiskImage.dmg` for the device's iOS version.
+- Free provisioning certificates expire every 7 days; rebuild and reinstall when the app refuses to open.
+
 ### Android APK
 ```bash
 flutter build apk --split-per-abi
