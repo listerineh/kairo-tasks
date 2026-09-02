@@ -178,7 +178,9 @@ Both trigger automatically when you push a git tag matching `v*` (for example `g
 | Secret | Workflow | Description |
 |--------|----------|-------------|
 | `ENV_FILE_BASE64` | Both | Base64-encoded contents of `.env` (or skip if not required). |
-| `KEYSTORE_BASE64` | Android | Base64-encoded `upload-keystore.jks`. |
+| `GOOGLE_SERVICES_JSON_BASE64` | Android | Base64-encoded `android/app/google-services.json`. |
+| `GOOGLE_SERVICE_INFO_PLIST_BASE64` | iOS | Base64-encoded `ios/Runner/GoogleService-Info.plist`. |
+| `KEYSTORE_BASE64` | Android | Base64-encoded `upload-keystore.jks` (optional, debug signing used if missing). |
 | `KEYSTORE_PASSWORD` | Android | Keystore password. |
 | `KEY_ALIAS` | Android | Keystore alias. |
 | `KEY_PASSWORD` | Android | Alias key password. |
