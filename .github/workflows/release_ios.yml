@@ -10,7 +10,26 @@ permissions:
   contents: write
 
 jobs:
+  check-ios-secrets:
+    runs-on: ubuntu-latest
+    outputs:
+      has_secrets: ${{ steps.check.outputs.has_secrets }}
+    steps:
+      - name: Check iOS signing secrets
+        id: check
+        env:
+          IOS_P12_CERTIFICATE: ${{ secrets.IOS_P12_CERTIFICATE }}
+        run: |
+          if [ -n "$IOS_P12_CERTIFICATE" ]; then
+            echo "has_secrets=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::IOS_P12_CERTIFICATE not set. Skipping iOS release build."
+            echo "has_secrets=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-ios:
+    needs: check-ios-secrets
+    if: needs.check-ios-secrets.outputs.has_secrets == 'true'
     # iOS release builds must run on macOS and require valid Apple signing secrets.
     runs-on: macos-latest
     steps:
@@ -50,15 +69,6 @@ jobs:
       #   IOS_PROVISIONING_PROFILE_BASE64 -> base64 of the .mobileprovision profile
       #   IOS_TEAM_ID            -> Apple Team ID (e.g. V9G9CUPUMF)
       #   IOS_PROVISIONING_NAME  -> exact name of the provisioning profile
-      - name: Check iOS signing secrets
-        env:
-          IOS_P12_CERTIFICATE: ${{ secrets.IOS_P12_CERTIFICATE }}
-        run: |
-          if [ -z "$IOS_P12_CERTIFICATE" ]; then
-            echo "::warning::IOS_P12_CERTIFICATE not set. Skipping iOS release build."
-            exit 0
-          fi
-
       - name: Install Apple certificate
         env:
           IOS_P12_CERTIFICATE: ${{ secrets.IOS_P12_CERTIFICATE }}
