@@ -204,6 +204,13 @@ ios-deploy \
   --no-wifi
 ```
 
+| Flag | Purpose |
+| ---- | ------- |
+| `--bundle` | Path to the built release `.app` bundle. |
+| `--id` | UDID of the target iPhone. |
+| `--nostart` | Install only; do not launch or attach a debugger. This avoids needing the device's `DeveloperDiskImage.dmg`. |
+| `--no-wifi` | Use the USB-connected device only; ignore any iOS devices discovered over Wi-Fi. |
+
 1. The app will appear on the home screen. If it does not open, trust the developer profile first (Settings → General → VPN & Device Management → Developer App → Trust).
 
 Notes:
