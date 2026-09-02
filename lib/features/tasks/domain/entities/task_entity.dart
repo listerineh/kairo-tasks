@@ -16,6 +16,7 @@ class TaskEntity extends Equatable {
     this.startDate,
     this.dueDate,
     this.updatedAt,
+    this.completedAt,
     this.sharedWith = const [],
     this.color,
   });
@@ -30,6 +31,7 @@ class TaskEntity extends Equatable {
   final DateTime? dueDate;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final DateTime? completedAt;
   final List<Map<String, dynamic>> sharedWith;
   final String? color;
 
@@ -46,6 +48,7 @@ class TaskEntity extends Equatable {
     DateTime? dueDate,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? completedAt,
     List<Map<String, dynamic>>? sharedWith,
     String? color,
   }) =>
@@ -60,6 +63,7 @@ class TaskEntity extends Equatable {
         dueDate: dueDate ?? this.dueDate,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
+        completedAt: completedAt ?? this.completedAt,
         sharedWith: sharedWith ?? this.sharedWith,
         color: color ?? this.color,
       );
@@ -89,6 +93,7 @@ class TaskEntity extends Equatable {
         dueDate,
         createdAt,
         updatedAt,
+        completedAt,
         sharedWith,
         color,
       ];

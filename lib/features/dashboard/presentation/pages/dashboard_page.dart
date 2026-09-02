@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../app/widgets/focus_button.dart';
 import '../../../../app/widgets/kairo_header.dart';
+import '../../../../app/widgets/notification_bell.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../tasks/domain/entities/task_entity.dart';
 import '../../../tasks/presentation/bloc/tasks_bloc.dart';
@@ -37,7 +39,7 @@ class DashboardPage extends StatelessWidget {
         final overdueCount = tasks.where((t) => t.isOverdue).length;
         final completedTodayCount = tasks.where((t) {
           if (t.status != TaskStatus.completed) return false;
-          final timestamp = t.updatedAt ?? t.createdAt;
+          final timestamp = t.completedAt ?? t.updatedAt ?? t.createdAt;
           return _isSameDay(timestamp, today);
         }).length;
         final lastCompletionDate = _lastCompletionDate(tasks, userId);
@@ -70,7 +72,9 @@ class DashboardPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const KairoHeader(),
+                        const KairoHeader(
+                          actions: [FocusButton(), NotificationBell()],
+                        ),
                         const SizedBox(height: AppSpacing.spacing4),
                         Text(
                           _greeting(context),
@@ -554,7 +558,7 @@ DateTime? _lastCompletionDate(List<TaskEntity> tasks, String? userId) {
   DateTime? last;
   for (final t in tasks) {
     if (t.status != TaskStatus.completed || t.ownerId != userId) continue;
-    final day = _dateOnly(t.updatedAt ?? t.createdAt);
+    final day = _dateOnly(t.completedAt ?? t.updatedAt ?? t.createdAt);
     if (last == null || day.isAfter(last)) last = day;
   }
   return last;
@@ -566,7 +570,7 @@ int _streak(List<TaskEntity> tasks, DateTime today, String? userId) {
   final days = <DateTime>{};
   for (final t in tasks) {
     if (t.status != TaskStatus.completed || t.ownerId != userId) continue;
-    days.add(_dateOnly(t.updatedAt ?? t.createdAt));
+    days.add(_dateOnly(t.completedAt ?? t.updatedAt ?? t.createdAt));
   }
   if (days.isEmpty) return 0;
 

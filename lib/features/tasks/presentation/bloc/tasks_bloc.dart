@@ -285,13 +285,30 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
       await NotificationService.instance.rescheduleMorningSummary(tasks);
 
       final today = _dateOnly(DateTime.now());
+      final streak = _streakFromDays(
+        tasks
+            .where(
+              (t) =>
+                  t.status == TaskStatus.completed &&
+                  t.ownerId == _userId,
+            )
+            .map(
+              (t) => _dateOnly(
+                t.completedAt ?? t.updatedAt ?? t.createdAt,
+              ),
+            )
+            .where((d) => !d.isAfter(today))
+            .toList(),
+        today,
+      );
       final completedTodayCount = tasks.where((t) {
         if (t.status != TaskStatus.completed || t.ownerId != _userId) {
           return false;
         }
-        return _isSameDay(t.updatedAt ?? t.createdAt, today);
+        return _isSameDay(t.completedAt ?? t.updatedAt ?? t.createdAt, today);
       }).length;
-      await NotificationService.instance.rescheduleStreakReminder(
+      await NotificationService.instance.rescheduleStreakReminders(
+        streak: streak,
         hasCompletedToday: completedTodayCount > 0,
       );
 
@@ -429,7 +446,10 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
         createdAt: DateTime.now(),
       );
       await NotificationService.instance.scheduleTaskReminder(createdTask);
-      await NotificationService.instance.rescheduleInactivityNudge();
+      await NotificationService.instance.rescheduleInactivityNudge([
+        ...state.tasks,
+        createdTask,
+      ]);
 
       if (createdTask.priority == TaskPriority.urgent) {
         await NotificationService.instance.showUrgentNotification(createdTask);
@@ -535,7 +555,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
           t.ownerId != _userId) {
         return false;
       }
-      return _isSameDay(t.updatedAt ?? t.createdAt, today);
+      return _isSameDay(t.completedAt ?? t.updatedAt ?? t.createdAt, today);
     });
 
     LoggerService.instance.info(
@@ -560,7 +580,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
             if (t.ownerId != _userId || t.status != TaskStatus.completed) {
               continue;
             }
-            final d = _dateOnly(t.updatedAt ?? t.createdAt);
+            final d = _dateOnly(t.completedAt ?? t.updatedAt ?? t.createdAt);
             if (!d.isAfter(today)) days.add(d);
           }
           final newStreak = _streakFromDays(days.toList(), today);
@@ -652,6 +672,9 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
       createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String).toLocal()
+          : null,
+      completedAt: json['completed_at'] != null
+          ? DateTime.parse(json['completed_at'] as String).toLocal()
           : null,
       sharedWith: sharedWith,
     );

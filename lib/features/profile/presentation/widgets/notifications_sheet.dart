@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -37,9 +35,9 @@ class _NotificationsSheetState extends State<NotificationsSheet> {
     setState(() {
       _taskReminders = prefs.getBool(NotificationService.kTaskReminders) ?? false;
       _friendActivity =
-          prefs.getBool(NotificationService.kFriendActivity) ?? false;
+          prefs.getBool(NotificationService.kFriendActivity) ?? true;
       _sharedTasks =
-          prefs.getBool(NotificationService.kSharedTaskUpdates) ?? false;
+          prefs.getBool(NotificationService.kSharedTaskUpdates) ?? true;
       _isLoading = false;
     });
   }
@@ -130,7 +128,13 @@ class _NotificationsSheetState extends State<NotificationsSheet> {
   }
 
   Future<void> _onTaskRemindersChanged(bool value) async {
-    if (value) await NotificationService.instance.requestPermission();
+    if (value) {
+      try {
+        await NotificationService.instance.requestPermission();
+      } catch (_) {
+        // Continue and let the user keep the toggle on.
+      }
+    }
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(NotificationService.kTaskReminders, value);
@@ -148,7 +152,11 @@ class _NotificationsSheetState extends State<NotificationsSheet> {
     required void Function(bool) setter,
   }) async {
     if (value) {
-      await NotificationService.instance.requestPermission();
+      try {
+        await NotificationService.instance.requestPermission();
+      } catch (_) {
+        // Continue so the user can still enable the toggle.
+      }
     }
 
     final prefs = await SharedPreferences.getInstance();
@@ -157,14 +165,12 @@ class _NotificationsSheetState extends State<NotificationsSheet> {
     if (!mounted) return;
     setState(() => setter(value));
 
-    if (value && Platform.isAndroid) {
-      await NotificationService.instance.registerFcmToken();
-    }
-
-    if (value && Platform.isIOS && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.iOSRemoteNotAvailable)),
-      );
+    if (value) {
+      try {
+        await NotificationService.instance.registerFcmToken();
+      } catch (_) {
+        // FCM registration may fail on iOS without APNs; keep the user choice.
+      }
     }
   }
 }

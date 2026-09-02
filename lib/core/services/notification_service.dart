@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -63,6 +64,8 @@ class NotificationService {
   static const int _kInactivityNudgeId = 999999999;
   static const int _kStreakId = 9999;
   static const int _kStreakReminderId = 8888;
+  static const int _kStreakLostId = 8887;
+  static const int _kFocusSessionId = 7777;
 
   int _reminderId(String taskId, int offset) =>
       taskId.hashCode.abs() + offset;
@@ -79,6 +82,40 @@ class NotificationService {
     return scheduled;
   }
 
+  String _payloadJson({
+    required String type,
+    required String title,
+    required String body,
+  }) {
+    return jsonEncode({
+      'type': type,
+      'title': title,
+      'body': body,
+    });
+  }
+
+  Future<void> _zonedSchedule({
+    required int id,
+    required String title,
+    required String body,
+    required tz.TZDateTime scheduledDate,
+    required NotificationDetails details,
+    required AndroidScheduleMode androidScheduleMode,
+    required String type,
+    DateTimeComponents? matchDateTimeComponents,
+  }) async {
+    await _flutterLocalNotificationsPlugin.zonedSchedule(
+      id,
+      title,
+      body,
+      scheduledDate,
+      details,
+      androidScheduleMode: androidScheduleMode,
+      matchDateTimeComponents: matchDateTimeComponents,
+      payload: _payloadJson(type: type, title: title, body: body),
+    );
+  }
+
   tz.TZDateTime _next8pm() {
     final now = tz.TZDateTime.now(tz.local);
     var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, 20);
@@ -93,7 +130,7 @@ class NotificationService {
   late SharedPreferences? _prefs;
 
   bool get _fcmAvailable =>
-      Platform.isAndroid &&
+      (Platform.isAndroid || Platform.isIOS) &&
       Firebase.apps.isNotEmpty;
 
   Future<void> initialize() async {
@@ -122,7 +159,10 @@ class NotificationService {
         android: androidInit,
         iOS: darwinInit,
       );
-      await _flutterLocalNotificationsPlugin.initialize(initSettings);
+      await _flutterLocalNotificationsPlugin.initialize(
+        initSettings,
+        onDidReceiveNotificationResponse: _onDidReceiveNotificationResponse,
+      );
 
       const androidChannel = AndroidNotificationChannel(
         'high_importance_channel',
@@ -165,6 +205,37 @@ class NotificationService {
       LoggerService.instance.error(
         'Notification service initialization failed',
         data: {'operation': 'notification.initialize', 'error': e.toString()},
+      );
+    }
+  }
+
+  Future<void> _onDidReceiveNotificationResponse(
+    NotificationResponse response,
+  ) async {
+    final payload = response.payload;
+    if (payload == null || payload.isEmpty) return;
+
+    try {
+      final decoded = jsonDecode(payload) as Map<String, dynamic>;
+      final title = decoded['title'] as String? ?? '';
+      final body = decoded['body'] as String? ?? '';
+      final type = decoded['type'] as String? ?? 'local';
+
+      if (title.isNotEmpty && body.isNotEmpty) {
+        await NotificationStore.instance.add(
+          title: title,
+          body: body,
+          type: type,
+          id: response.id?.toString(),
+        );
+      }
+    } on FormatException catch (_) {
+      LoggerService.instance.warning(
+        'Ignoring malformed local notification payload',
+        data: {
+          'operation': 'notification.onDidReceiveNotificationResponse',
+          'payload': payload,
+        },
       );
     }
   }
@@ -312,13 +383,14 @@ class NotificationService {
         startDate.subtract(const Duration(minutes: 5)).toUtc(),
         tz.UTC,
       );
-      await _flutterLocalNotificationsPlugin.zonedSchedule(
-        _reminderId(task.id, _kStartReminderOffset),
-        task.title,
-        l10n.notificationTaskStartsSoon,
-        startReminder,
-        details,
+      await _zonedSchedule(
+        id: _reminderId(task.id, _kStartReminderOffset),
+        title: task.title,
+        body: l10n.notificationTaskStartsSoon,
+        scheduledDate: startReminder,
+        details: details,
         androidScheduleMode: AndroidScheduleMode.inexact,
+        type: 'task_reminder',
       );
     }
 
@@ -328,23 +400,25 @@ class NotificationService {
         dueDate.subtract(const Duration(minutes: 15)).toUtc(),
         tz.UTC,
       );
-      await _flutterLocalNotificationsPlugin.zonedSchedule(
-        _reminderId(task.id, _kDueSoonOffset),
-        task.title,
-        l10n.notificationTaskDueSoon,
-        dueSoon,
-        details,
+      await _zonedSchedule(
+        id: _reminderId(task.id, _kDueSoonOffset),
+        title: task.title,
+        body: l10n.notificationTaskDueSoon,
+        scheduledDate: dueSoon,
+        details: details,
         androidScheduleMode: AndroidScheduleMode.inexact,
+        type: 'task_reminder',
       );
 
       final overdue = tz.TZDateTime.from(dueDate.toUtc(), tz.UTC);
-      await _flutterLocalNotificationsPlugin.zonedSchedule(
-        _reminderId(task.id, _kOverdueOffset),
-        task.title,
-        l10n.notificationTaskOverdue,
-        overdue,
-        details,
+      await _zonedSchedule(
+        id: _reminderId(task.id, _kOverdueOffset),
+        title: task.title,
+        body: l10n.notificationTaskOverdue,
+        scheduledDate: overdue,
+        details: details,
         androidScheduleMode: AndroidScheduleMode.inexact,
+        type: 'task_reminder',
       );
 
       if (task.priority == TaskPriority.urgent &&
@@ -353,13 +427,14 @@ class NotificationService {
           dueDate.subtract(const Duration(hours: 1)).toUtc(),
           tz.UTC,
         );
-        await _flutterLocalNotificationsPlugin.zonedSchedule(
-          _reminderId(task.id, _kUrgentOffset),
-          l10n.notificationUrgentTitle(task.title),
-          l10n.notificationTaskUrgentOneHour,
-          oneHourReminder,
-          details,
+        await _zonedSchedule(
+          id: _reminderId(task.id, _kUrgentOffset),
+          title: l10n.notificationUrgentTitle(task.title),
+          body: l10n.notificationTaskUrgentOneHour,
+          scheduledDate: oneHourReminder,
+          details: details,
           androidScheduleMode: AndroidScheduleMode.inexact,
+          type: 'task_reminder',
         );
       }
     }
@@ -384,7 +459,7 @@ class NotificationService {
       await scheduleTaskReminder(task);
     }
     await rescheduleMorningSummary(tasks);
-    await rescheduleInactivityNudge();
+    await rescheduleInactivityNudge(tasks);
   }
 
   Future<void> rescheduleMorningSummary(List<TaskEntity> tasks) async {
@@ -409,6 +484,7 @@ class NotificationService {
     }
 
     final l10n = _l10n();
+    final title = l10n.kairoTasks;
     final String body;
     if (todayCount == 0 && overdueCount == 0) {
       body = l10n.notificationMorningNoPending;
@@ -435,18 +511,33 @@ class NotificationService {
       iOS: DarwinNotificationDetails(),
     );
 
-    await _flutterLocalNotificationsPlugin.zonedSchedule(
-      _kMorningSummaryId,
-      l10n.kairoTasks,
-      body,
-      _next8am(),
-      details,
+    await _zonedSchedule(
+      id: _kMorningSummaryId,
+      title: title,
+      body: body,
+      scheduledDate: _next8am(),
+      details: details,
       androidScheduleMode: AndroidScheduleMode.inexact,
+      type: 'morning',
     );
   }
 
-  Future<void> rescheduleInactivityNudge() async {
+  Future<void> rescheduleInactivityNudge(List<TaskEntity> tasks) async {
     await _flutterLocalNotificationsPlugin.cancel(_kInactivityNudgeId);
+
+    final now = tz.TZDateTime.now(tz.local);
+    final today = tz.TZDateTime(tz.local, now.year, now.month, now.day);
+
+    final createdToday = tasks.any((t) {
+      final created = t.createdAt.toLocal();
+      return created.year == today.year &&
+          created.month == today.month &&
+          created.day == today.day;
+    });
+
+    if (createdToday || now.hour >= 20) {
+      return;
+    }
 
     const details = NotificationDetails(
       android: AndroidNotificationDetails(
@@ -461,13 +552,16 @@ class NotificationService {
     );
 
     final l10n = _l10n();
-    await _flutterLocalNotificationsPlugin.zonedSchedule(
-      _kInactivityNudgeId,
-      l10n.kairoTasks,
-      l10n.notificationInactivityBody,
-      _next8pm(),
-      details,
+    final title = l10n.kairoTasks;
+    final body = l10n.notificationInactivityBody;
+    await _zonedSchedule(
+      id: _kInactivityNudgeId,
+      title: title,
+      body: body,
+      scheduledDate: _next8pm(),
+      details: details,
       androidScheduleMode: AndroidScheduleMode.inexact,
+      type: 'inactivity',
     );
   }
 
@@ -480,25 +574,41 @@ class NotificationService {
     );
   }
 
-  Future<void> rescheduleStreakReminder({
+  Future<void> rescheduleStreakReminders({
+    required int streak,
     required bool hasCompletedToday,
   }) async {
     await _flutterLocalNotificationsPlugin.cancel(_kStreakReminderId);
+    await _flutterLocalNotificationsPlugin.cancel(_kStreakLostId);
 
-    if (hasCompletedToday) {
+    if (hasCompletedToday || streak <= 0) {
       LoggerService.instance.info(
-        'Streak reminder canceled, tasks completed today',
-        data: {'operation': 'notification.rescheduleStreakReminder'},
+        'Streak reminders canceled',
+        data: {
+          'operation': 'notification.rescheduleStreakReminders',
+          'hasCompletedToday': hasCompletedToday,
+          'streak': streak,
+        },
       );
       return;
     }
 
     final now = tz.TZDateTime.now(tz.local);
-    var scheduleDate =
+    var closeDate =
         tz.TZDateTime(tz.local, now.year, now.month, now.day, 23);
-    if (!scheduleDate.isAfter(now)) {
-      scheduleDate = scheduleDate.add(const Duration(days: 1));
+    if (!closeDate.isAfter(now)) {
+      closeDate = closeDate.add(const Duration(days: 1));
     }
+
+    final lostDate = tz.TZDateTime(
+      tz.local,
+      closeDate.year,
+      closeDate.month,
+      closeDate.day + 1,
+      0,
+      0,
+      1,
+    );
 
     const details = NotificationDetails(
       android: AndroidNotificationDetails(
@@ -513,27 +623,146 @@ class NotificationService {
     );
 
     final l10n = _l10n();
-    await _flutterLocalNotificationsPlugin.zonedSchedule(
-      _kStreakReminderId,
-      l10n.notificationStreakTitle,
-      l10n.notificationStreakBody,
-      scheduleDate,
-      details,
+    await _zonedSchedule(
+      id: _kStreakReminderId,
+      title: l10n.notificationStreakCloseTitle,
+      body: l10n.notificationStreakCloseBody(streak),
+      scheduledDate: closeDate,
+      details: details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
+      type: 'streak',
+    );
+
+    await _zonedSchedule(
+      id: _kStreakLostId,
+      title: l10n.notificationStreakLostTitle,
+      body: l10n.notificationStreakLostBody(streak),
+      scheduledDate: lostDate,
+      details: details,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      type: 'streak',
     );
 
     LoggerService.instance.info(
-      'Streak reminder rescheduled',
+      'Streak reminders rescheduled',
       data: {
-        'operation': 'notification.rescheduleStreakReminder',
-        'scheduleDate': scheduleDate.toIso8601String(),
+        'operation': 'notification.rescheduleStreakReminders',
+        'closeDate': closeDate.toIso8601String(),
+        'lostDate': lostDate.toIso8601String(),
+        'streak': streak,
       },
     );
   }
 
-  Future<void> cancelStreakReminder() async {
+  Future<void> cancelStreakReminders() async {
     await _flutterLocalNotificationsPlugin.cancel(_kStreakReminderId);
+    await _flutterLocalNotificationsPlugin.cancel(_kStreakLostId);
+  }
+
+  Future<void> scheduleFocusSessionEnd({
+    required Duration duration,
+    String? taskTitle,
+  }) async {
+    await _flutterLocalNotificationsPlugin.cancel(_kFocusSessionId);
+
+    final now = tz.TZDateTime.now(tz.local);
+    final scheduleDate = now.add(duration);
+
+    final l10n = _l10n();
+    final title = taskTitle != null
+        ? l10n.focusSessionCompleteTitle
+        : l10n.focusBreakCompleteTitle;
+    final body = taskTitle != null
+        ? l10n.focusSessionCompleteBody(taskTitle)
+        : l10n.focusBreakCompleteBody;
+
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'high_importance_channel',
+        'High Importance Notifications',
+        channelDescription:
+            'This channel is used for important notifications.',
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
+
+    await _zonedSchedule(
+      id: _kFocusSessionId,
+      title: title,
+      body: body,
+      scheduledDate: scheduleDate,
+      details: details,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      type: 'focus',
+    );
+
+    LoggerService.instance.info(
+      'Focus session end scheduled',
+      data: {
+        'operation': 'notification.scheduleFocusSessionEnd',
+        'scheduleDate': scheduleDate.toIso8601String(),
+        'taskTitle': taskTitle,
+      },
+    );
+  }
+
+  Future<void> cancelFocusSessionEnd() async {
+    await _flutterLocalNotificationsPlugin.cancel(_kFocusSessionId);
+  }
+
+  Future<void> scheduleSoftReminder({
+    required String taskId,
+    required String taskTitle,
+    required Duration delay,
+  }) async {
+    final id = _softReminderIdFor(taskId);
+    await _flutterLocalNotificationsPlugin.cancel(id);
+
+    final now = tz.TZDateTime.now(tz.local);
+    final scheduleDate = now.add(delay);
+
+    final l10n = _l10n();
+    final title = l10n.softReminderTitle;
+    final body = l10n.softReminderBody(taskTitle);
+
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'high_importance_channel',
+        'High Importance Notifications',
+        channelDescription:
+            'This channel is used for important notifications.',
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
+
+    await _zonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: scheduleDate,
+      details: details,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      type: 'soft_reminder',
+    );
+
+    LoggerService.instance.info(
+      'Soft reminder scheduled',
+      data: {
+        'operation': 'notification.scheduleSoftReminder',
+        'scheduleDate': scheduleDate.toIso8601String(),
+        'taskTitle': taskTitle,
+        'delayMinutes': delay.inMinutes,
+      },
+    );
+  }
+
+  int _softReminderIdFor(String taskId) {
+    return taskId.hashCode.abs() + 600000000;
   }
 
   Future<void> showUrgentNotification(TaskEntity task) async {

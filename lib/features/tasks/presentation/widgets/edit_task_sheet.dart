@@ -407,6 +407,7 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
         dueDate: _dueDate,
         createdAt: widget.task.createdAt,
         updatedAt: widget.task.updatedAt,
+        completedAt: widget.task.completedAt,
         sharedWith: widget.task.sharedWith,
         color: widget.task.color,
       );

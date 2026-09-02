@@ -11,6 +11,7 @@ class TaskModel {
     this.status = 'pending',
     this.dueDate,
     this.updatedAt,
+    this.completedAt,
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +29,9 @@ class TaskModel {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
           : null,
+      completedAt: json['completed_at'] != null
+          ? DateTime.parse(json['completed_at'] as String)
+          : null,
     );
   }
 
@@ -42,6 +46,7 @@ class TaskModel {
       dueDate: entity.dueDate,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
+      completedAt: entity.completedAt,
     );
   }
 
@@ -54,6 +59,7 @@ class TaskModel {
   final DateTime? dueDate;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final DateTime? completedAt;
 
   TaskEntity toEntity() {
     return TaskEntity(
@@ -66,6 +72,7 @@ class TaskModel {
       dueDate: dueDate,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      completedAt: completedAt,
     );
   }
 

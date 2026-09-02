@@ -19,6 +19,7 @@
 - Visual time progress bar showing remaining time
 - Completed tasks section ordered by most recently completed
 - Priority filtering (all, urgent, high, medium, low)
+- Accurate streak tracking using `completed_at` so only completion day counts
 
 ### Calendar
 - **Day view**: 24h vertical timeline with task blocks sized by duration
@@ -50,7 +51,7 @@
 - Calendar visibility (public / private)
 - Choose your own task color in a dedicated "My task color" section
 - Appearance settings (light / dark / system)
-- Notifications preferences (placeholder)
+- Notifications preferences (task reminders, friend activity, shared task updates)
 - Version tile pulled from package info
 - Language switcher to override the app locale from `ProfilePage`
 
@@ -64,22 +65,36 @@
 - Subtle animations: tail wag, blinking, ear wiggles, falling tear, breathing snot bubble
 - Random `MIAU` speech with an animated mouth and particle text
 
+### Focus Mode (ADHD-friendly)
+- Pomodoro-style 25-minute focus timer accessible from the dashboard header
+- Pick one pending task, start the timer, and minimize distractions
+- Pause, reset, and complete the task when the session ends
+- 5-minute break timer after each focus session
+- Local notification when a session ends
+
+### Soft Persistent Reminders (ADHD-friendly)
+- From any task detail sheet, tap "10 / 15 / 30 / 60 min" to schedule a gentle reminder
+- Useful for starting tasks when executive function is low
+- Cancels the previous reminder for the same task before scheduling a new one
+- Localized "Time to start" notification when the time is up
+
 ### Internationalization
 - Bilingual English/Spanish support using Flutter ARB files (`lib/l10n/app_en.arb`, `lib/l10n/app_es.arb`)
 - Generated `AppLocalizations` accessible via `context.l10n`
 - Spanish is the default; the user can override it from `ProfilePage`. The device locale falls back to `es` or `en` through `supportedLocales`
 
-### Push Notifications
+### In-App & Push Notifications
+- In-app notification history with unread badge in the dashboard `KairoHeader`
 - Android: FCM foreground/background messages, token registration, and token refresh
-- iOS: local notifications only; remote push requires a paid Apple Developer account for APNs
+- iOS: push notification toggles are now active (token registration is attempted; remote delivery still requires a paid Apple Developer account for APNs)
 - Notification preferences in `Profile` (task reminders, friend activity, shared task updates)
 - Tapping a notification navigates to the relevant tab
-- Note: the server-side FCM sender (Supabase Edge Function) is not set up yet because it requires Firebase service-account credentials
+- Streak notifications: earned, close-to-losing, and lost
 
 ### Coming Soon
 - Server-side push delivery (needs FCM service account)
 - Offline support
-- ADHD/Autism accessibility tools
+- More ADHD/Autism accessibility tools (subtasks, routine templates, energy-based planning)
 
 ---
 
@@ -186,6 +201,7 @@ lib/
     ├── calendar/ # Calendar views (day, week, month)
     ├── social/   # Friends & sharing
     ├── notifications/ # Push & in-app
+    ├── focus/    # Pomodoro focus mode (ADHD-friendly)
     └── profile/  # User settings
 ```
 
@@ -236,9 +252,11 @@ We welcome contributions! This project is built to be accessible to developers o
 - [x] V 01.02 - Calendar views (day, week, month)
 - [x] V 01.03 - Social features (friends, public calendars, friend colors)
 - [x] V 01.04 - Real-time collaboration + shared tasks, onboarding, and in-app locale
-- [ ] V 01.05 - Push notifications
-- [ ] V 01.06 - Offline support
-- [ ] V 02.00 - ADHD/Autism accessibility tools
+- [x] V 01.05 - Push notifications, in-app notifications, iOS toggles, and streak notifications
+- [x] V 01.06 - Focus Mode Pomodoro timer (first ADHD accessibility tool)
+- [x] V 01.07 - Soft persistent reminders from TaskDetailSheet
+- [ ] V 01.08 - Offline support
+- [ ] V 01.09 - More ADHD/Autism accessibility tools
 
 ---
 

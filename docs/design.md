@@ -208,7 +208,7 @@ All interactive elements MUST meet minimum touch target requirements:
 - Height: 36px (with padding meeting 44px touch target via gesture area)
 
 ### Bottom Navigation
-- 4 tabs: Tasks, Calendar, Social, Profile
+- 5 tabs: Dashboard, Tasks, Calendar, Social, Profile
 - Outlined icons (unselected) / Filled icons (selected)
 - Label always visible (no icon-only mode)
 - No elevation shadow - separated by subtle border at top
@@ -233,6 +233,30 @@ A reusable branded header used in Dashboard, Tasks, Calendar, Social, and Profil
 
 - Logo (SVG `app_icon.svg`, height 28)
 - `Text(context.l10n.kairoTasks, style: context.textTheme.titleLarge?...)`
+- Optional `actions` list (e.g. `FocusButton`, `NotificationBell` in `DashboardPage`)
+
+### Focus Timer
+
+ADHD-friendly Pomodoro-style timer with minimal distraction.
+
+- Large `displayLarge` countdown (`mm:ss`) centered on screen
+- `Focus` icon in the `KairoHeader` opens the mode
+- Task picker lists pending tasks sorted by priority; tap to start
+- Circular `IconButton` play/pause and reset controls (64px touch targets)
+- Post-session actions: "Complete task" and "Take 5 min break"
+- End-of-session notification uses high-importance channel
+- Reduced visual clutter to support concentration
+
+### Soft Reminder Chips
+
+ADHD-friendly nudge for users who struggle to start tasks.
+
+- Located inside `TaskDetailSheet`, below the "Edit" button
+- Four `ActionChip`s: `10 min`, `15 min`, `30 min`, `60 min`
+- Selecting one cancels the previous reminder for that task and schedules a new one
+- Shows a short `SnackBar` confirmation to reduce uncertainty
+- Notification title is friendly and non-urgent: "Gentle reminder"
+- Large enough touch targets and clear labels
 
 ### Onboarding
 

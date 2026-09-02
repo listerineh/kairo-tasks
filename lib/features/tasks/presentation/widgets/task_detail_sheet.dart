@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../domain/entities/task_entity.dart';
 
 class TaskDetailSheet extends StatelessWidget {
@@ -90,8 +91,62 @@ class TaskDetailSheet extends StatelessWidget {
                 child: Text(context.l10n.editTask),
               ),
             ),
+            const SizedBox(height: AppSpacing.spacing24),
+            _SoftReminderSection(task: task),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SoftReminderSection extends StatelessWidget {
+  const _SoftReminderSection({required this.task});
+
+  final TaskEntity task;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    const options = [10, 15, 30, 60];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          context.l10n.remindMe,
+          style: context.textTheme.bodyMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.spacing8),
+        Wrap(
+          spacing: AppSpacing.spacing8,
+          children: options
+              .map(
+                (minutes) => ActionChip(
+                  label: Text(context.l10n.remindInMinutes(minutes)),
+                  onPressed: () => _schedule(context, minutes),
+                ),
+              )
+              .toList(),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _schedule(BuildContext context, int minutes) async {
+    await NotificationService.instance.scheduleSoftReminder(
+      taskId: task.id,
+      taskTitle: task.title,
+      delay: Duration(minutes: minutes),
+    );
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.l10n.reminderSet(minutes)),
+        duration: const Duration(seconds: 2),
       ),
     );
   }

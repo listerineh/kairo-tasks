@@ -123,6 +123,30 @@ flutter build ios
 - CocoaPods (`brew install cocoapods`)
 - Android SDK (command-line tools for APK generation)
 
+### Environment Variables
+
+Copy `.env.example` to `.env` and fill in the real values:
+
+```bash
+cp .env.example .env
+```
+
+Runtime variables used by the Flutter app:
+
+| Variable | Source | Purpose |
+|----------|--------|---------|
+| `SUPABASE_URL` | Supabase project settings | Supabase API URL |
+| `SUPABASE_ANON_KEY` | Supabase project settings | Supabase public anon key |
+| `LOGS_API_KEY` | Any strong random UUID | Shared secret for the logs Edge Function |
+| `GOOGLE_WEB_CLIENT_ID` | Google Cloud Console | Web OAuth client ID |
+| `GOOGLE_IOS_CLIENT_ID` | Google Cloud Console | iOS OAuth client ID |
+
+iOS also needs `ios/Flutter/Env.xcconfig` with the reversed Google client ID:
+
+```
+REVERSED_GOOGLE_CLIENT_ID=com.googleusercontent.apps.<YOUR_IOS_CLIENT_ID>
+```
+
 ### iOS Testing (Free Provisioning)
 1. Connect iPhone via USB
 2. Enable Developer Mode on iPhone (Settings → Privacy & Security → Developer Mode)
@@ -133,8 +157,40 @@ flutter build ios
 ### Android APK
 ```bash
 flutter build apk --split-per-abi
-# Output: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+# Output (per ABI): build/app/outputs/flutter-apk/Kairo-<version>+<code>-<abi>-release.apk
+
+# Single universal APK (larger, works on all ABIs)
+flutter build apk
+# Output: build/app/outputs/flutter-apk/Kairo-<version>+<code>-release.apk
 ```
+
+## CI/CD (GitHub Actions)
+
+Two workflows are provided in `.github/workflows/`:
+
+- `release.yml` — builds a signed Android APK and attaches it to a GitHub Release.
+- `release_ios.yml` — builds a signed iOS IPA and attaches it to a GitHub Release.
+
+Both trigger automatically when you push a git tag matching `v*` (for example `git tag v1.17.8+94 && git push origin v1.17.8+94`).
+
+### Required repository secrets
+
+| Secret | Workflow | Description |
+|--------|----------|-------------|
+| `ENV_FILE_BASE64` | Both | Base64-encoded contents of `.env` (or skip if not required). |
+| `KEYSTORE_BASE64` | Android | Base64-encoded `upload-keystore.jks`. |
+| `KEYSTORE_PASSWORD` | Android | Keystore password. |
+| `KEY_ALIAS` | Android | Keystore alias. |
+| `KEY_PASSWORD` | Android | Alias key password. |
+| `IOS_P12_CERTIFICATE` | iOS | Base64-encoded `.p12` distribution/development certificate. |
+| `IOS_P12_PASSWORD` | iOS | Password for the `.p12` file. |
+| `IOS_PROVISIONING_PROFILE_BASE64` | iOS | Base64-encoded `.mobileprovision` profile. |
+| `IOS_TEAM_ID` | iOS | Apple Team ID (example: `V9G9CUPUMF`). |
+| `IOS_PROVISIONING_NAME` | iOS | Exact name of the provisioning profile. |
+
+### iOS distribution note
+
+GitHub Releases is convenient for Android APKs. iOS `.ipa` files attached to a release can only be installed on devices registered in the provisioning profile (ad-hoc) or through an Enterprise/Mobile Device Management flow. For public iOS distribution, use TestFlight or the App Store.
 
 ## Notifications Strategy
 

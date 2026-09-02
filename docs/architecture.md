@@ -71,6 +71,7 @@ lib/
     ├── calendar/                 # Calendar view
     ├── social/                   # Friends, shared calendars
     ├── notifications/            # Push + in-app notifications
+    ├── focus/                    # Pomodoro focus timer (ADHD-friendly)
     └── profile/                  # User settings & profile
 ```
 
@@ -191,8 +192,11 @@ class TaskRepositoryImpl implements TaskRepository {
 | priority | TEXT | DEFAULT 'medium', CHECK('urgent','high','medium','low') |
 | status | TEXT | DEFAULT 'pending', CHECK('pending','in_progress','completed') |
 | due_date | TIMESTAMPTZ | nullable |
+|| completed_at | TIMESTAMPTZ | nullable |
 | created_at | TIMESTAMPTZ | DEFAULT NOW() |
 | updated_at | TIMESTAMPTZ | DEFAULT NOW() |
+
+The `completed_at` column is set by a database trigger when `status` changes to `'completed'`, and cleared when it reverts to another status. Streak calculations use this column to count only the day a task was completed, not the day it was created or last edited.
 
 #### `shared_tasks`
 | Column | Type | Constraints |
@@ -352,14 +356,15 @@ Using `go_router` with declarative routing.
 ```
 /onboarding         → OnboardingPage
 /login              → LoginPage
-/tasks              → TasksPage (tab 0)
+/dashboard          → DashboardPage (tab 0)
+/tasks              → TasksPage (tab 1)
 /tasks/:id          → TaskDetailPage
 /tasks/create       → CreateTaskPage
-/calendar           → CalendarPage (tab 1)
-/social             → SocialPage (tab 2)
-/social/friends     → FriendsListPage
-/profile            → ProfilePage (tab 3)
-/profile/settings   → SettingsPage
+/calendar           → CalendarPage (tab 2)
+/social             → SocialPage (tab 3)
+/profile            → ProfilePage (tab 4)
+/notifications      → NotificationsPage
+/focus              → FocusPage
 ```
 
 `AppRouter.create(initialLocation)` computes the initial route:
@@ -378,8 +383,19 @@ The main tabs (tasks, calendar, social, profile) share a `ShellRoute` with `Bott
 - Foreground messages are shown as local notifications
 - `onMessageOpenedApp` and `getInitialMessage` navigate via `AppRouter.router`
 - Payload `type` values (`friend_request`, `shared_task`, `task_due`, etc.) map to routes (`/social`, `/tasks`, `/calendar`)
-- iOS: no APNs/FCM remote without paid developer account; local task reminders still work
-- Server-side delivery planned via Supabase Edge Function + FCM HTTP v1 (requires credentials)
+- iOS: push notification toggles are now active; remote delivery still needs a paid Apple Developer account for APNs
+- Streak reminders: 23:00 close-to-losing and 00:00:01 lost-streak notifications
+- In-app notification bell in `KairoHeader` navigates to `/notifications`
+- Focus timer end notifications are scheduled locally with `zonedSchedule`
+- Soft persistent reminders (`scheduleSoftReminder`) are scheduled from `TaskDetailSheet` and cancelled when a new one replaces it
+
+## Focus Mode
+
+- `FocusCubit` in `lib/features/focus/presentation/cubit/` manages timer state
+- `FocusPage` (`/focus`) lets the user pick a pending task and start a 25-minute Pomodoro session
+- `FocusButton` in the dashboard `KairoHeader` opens `/focus`
+- Timer uses a 1-second `Timer.periodic`; it schedules a local notification on start and cancels on pause/reset/close
+- At the end of a focus session the user can mark the task complete or take a 5-minute break
 
 ---
 

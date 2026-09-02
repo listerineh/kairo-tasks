@@ -10,6 +10,97 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.17.08 - Show scheduled notifications in in-app history (2026-09-01)
+
+### Changed in V 01.17.08
+
+- Register `onDidReceiveNotificationResponse` callback in `NotificationService`.
+- Add JSON payload to all `zonedSchedule` calls so `NotificationStore` can capture them.
+- When a user taps a scheduled local notification, it is added to the in-app history.
+- Build release APKs with version number and ABI in filename.
+- Bumped version to `1.17.8+94`.
+
+---
+
+## V 01.17.07 - Fix inactivity nudge condition (2026-09-01)
+
+### Changed in V 01.17.07
+
+- `rescheduleInactivityNudge` now checks if the user has created any task today before scheduling the 8pm "No has creado ninguna tarea hoy" notification.
+- Do not schedule the inactivity nudge for the next day if the current local time is already past 20:00.
+- Pass the task list to `rescheduleInactivityNudge` from `rescheduleAll` and `TasksBloc` on task creation.
+- Bumped version to `1.17.7+93`.
+
+---
+
+## V 01.17.06 - Social tab opens on Friends by default (2026-09-01)
+
+### Changed in V 01.17.06
+
+- Set `SocialPage` `TabController` `initialIndex` to 1 so the Friends tab opens by default.
+- Bumped version to `1.17.6+92`.
+
+---
+
+## V 01.17.05 - Soft persistent reminders for tasks (2026-09-01)
+
+### Changed in V 01.17.05
+
+- Add soft persistent reminders (ADHD-friendly) from `TaskDetailSheet`.
+- Tap 10/15/30/60 min to schedule a gentle "Time to start" notification.
+- Cancel previous reminder for the same task when a new one is scheduled.
+- Localized title, body, and confirmation snackbar.
+- Bumped version to `1.17.5+91`.
+
+---
+
+## V 01.17.04 - Focus mode with Pomodoro timer (2026-09-01)
+
+### Changed in V 01.17.04
+
+- Add Focus Mode (`/focus`) for ADHD-friendly Pomodoro sessions.
+- Pick a task, start a 25-minute focus timer or a 5-minute break.
+- Schedule a local notification when the session ends.
+- Add a focus button to the dashboard `KairoHeader`.
+- Bumped version to `1.17.4+90`.
+
+---
+
+## V 01.17.03 - Enable iOS push notification toggles (2026-09-01)
+
+### Changed in V 01.17.03
+
+- Enable `Friend activity` and `Shared task updates` toggles on iOS in Profile > Notifications.
+- Allow FCM token registration on iOS so the app attempts to register the token when those toggles are on.
+- Default `Friend activity` and `Shared task updates` to on, matching the notification service defaults.
+- Make toggle handlers resilient to permission/registration errors so the switch always updates.
+- Bumped version to `1.17.3+89`.
+
+---
+
+## V 01.17.02 - Accurate task streak tracking and streak notifications (2026-09-01)
+
+### Changed in V 01.17.02
+
+- Add `completed_at` column to `tasks` with a trigger that sets it on completion and clears it on revert.
+- Backfill `completed_at` for existing completed tasks.
+- Use `completed_at` for streak calculations so only completion day counts, not creation or edit.
+- Localize the streak celebration dialog and add localized strings for close-to-losing and losing streak notifications.
+- Schedule two streak notifications when a streak is active and no task has been completed today: a 23:00 reminder and a 00:00:01 "streak lost" notification.
+- Bumped version to `1.17.2+87`.
+
+---
+
+## V 01.17.01 - In-app notification bell on dashboard (2026-09-01)
+
+### Changed in V 01.17.01
+
+- Added a `NotificationBell` icon to the dashboard `KairoHeader` that opens the in-app notifications page.
+- Bell shows a red badge with the count of unread in-app notifications (`NotificationStore`).
+- Bumped version to `1.17.1+86`.
+
+---
+
 ## V 01.17.00 - Notification timezone, i18n and in-app inbox (2026-08-27)
 
 ### Changed in V 01.17.00

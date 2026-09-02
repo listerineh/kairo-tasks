@@ -81,7 +81,7 @@ class _StreakCelebrationState extends State<StreakCelebration>
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      '+1 streak day!',
+                      context.l10n.notificationStreakEarnedTitle,
                       style: context.textTheme.headlineSmall?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -89,7 +89,7 @@ class _StreakCelebrationState extends State<StreakCelebration>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'You have ${widget.streak} consecutive days',
+                      context.l10n.notificationStreakEarnedBody(widget.streak),
                       style: context.textTheme.titleMedium?.copyWith(
                         color: Colors.white,
                       ),

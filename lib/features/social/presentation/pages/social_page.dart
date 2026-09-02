@@ -34,7 +34,11 @@ class _SocialPageState extends State<SocialPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: 1,
+    );
     _loadSocialData();
     _searchController.addListener(_onSearchChanged);
 

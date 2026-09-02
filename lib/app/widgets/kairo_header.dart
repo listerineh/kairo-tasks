@@ -5,11 +5,16 @@ import '../../app/theme/app_spacing.dart';
 import '../../core/extensions/context_extensions.dart';
 
 class KairoHeader extends StatelessWidget {
-  const KairoHeader({super.key});
+  const KairoHeader({
+    super.key,
+    this.actions = const <Widget>[],
+  });
+
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final logo = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         SvgPicture.asset(
@@ -23,6 +28,16 @@ class KairoHeader extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
+      ],
+    );
+
+    if (actions.isEmpty) return logo;
+
+    return Row(
+      children: [
+        logo,
+        const Spacer(),
+        ...actions,
       ],
     );
   }
