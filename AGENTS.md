@@ -225,6 +225,38 @@ The latest `CHANGELOG.md` entry is the single source of truth for the current ap
 - Commits must be made in the user's name only.
 - Commit messages must contain only the description of the changes.
 - Do not include signatures, footers, `Co-Authored-By`, `Generated with`, or any bot attribution.
+- Use **Conventional Commits** for all commit messages.
+
+### Conventional Commits
+
+Follow the format:
+
+```
+<type>(<scope>): <short description>
+```
+
+Common types:
+
+| Type | Use for |
+|------|---------|
+| `feat` | New feature or behavior |
+| `fix` | Bug fix |
+| `docs` | Documentation changes only |
+| `style` | Code style changes that do not affect logic (formatting, missing semicolons, etc.) |
+| `refactor` | Code refactoring without changing behavior |
+| `perf` | Performance improvements |
+| `test` | Adding or updating tests |
+| `chore` | Build, CI, tooling, or dependency changes |
+| `ci` | CI/CD configuration changes |
+
+Examples:
+
+```
+feat(tasks): add shared friends chips to edit task sheet
+fix(notifications): skip past reminder dates when scheduling
+docs(readme): update environment setup instructions
+chore(pubspec): bump version to 1.17.9+95
+```
 
 ## Contributing
 
