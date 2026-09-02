@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.17.09 - Fix task edit save on Android (2026-09-02)
+
+### Changed in V 01.17.09
+
+- `NotificationService.scheduleTaskReminder` skips reminders whose computed time is in the past (start reminder, due-soon, overdue, urgent one-hour).
+- `EditTaskSheet` catches reminder reschedule errors and continues saving the task.
+- `TasksBloc._onEditRequested` refreshes the task list immediately after a successful edit.
+- Bumped version to `1.17.9+95`.
+
+---
+
 ## V 01.17.08 - Show scheduled notifications in in-app history (2026-09-01)
 
 ### Changed in V 01.17.08

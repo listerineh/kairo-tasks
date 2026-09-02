@@ -375,7 +375,39 @@ class NotificationService {
     );
 
     final now = DateTime.now();
+    final nowUtc = tz.TZDateTime.now(tz.UTC);
     final l10n = _l10n();
+
+    Future<void> scheduleIfFuture(
+      tz.TZDateTime scheduledDate,
+      int id,
+      String title,
+      String body,
+      String type,
+    ) async {
+      if (!scheduledDate.isAfter(nowUtc)) return;
+      try {
+        await _zonedSchedule(
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: scheduledDate,
+          details: details,
+          androidScheduleMode: AndroidScheduleMode.inexact,
+          type: type,
+        );
+      } catch (e) {
+        LoggerService.instance.error(
+          'Failed to schedule task reminder',
+          data: {
+            'operation': 'notification.scheduleTaskReminder',
+            'task_id': task.id,
+            'scheduled_date': scheduledDate.toIso8601String(),
+            'error': e.toString(),
+          },
+        );
+      }
+    }
 
     final startDate = task.startDate;
     if (startDate != null && startDate.isAfter(now)) {
@@ -383,14 +415,12 @@ class NotificationService {
         startDate.subtract(const Duration(minutes: 5)).toUtc(),
         tz.UTC,
       );
-      await _zonedSchedule(
-        id: _reminderId(task.id, _kStartReminderOffset),
-        title: task.title,
-        body: l10n.notificationTaskStartsSoon,
-        scheduledDate: startReminder,
-        details: details,
-        androidScheduleMode: AndroidScheduleMode.inexact,
-        type: 'task_reminder',
+      await scheduleIfFuture(
+        startReminder,
+        _reminderId(task.id, _kStartReminderOffset),
+        task.title,
+        l10n.notificationTaskStartsSoon,
+        'task_reminder',
       );
     }
 
@@ -400,25 +430,21 @@ class NotificationService {
         dueDate.subtract(const Duration(minutes: 15)).toUtc(),
         tz.UTC,
       );
-      await _zonedSchedule(
-        id: _reminderId(task.id, _kDueSoonOffset),
-        title: task.title,
-        body: l10n.notificationTaskDueSoon,
-        scheduledDate: dueSoon,
-        details: details,
-        androidScheduleMode: AndroidScheduleMode.inexact,
-        type: 'task_reminder',
+      await scheduleIfFuture(
+        dueSoon,
+        _reminderId(task.id, _kDueSoonOffset),
+        task.title,
+        l10n.notificationTaskDueSoon,
+        'task_reminder',
       );
 
       final overdue = tz.TZDateTime.from(dueDate.toUtc(), tz.UTC);
-      await _zonedSchedule(
-        id: _reminderId(task.id, _kOverdueOffset),
-        title: task.title,
-        body: l10n.notificationTaskOverdue,
-        scheduledDate: overdue,
-        details: details,
-        androidScheduleMode: AndroidScheduleMode.inexact,
-        type: 'task_reminder',
+      await scheduleIfFuture(
+        overdue,
+        _reminderId(task.id, _kOverdueOffset),
+        task.title,
+        l10n.notificationTaskOverdue,
+        'task_reminder',
       );
 
       if (task.priority == TaskPriority.urgent &&
@@ -427,14 +453,12 @@ class NotificationService {
           dueDate.subtract(const Duration(hours: 1)).toUtc(),
           tz.UTC,
         );
-        await _zonedSchedule(
-          id: _reminderId(task.id, _kUrgentOffset),
-          title: l10n.notificationUrgentTitle(task.title),
-          body: l10n.notificationTaskUrgentOneHour,
-          scheduledDate: oneHourReminder,
-          details: details,
-          androidScheduleMode: AndroidScheduleMode.inexact,
-          type: 'task_reminder',
+        await scheduleIfFuture(
+          oneHourReminder,
+          _reminderId(task.id, _kUrgentOffset),
+          l10n.notificationUrgentTitle(task.title),
+          l10n.notificationTaskUrgentOneHour,
+          'task_reminder',
         );
       }
     }

@@ -527,6 +527,15 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
               .filter('shared_with_id', 'in', toRemove);
         }
       }
+
+      final tasks = await _fetchTasks();
+      emit(
+        state.copyWith(
+          status: TasksStatus.loaded,
+          tasks: tasks,
+          errorMessage: null,
+        ),
+      );
     } catch (e) {
       LoggerService.instance.error(
         'Failed to edit task',

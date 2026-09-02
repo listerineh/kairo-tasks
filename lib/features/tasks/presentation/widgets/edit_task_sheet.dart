@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/services/logger_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../domain/entities/task_entity.dart';
 import '../bloc/tasks_bloc.dart';
@@ -391,27 +392,34 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
     final title = _titleController.text.trim();
     if (title.isEmpty) return;
 
-    await NotificationService.instance.cancelTaskReminder(widget.task.id);
+    try {
+      await NotificationService.instance.cancelTaskReminder(widget.task.id);
 
-    if (_dueDate != null) {
-      final updated = TaskEntity(
-        id: widget.task.id,
-        ownerId: widget.task.ownerId,
-        title: title,
-        description: _descriptionController.text.trim().isNotEmpty
-            ? _descriptionController.text.trim()
-            : null,
-        priority: _priority,
-        status: widget.task.status,
-        startDate: _startDate,
-        dueDate: _dueDate,
-        createdAt: widget.task.createdAt,
-        updatedAt: widget.task.updatedAt,
-        completedAt: widget.task.completedAt,
-        sharedWith: widget.task.sharedWith,
-        color: widget.task.color,
+      if (_dueDate != null) {
+        final updated = TaskEntity(
+          id: widget.task.id,
+          ownerId: widget.task.ownerId,
+          title: title,
+          description: _descriptionController.text.trim().isNotEmpty
+              ? _descriptionController.text.trim()
+              : null,
+          priority: _priority,
+          status: widget.task.status,
+          startDate: _startDate,
+          dueDate: _dueDate,
+          createdAt: widget.task.createdAt,
+          updatedAt: widget.task.updatedAt,
+          completedAt: widget.task.completedAt,
+          sharedWith: widget.task.sharedWith,
+          color: widget.task.color,
+        );
+        await NotificationService.instance.scheduleTaskReminder(updated);
+      }
+    } catch (e) {
+      LoggerService.instance.error(
+        'Failed to reschedule task reminder on edit',
+        data: {'task_id': widget.task.id, 'error': e.toString()},
       );
-      await NotificationService.instance.scheduleTaskReminder(updated);
     }
 
     if (!mounted) return;
