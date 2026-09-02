@@ -7,6 +7,7 @@
 ## Project Overview
 
 Kairo is a mobile-first collaborative task management app with:
+
 - Real-time task synchronization between users
 - Calendar and priority views
 - Social features (friends, shared calendars, shared tasks)
@@ -16,7 +17,7 @@ Kairo is a mobile-first collaborative task management app with:
 ## Tech Stack
 
 | Layer | Technology | Version |
-|-------|-----------|---------|
+| ------- | ----------- | --------- |
 | Framework | Flutter | 3.47+ |
 | Backend | Supabase (Free Tier) | - |
 | Auth | Supabase Auth (Email + Google + Apple) | - |
@@ -31,7 +32,8 @@ Kairo is a mobile-first collaborative task management app with:
 
 This project follows **Clean Architecture** with a **feature-first** folder structure. See [docs/architecture.md](docs/architecture.md) for full details.
 
-### Key Rules:
+### Key Rules
+
 1. **Domain layer** is pure Dart. No Flutter imports, no external packages except `equatable` and `dartz`.
 2. **Dependencies point inward**: Presentation → Domain ← Data.
 3. **Each feature is self-contained**: its own data/, domain/, presentation/ layers.
@@ -42,7 +44,8 @@ This project follows **Clean Architecture** with a **feature-first** folder stru
 
 See [docs/design.md](docs/design.md) for the complete design system including tokens, colors, typography, and component guidelines.
 
-### Quick Reference:
+### Quick Reference
+
 - Style: **Zen/Calm Editorial**
 - Fonts: DM Serif Display (headings) + DM Sans (body)
 - Primary accent: Sage green (#4A6741)
@@ -54,6 +57,7 @@ See [docs/design.md](docs/design.md) for the complete design system including to
 ## Code Conventions
 
 ### File Naming
+
 - All files use `snake_case`
 - BLoC files: `feature_bloc.dart`, `feature_event.dart`, `feature_state.dart` (or combined)
 - Pages: `feature_page.dart`
@@ -62,12 +66,14 @@ See [docs/design.md](docs/design.md) for the complete design system including to
 - Repositories: `feature_repository.dart`
 
 ### Import Order
+
 1. Dart SDK imports
 2. Flutter imports
 3. Package imports (third-party)
 4. Project imports (relative)
 
 ### BLoC Conventions
+
 - Use `Cubit` for simple state (no complex event handling needed)
 - Use `Bloc` when you need event-driven logic, transformations, or debouncing
 - Always emit new state objects (immutable state)
@@ -75,12 +81,14 @@ See [docs/design.md](docs/design.md) for the complete design system including to
 - Name states descriptively: `TasksLoading`, `TasksLoaded`, `TasksError`
 
 ### Widget Rules
+
 - Prefer `const` constructors wherever possible
 - Extract reusable widgets into separate files when used 2+ times
 - Keep widget build methods lean (< 80 lines ideally)
 - Use `context.read<Bloc>()` for events, `BlocBuilder` for state
 
 ### Error Handling
+
 - Use `Either<Failure, T>` (from dartz) for repository return types
 - Define specific `Failure` subclasses in `core/errors/failures.dart`
 - Never catch generic `Exception` without reason
@@ -117,6 +125,7 @@ flutter build ios
 ## Environment Setup
 
 ### Prerequisites
+
 - macOS with Apple Silicon
 - Xcode (from App Store) + Command Line Tools
 - Flutter SDK (via Homebrew: `brew install --cask flutter`)
@@ -134,7 +143,7 @@ cp .env.example .env
 Runtime variables used by the Flutter app:
 
 | Variable | Source | Purpose |
-|----------|--------|---------|
+| ---------- | -------- | --------- |
 | `SUPABASE_URL` | Supabase project settings | Supabase API URL |
 | `SUPABASE_ANON_KEY` | Supabase project settings | Supabase public anon key |
 | `LOGS_API_KEY` | Any strong random UUID | Shared secret for the logs Edge Function |
@@ -148,6 +157,7 @@ REVERSED_GOOGLE_CLIENT_ID=com.googleusercontent.apps.<YOUR_IOS_CLIENT_ID>
 ```
 
 ### iOS Testing (Free Provisioning)
+
 1. Connect iPhone via USB
 2. Enable Developer Mode on iPhone (Settings → Privacy & Security → Developer Mode)
 3. In Xcode: Sign with Personal Team (free Apple ID)
@@ -159,6 +169,7 @@ REVERSED_GOOGLE_CLIENT_ID=com.googleusercontent.apps.<YOUR_IOS_CLIENT_ID>
 This is the preferred way to install a release build on Sebastian's iPhone without going through the App Store.
 
 Prerequisites:
+
 - iPhone connected via USB
 - `ios-deploy` installed (`brew install ios-deploy`)
 - Xcode configured with a signing team for `Runner`
@@ -168,10 +179,10 @@ Steps:
 1. Build the release `.app` bundle:
 
 ```bash
-flutter build ios --release
+flutter build ios --release --dart-define-from-file=.env
 ```
 
-2. Find the device ID:
+1. Find the device ID:
 
 ```bash
 flutter devices
@@ -183,7 +194,7 @@ Look for the iOS device entry, e.g.:
 iPhone de Sebastian (mobile) • 00008140-000565982EC0801C • ios • iOS 26.6.1 23G83
 ```
 
-3. Install using `ios-deploy` (use `--nostart` to avoid the debug/launch phase and exit cleanly after installation):
+1. Install using `ios-deploy` (use `--nostart` to avoid the debug/launch phase and exit cleanly after installation):
 
 ```bash
 ios-deploy \
@@ -193,20 +204,25 @@ ios-deploy \
   --no-wifi
 ```
 
-4. The app will appear on the home screen. If it does not open, trust the developer profile first (Settings → General → VPN & Device Management → Developer App → Trust).
+1. The app will appear on the home screen. If it does not open, trust the developer profile first (Settings → General → VPN & Device Management → Developer App → Trust).
 
 Notes:
+
 - The `--nostart` flag installs without trying to launch/debug. If you want `ios-deploy` to also launch the app, use `--justlaunch` instead, but it requires Xcode's `DeveloperDiskImage.dmg` for the device's iOS version.
 - Free provisioning certificates expire every 7 days; rebuild and reinstall when the app refuses to open.
 
 ### Android APK
-```bash
-flutter build apk --split-per-abi
-# Output (per ABI): build/app/outputs/flutter-apk/Kairo-<version>+<code>-<abi>-release.apk
 
-# Single universal APK (larger, works on all ABIs)
-flutter build apk
-# Output: build/app/outputs/flutter-apk/Kairo-<version>+<code>-release.apk
+```bash
+flutter build apk --release --dart-define-from-file=.env
+# Output: build/app/outputs/flutter-apk/app-release.apk
+
+# To generate an APK per ABI (smaller individual files)
+flutter build apk --release --dart-define-from-file=.env --split-per-abi
+# Output: build/app/outputs/flutter-apk/Kairo-<version>+<code>-<abi>-release.apk
+
+# The CI pipeline renames the universal APK to:
+# build/app/outputs/apk/release/Kairo-<version>+<code>-release.apk
 ```
 
 ## CI/CD (GitHub Actions)
@@ -221,7 +237,7 @@ Both trigger automatically when you push a git tag matching `v*` (for example `g
 ### Required repository secrets
 
 | Secret | Workflow | Description |
-|--------|----------|-------------|
+| -------- | ---------- | ------------- |
 | `ENV_FILE_BASE64` | Both | Base64-encoded contents of `.env` (or skip if not required). |
 | `GOOGLE_SERVICES_JSON_BASE64` | Android | Base64-encoded `android/app/google-services.json`. |
 | `GOOGLE_SERVICE_INFO_PLIST_BASE64` | iOS | Base64-encoded `ios/Runner/GoogleService-Info.plist`. |
@@ -242,7 +258,7 @@ GitHub Releases is convenient for Android APKs. iOS `.ipa` files attached to a r
 ## Notifications Strategy
 
 | Type | Channel | When |
-|------|---------|------|
+| ------ | --------- | ------ |
 | Task shared with you | Push (FCM) | Always |
 | Friend request | Push (FCM) | Always |
 | Task due soon | Push (FCM) | Based on user preference |
@@ -253,6 +269,7 @@ GitHub Releases is convenient for Android APKs. iOS `.ipa` files attached to a r
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for version history. Format: `V xx.yy.zz`
+
 - xx = major version (breaking changes)
 - yy = new important feature
 - zz = minor change (every individual change)
@@ -283,7 +300,7 @@ Follow the format:
 Common types:
 
 | Type | Use for |
-|------|---------|
+| ------ | --------- |
 | `feat` | New feature or behavior |
 | `fix` | Bug fix |
 | `docs` | Documentation changes only |
