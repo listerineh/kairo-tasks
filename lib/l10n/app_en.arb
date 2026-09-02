@@ -171,6 +171,15 @@
   "notificationStreakLostBody": "You lost your streak of {count} consecutive days. Let's start a new one!",
   "notificationStreakEarnedTitle": "+1 streak day!",
   "notificationStreakEarnedBody": "You have {count} consecutive days completing tasks",
+  "streakDays": "{count, plural, =1{1 day} other{{count} days}}",
+  "@streakDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "close": "Close",
   "notificationUrgentTitle": "Urgent: {title}",
   "notificationUrgentBody": "Due {due}",
   "noNotifications": "No notifications yet",

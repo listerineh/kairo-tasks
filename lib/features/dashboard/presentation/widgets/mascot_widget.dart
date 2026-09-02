@@ -12,11 +12,13 @@ class MascotWidget extends StatefulWidget {
   const MascotWidget({
     required this.state,
     required this.streak,
+    this.showStreak = true,
     super.key,
   });
 
   final MascotState state;
   final int streak;
+  final bool showStreak;
 
   @override
   State<MascotWidget> createState() => _MascotWidgetState();
@@ -111,8 +113,10 @@ class _MascotWidgetState extends State<MascotWidget>
             ],
           ),
         ),
-        const SizedBox(height: AppSpacing.spacing8),
-        _StreakChip(streak: widget.streak),
+        if (widget.showStreak) ...[
+          const SizedBox(height: AppSpacing.spacing8),
+          _StreakChip(streak: widget.streak),
+        ],
       ],
     );
   }
@@ -505,7 +509,7 @@ class _StreakChip extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.spacing4),
           Text(
-            'Streak: $streak days',
+            context.l10n.streakDays(streak),
             style: context.textTheme.bodySmall?.copyWith(
               color: colors.accent,
               fontWeight: FontWeight.w600,

@@ -177,6 +177,15 @@
   "notificationStreakLostBody": "Perdiste tu racha de {count} días consecutivos. ¡Empecemos una nueva!",
   "notificationStreakEarnedTitle": "¡+1 día de racha!",
   "notificationStreakEarnedBody": "Tienes {count} días consecutivos completando tareas",
+  "streakDays": "{count, plural, =1{1 día} other{{count} días}}",
+  "@streakDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "close": "Cerrar",
   "notificationUrgentTitle": "Urgente: {title}",
   "notificationUrgentBody": "Vence {due}",
   "noNotifications": "Aún no hay notificaciones",

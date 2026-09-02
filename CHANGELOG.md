@@ -10,6 +10,18 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.17.11 - Redesign streak celebration dialog (2026-09-02)
+
+### Changed in V 01.17.11
+
+- Redesigned `StreakCelebration` to match the app's design system: rounded surface card, mascot on a soft accent circle, confetti in app colors, and a clear close button.
+- Removed automatic dismissal; the dialog now waits for the user to close it.
+- Localized the streak badge in `MascotWidget` (`streakDays`) and made the chip optional (`showStreak`).
+- Added `close` and `streakDays` localization keys for English and Spanish.
+- Bumped version to `1.17.11+97`.
+
+---
+
 ## V 01.17.10 - Fix Android push notifications and streak dialog crash (2026-09-02)
 
 ### Changed in V 01.17.10
