@@ -59,7 +59,14 @@ class _KairoAppState extends State<KairoApp> {
                 current.streakToCelebrate != null &&
                 previous.streakToCelebrate != current.streakToCelebrate,
             listener: (context, state) {
-              showStreakCelebration(context, state.streakToCelebrate!);
+              final navigator =
+                  AppRouter.router?.routerDelegate.navigatorKey.currentState;
+              if (navigator != null && navigator.mounted) {
+                showStreakCelebration(
+                  navigator.context,
+                  state.streakToCelebrate!,
+                );
+              }
               context.read<TasksBloc>().add(const TasksClearStreakCelebration());
             },
             child: MaterialApp.router(

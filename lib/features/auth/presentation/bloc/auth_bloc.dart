@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -10,6 +11,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/services/logger_service.dart';
+import '../../../../core/services/notification_service.dart';
 
 // Events
 abstract class AuthEvent extends Equatable {
@@ -115,6 +117,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           user: _client.auth.currentUser,
         ),
       );
+      unawaited(NotificationService.instance.registerFcmToken());
     } else {
       emit(state.copyWith(status: AuthStatus.unauthenticated));
     }
@@ -140,6 +143,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           user: response.user,
         ),
       );
+      unawaited(NotificationService.instance.registerFcmToken());
       LoggerService.instance.info(
         'Sign in successful',
         data: {
@@ -191,6 +195,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             user: response.user,
           ),
         );
+        unawaited(NotificationService.instance.registerFcmToken());
         LoggerService.instance.info(
           'Sign up successful',
           data: {
@@ -299,6 +304,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           user: response.user,
         ),
       );
+      unawaited(NotificationService.instance.registerFcmToken());
       LoggerService.instance.info(
         'Google sign in successful',
         data: {
@@ -385,6 +391,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           user: response.user,
         ),
       );
+      unawaited(NotificationService.instance.registerFcmToken());
       LoggerService.instance.info(
         'Apple sign in successful',
         data: {

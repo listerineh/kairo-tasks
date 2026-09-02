@@ -102,18 +102,32 @@ class NotificationService {
     required NotificationDetails details,
     required AndroidScheduleMode androidScheduleMode,
     required String type,
+    String? taskId,
     DateTimeComponents? matchDateTimeComponents,
   }) async {
-    await _flutterLocalNotificationsPlugin.zonedSchedule(
-      id,
-      title,
-      body,
-      scheduledDate,
-      details,
-      androidScheduleMode: androidScheduleMode,
-      matchDateTimeComponents: matchDateTimeComponents,
-      payload: _payloadJson(type: type, title: title, body: body),
-    );
+    try {
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduledDate,
+        details,
+        androidScheduleMode: androidScheduleMode,
+        matchDateTimeComponents: matchDateTimeComponents,
+        payload: _payloadJson(type: type, title: title, body: body),
+      );
+    } catch (e) {
+      LoggerService.instance.error(
+        'Failed to schedule notification',
+        data: {
+          'operation': 'notification.zonedSchedule',
+          if (taskId != null) 'task_id': taskId,
+          'id': id,
+          'scheduled_date': scheduledDate.toIso8601String(),
+          'error': e.toString(),
+        },
+      );
+    }
   }
 
   tz.TZDateTime _next8pm() {
@@ -270,22 +284,43 @@ class NotificationService {
     }
 
     if (Platform.isIOS) {
-      final settings = await FirebaseMessaging.instance.requestPermission(
+      if (_fcmAvailable) {
+        final settings = await FirebaseMessaging.instance.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        final granted =
+            settings.authorizationStatus == AuthorizationStatus.authorized;
+        LoggerService.instance.info(
+          'Notification permission result',
+          data: {
+            'operation': 'notification.requestPermission',
+            'platform': platform,
+            'granted': granted,
+          },
+        );
+        return granted;
+      }
+
+      final iOSImplementation = _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>();
+      final granted = await iOSImplementation?.requestPermissions(
         alert: true,
         badge: true,
         sound: true,
       );
-      final granted =
-          settings.authorizationStatus == AuthorizationStatus.authorized;
+      final result = granted ?? true;
       LoggerService.instance.info(
         'Notification permission result',
         data: {
           'operation': 'notification.requestPermission',
           'platform': platform,
-          'granted': granted,
+          'granted': result,
         },
       );
-      return granted;
+      return result;
     }
 
     LoggerService.instance.info(
@@ -471,6 +506,8 @@ class NotificationService {
         .cancel(_reminderId(taskId, _kDueSoonOffset));
     await _flutterLocalNotificationsPlugin
         .cancel(_reminderId(taskId, _kOverdueOffset));
+    await _flutterLocalNotificationsPlugin
+        .cancel(_reminderId(taskId, _kUrgentOffset));
   }
 
   Future<void> cancelAllTaskReminders() async {

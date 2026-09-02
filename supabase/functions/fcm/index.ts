@@ -97,6 +97,13 @@ Deno.serve(async (req) => {
             Object.entries(data).map(([k, v]) => [k, String(v)]),
           )
         : {},
+      android: {
+        priority: "high",
+        notification: {
+          channel_id: "high_importance_channel",
+          sound: "default",
+        },
+      },
     },
   };
 

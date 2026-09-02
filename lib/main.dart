@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -61,11 +60,6 @@ Future<void> main() async {
   final initialLocation = session != null
       ? '/dashboard'
       : (hasSeenOnboarding ? '/login' : '/onboarding');
-
-  // Register Android FCM token on startup
-  if (Platform.isAndroid) {
-    await NotificationService.instance.registerFcmToken();
-  }
 
   // Capture Flutter and platform errors
   FlutterError.onError = (details) {

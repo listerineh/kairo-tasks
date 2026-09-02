@@ -10,6 +10,19 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.17.10 - Fix Android push notifications and streak dialog crash (2026-09-02)
+
+### Changed in V 01.17.10
+
+- Register the FCM token after every successful sign-in and on app-start session check (`AuthBloc`).
+- Fix iOS notification permission crash when Firebase is not configured by using `flutter_local_notifications` iOS permission request.
+- Fix streak celebration crash caused by `showDialog` being called with a `BuildContext` above the `Navigator`.
+- Harden `NotificationService._zonedSchedule` and `cancelTaskReminder` (cancel urgent reminders, catch scheduling errors).
+- FCM Edge Function now sends `android.priority: high` and `android.notification.channel_id: high_importance_channel` for reliable heads-up delivery on Android.
+- Bumped version to `1.17.10+96`.
+
+---
+
 ## V 01.17.09 - Fix task edit save on Android (2026-09-02)
 
 ### Changed in V 01.17.09
