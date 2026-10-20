@@ -409,7 +409,7 @@ The main tabs (tasks, calendar, social, profile) share a `ShellRoute` with `Bott
 6. Build pages and widgets in `presentation/pages/` and `presentation/widgets/`
 7. Register dependencies in DI (`@injectable`, `@LazySingleton`)
 8. Add routes in `app/router/app_router.dart`
-9. Run `dart run build_runner build --delete-conflicting-outputs`
+9. Run `dart run build_runner build`
 
 ---
 

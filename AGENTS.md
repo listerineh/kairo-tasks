@@ -101,7 +101,7 @@ See [docs/design.md](docs/design.md) for the complete design system including to
 flutter pub get
 
 # Run code generation (after adding @injectable annotations)
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 
 # Run analyzer
 flutter analyze
