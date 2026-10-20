@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injectable/injectable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/services/logger_service.dart';
@@ -227,8 +228,9 @@ class TasksState extends Equatable {
 enum TasksStatus { initial, loading, loaded, error }
 
 // BLoC
+@injectable
 class TasksBloc extends Bloc<TasksEvent, TasksState> {
-  TasksBloc() : super(const TasksState()) {
+  TasksBloc(this._client) : super(const TasksState()) {
     on<TasksLoadRequested>(_onLoadRequested);
     on<TasksFilterChanged>(_onFilterChanged);
     on<TaskCreateRequested>(_onCreateRequested);
@@ -240,7 +242,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     on<TasksClearStreakCelebration>(_onClearStreakCelebration);
   }
 
-  SupabaseClient get _client => Supabase.instance.client;
+  final SupabaseClient _client;
   String get _userId => _client.auth.currentUser!.id;
   StreamSubscription<List<Map<String, dynamic>>>? _subscription;
   StreamSubscription<List<Map<String, dynamic>>>? _sharedSubscription;

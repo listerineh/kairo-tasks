@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:injectable/injectable.dart';
 
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
@@ -7,6 +8,7 @@ import '../../domain/repositories/task_repository.dart';
 import '../datasources/task_remote_datasource.dart';
 import '../models/task_model.dart';
 
+@LazySingleton(as: TaskRepository)
 class TaskRepositoryImpl implements TaskRepository {
   TaskRepositoryImpl(this._remoteDataSource);
 

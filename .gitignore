@@ -72,3 +72,6 @@ lib/generated/
 .vscode/
 .idea/
 supabase/.temp/
+
+# Golden test failure diffs
+**/failures/

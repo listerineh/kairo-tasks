@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -15,7 +16,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../app/locale/locale_service.dart';
-import '../../app/router/app_router.dart';
+import '../../app/di/injection.dart';
 import '../../generated/app_localizations.dart';
 import '../../features/tasks/domain/entities/task_entity.dart';
 import 'logger_service.dart';
@@ -1010,8 +1011,8 @@ class NotificationService {
   }
 
   void _navigateFromMessage(RemoteMessage message) {
-    final router = AppRouter.router;
-    if (router == null) return;
+    if (!getIt.isRegistered<GoRouter>()) return;
+    final router = getIt<GoRouter>();
     if (Supabase.instance.client.auth.currentSession == null) return;
 
     final type = message.data['type'] as String? ?? '';

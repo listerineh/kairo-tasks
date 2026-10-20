@@ -10,6 +10,27 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.18.00 - Kairo 2.0 foundation: bug fixes, DI and tests (2026-10-20)
+
+### Fixed in V 01.18.00
+
+- The `GoRouter` is now created once in `main` and registered in DI. Before, it was recreated on every locale change, which reset the navigation stack.
+- The theme listener no longer piles up on every rebuild; `KairoApp` now uses `ValueListenableBuilder`.
+- `ThemeService` and `LocaleService` initialize once, after Supabase, so the locale fallback to the user's profile language works.
+- Removed the mutable static `AppRouter.router`. `NotificationService` now reads the router from DI.
+- Localized the "View notification history" label (`viewNotificationHistory`).
+- Fixed the "Zone mismatch" error at startup: bindings, initialization and `runApp` now run inside a single `runZonedGuarded` zone.
+
+### Added in V 01.18.00
+
+- DI wiring with injectable: `SupabaseClient` module, task and auth data sources, `TaskRepository`, and `AuthBloc` and `TasksBloc` as factories (the client is injected through the constructor).
+- Test setup: mocktail mocks, a font loader for golden tests (`flutter_test_config.dart`), and the first unit and bloc tests for `TaskModel`, `TaskRepositoryImpl`, `TasksBloc` and `AuthBloc`.
+- Added `docs/redesign-plan.md` and `CLAUDE.md`.
+- Bumped version to `1.18.0+98`.
+- Removed the `--delete-conflicting-outputs` flag (dropped by build_runner) from `AGENTS.md` and `docs/architecture.md`.
+
+---
+
 ## V 01.17.11 - Redesign streak celebration dialog (2026-09-02)
 
 ### Changed in V 01.17.11

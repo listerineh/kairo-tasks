@@ -189,6 +189,7 @@
   "notificationUrgentTitle": "Urgente: {title}",
   "notificationUrgentBody": "Vence {due}",
   "noNotifications": "Aún no hay notificaciones",
+  "viewNotificationHistory": "Ver historial de notificaciones",
   "markAllAsRead": "Marcar todas como leídas",
   "remindMe": "Recordarme en",
   "remindInMinutes": "{minutes} min",

@@ -113,7 +113,7 @@ class _NotificationsSheetState extends State<NotificationsSheet> {
             ],
             const SizedBox(height: AppSpacing.spacing16),
             ListTile(
-              title: const Text('View notification history'),
+              title: Text(context.l10n.viewNotificationHistory),
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: () {
                 Navigator.of(context).pop();
