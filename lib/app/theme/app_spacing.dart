@@ -26,6 +26,14 @@ class AppSpacing {
   static const double buttonHeight = 48;
   static const double iconButtonSize = 44;
 
+  // Kairo 2.0 layout (docs/redesign-plan.md §2.3): a radius hierarchy instead
+  // of one radius everywhere. Buttons are capsules, avatars circles.
+  static const double screenMargin = 16;
+  static const double radiusRow = 10;
+  static const double radiusSheet = 12;
+  static const double radiusCard = 16;
+  static const double hairline = 0.5;
+
   // Content max width (for tablets/landscape)
   static const double maxContentWidth = 600;
 }
