@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -11,6 +12,7 @@ import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/social/presentation/pages/social_page.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
+import '../gallery/gallery_page.dart';
 import '../router/shell_scaffold.dart';
 import 'route_names.dart';
 
@@ -30,6 +32,8 @@ class AppRouter {
       final isOnAuth = state.matchedLocation == '/login' ||
           state.matchedLocation == '/onboarding';
 
+      // The debug gallery needs no session.
+      if (state.matchedLocation == '/gallery') return null;
       if (!isLoggedIn && !isOnAuth) return '/login';
       if (isLoggedIn && isOnAuth) return '/dashboard';
       return null;
@@ -52,6 +56,12 @@ class AppRouter {
         path: '/focus',
         builder: (context, state) => const FocusPage(),
       ),
+      if (kDebugMode)
+        GoRoute(
+          path: '/gallery',
+          name: RouteNames.gallery,
+          builder: (context, state) => const GalleryPage(),
+        ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => ShellScaffold(
           navigationShell: navigationShell,
