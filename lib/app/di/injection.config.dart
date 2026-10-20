@@ -13,6 +13,7 @@ import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 import 'package:supabase_flutter/supabase_flutter.dart' as _i454;
 
+import '../../core/services/haptics_service.dart' as _i538;
 import '../../features/auth/data/datasources/auth_remote_datasource.dart'
     as _i161;
 import '../../features/auth/presentation/bloc/auth_bloc.dart' as _i797;
@@ -32,6 +33,7 @@ extension GetItInjectableX on _i174.GetIt {
   }) {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final registerModule = _$RegisterModule();
+    gh.lazySingleton<_i538.HapticsService>(() => _i538.HapticsService());
     gh.lazySingleton<_i454.SupabaseClient>(() => registerModule.supabaseClient);
     gh.lazySingleton<_i25.TaskRemoteDataSource>(
       () => _i25.TaskRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
