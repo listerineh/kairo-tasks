@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../app/theme/app_colors.dart';
+import '../../app/theme/kairo_colors.dart';
+import '../../app/theme/kairo_typography.dart';
 import '../../generated/app_localizations.dart';
 
 extension BuildContextX on BuildContext {
@@ -11,8 +12,12 @@ extension BuildContextX on BuildContext {
   Size get screenSize => MediaQuery.sizeOf(this);
   bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
 
-  AppColorScheme get appColors =>
-      isDarkMode ? AppColors.dark : AppColors.light;
+  /// Kairo color tokens from the active theme (animates with theme changes).
+  KairoColors get appColors => Theme.of(this).extension<KairoColors>()!;
+
+  /// Kairo 2.0 type scale for the current platform.
+  KairoTypography get typography =>
+      Theme.of(this).extension<KairoTypography>()!;
 
   AppLocalizations get l10n => AppLocalizations.of(this)!;
 }

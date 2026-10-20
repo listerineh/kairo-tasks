@@ -85,7 +85,7 @@ class _FilterChip extends StatelessWidget {
         child: Text(
           label,
           style: context.textTheme.labelLarge?.copyWith(
-            color: isSelected ? Colors.white : colors.textSecondary,
+            color: isSelected ? colors.onTint : colors.textSecondary,
           ),
         ),
       ),

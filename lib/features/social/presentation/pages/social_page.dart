@@ -550,8 +550,8 @@ class _Tab extends StatelessWidget {
               child: Center(
                 child: Text(
                   count.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colors.onDestructive,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -791,7 +791,7 @@ class _RequestsTab extends StatelessWidget {
                         _IconActionButton(
                           icon: Icons.check,
                           backgroundColor: colors.accent,
-                          iconColor: Colors.white,
+                          iconColor: colors.onTint,
                           onPressed: () => onAccept(
                             request['id'] as String,
                             'accepted',

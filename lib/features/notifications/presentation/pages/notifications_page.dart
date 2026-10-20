@@ -15,7 +15,7 @@ class NotificationsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.notifications),
-        backgroundColor: colors.surface,
+        backgroundColor: colors.background,
         foregroundColor: colors.textPrimary,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -28,7 +28,7 @@ class NotificationsPage extends StatelessWidget {
           ),
         ],
       ),
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background,
       body: ValueListenableBuilder(
         valueListenable: NotificationStore.instance.notifications,
         builder: (context, list, _) {

@@ -76,7 +76,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     ];
 
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: Stack(
           children: [

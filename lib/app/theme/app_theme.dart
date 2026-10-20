@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'app_colors.dart';
 import 'app_spacing.dart';
+import 'kairo_colors.dart';
+import 'kairo_typography.dart';
 
 class AppTheme {
   AppTheme._();
@@ -10,35 +12,43 @@ class AppTheme {
   static ThemeData get light => _buildTheme(Brightness.light);
   static ThemeData get dark => _buildTheme(Brightness.dark);
 
-  static ThemeData _buildTheme(Brightness brightness) {
+  /// Same theme with the legacy DM fonts swapped for bundled Inter, because
+  /// golden tests cannot download Google Fonts.
+  @visibleForTesting
+  static ThemeData golden(Brightness brightness) =>
+      _buildTheme(brightness, goldens: true);
+
+  static ThemeData _buildTheme(Brightness brightness, {bool goldens = false}) {
+    final fonts = _LegacyFonts(bundled: goldens);
     final isLight = brightness == Brightness.light;
-    final colors = isLight ? AppColors.light : AppColors.dark;
+    final colors = isLight ? KairoColors.light : KairoColors.dark;
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      scaffoldBackgroundColor: colors.surface,
+      scaffoldBackgroundColor: colors.background,
+      extensions: [colors, KairoTypography.forPlatform(defaultTargetPlatform)],
       colorScheme: ColorScheme(
         brightness: brightness,
         primary: colors.accent,
-        onPrimary: Colors.white,
+        onPrimary: colors.onTint,
         secondary: colors.accentSoft,
         onSecondary: colors.textPrimary,
-        error: colors.urgent,
-        onError: Colors.white,
+        error: colors.destructive,
+        onError: colors.onDestructive,
         surface: colors.surface,
         onSurface: colors.textPrimary,
-        surfaceContainerHighest: colors.surfaceElevated,
+        surfaceContainerHighest: colors.surfaceRaised,
         outline: colors.border,
       ),
-      textTheme: _buildTextTheme(colors),
+      textTheme: _buildTextTheme(colors, fonts),
       appBarTheme: AppBarTheme(
-        backgroundColor: colors.surface,
+        backgroundColor: colors.background,
         foregroundColor: colors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0.5,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.dmSerifDisplay(
+        titleTextStyle: fonts.serif(
           fontSize: 22,
           fontWeight: FontWeight.w400,
           color: colors.textPrimary,
@@ -57,12 +67,12 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: colors.accent,
-          foregroundColor: Colors.white,
+          foregroundColor: colors.onTint,
           minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
           ),
-          textStyle: GoogleFonts.dmSans(
+          textStyle: fonts.sans(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.2,
@@ -77,7 +87,7 @@ class AppTheme {
             borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
           ),
           side: BorderSide(color: colors.accent),
-          textStyle: GoogleFonts.dmSans(
+          textStyle: fonts.sans(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.2,
@@ -107,14 +117,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
           borderSide: BorderSide(color: colors.urgent),
         ),
-        hintStyle: GoogleFonts.dmSans(
-          color: colors.textMuted,
-          fontSize: 14,
-        ),
-        labelStyle: GoogleFonts.dmSans(
-          color: colors.textSecondary,
-          fontSize: 14,
-        ),
+        hintStyle: fonts.sans(color: colors.textMuted, fontSize: 14),
+        labelStyle: fonts.sans(color: colors.textSecondary, fontSize: 14),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: colors.surfaceElevated,
@@ -122,11 +126,11 @@ class AppTheme {
         unselectedItemColor: colors.textMuted,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-        selectedLabelStyle: GoogleFonts.dmSans(
+        selectedLabelStyle: fonts.sans(
           fontSize: 12,
           fontWeight: FontWeight.w600,
         ),
-        unselectedLabelStyle: GoogleFonts.dmSans(
+        unselectedLabelStyle: fonts.sans(
           fontSize: 12,
           fontWeight: FontWeight.w400,
         ),
@@ -138,7 +142,7 @@ class AppTheme {
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: colors.accent,
-        foregroundColor: Colors.white,
+        foregroundColor: colors.onTint,
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
@@ -147,72 +151,72 @@ class AppTheme {
     );
   }
 
-  static TextTheme _buildTextTheme(AppColorScheme colors) {
+  static TextTheme _buildTextTheme(KairoColors colors, _LegacyFonts fonts) {
     return TextTheme(
-      displayLarge: GoogleFonts.dmSerifDisplay(
+      displayLarge: fonts.serif(
         fontSize: 32,
         fontWeight: FontWeight.w400,
         color: colors.textPrimary,
         height: 1.3,
       ),
-      displayMedium: GoogleFonts.dmSerifDisplay(
+      displayMedium: fonts.serif(
         fontSize: 28,
         fontWeight: FontWeight.w400,
         color: colors.textPrimary,
         height: 1.3,
       ),
-      titleLarge: GoogleFonts.dmSerifDisplay(
+      titleLarge: fonts.serif(
         fontSize: 22,
         fontWeight: FontWeight.w400,
         color: colors.textPrimary,
         height: 1.3,
       ),
-      titleMedium: GoogleFonts.dmSans(
+      titleMedium: fonts.sans(
         fontSize: 18,
         fontWeight: FontWeight.w600,
         color: colors.textPrimary,
         height: 1.4,
       ),
-      titleSmall: GoogleFonts.dmSans(
+      titleSmall: fonts.sans(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         color: colors.textPrimary,
         height: 1.4,
       ),
-      bodyLarge: GoogleFonts.dmSans(
+      bodyLarge: fonts.sans(
         fontSize: 16,
         fontWeight: FontWeight.w400,
         color: colors.textPrimary,
         height: 1.6,
         letterSpacing: 0.2,
       ),
-      bodyMedium: GoogleFonts.dmSans(
+      bodyMedium: fonts.sans(
         fontSize: 14,
         fontWeight: FontWeight.w400,
         color: colors.textSecondary,
         height: 1.6,
         letterSpacing: 0.2,
       ),
-      bodySmall: GoogleFonts.dmSans(
+      bodySmall: fonts.sans(
         fontSize: 12,
         fontWeight: FontWeight.w400,
         color: colors.textMuted,
         height: 1.5,
       ),
-      labelLarge: GoogleFonts.dmSans(
+      labelLarge: fonts.sans(
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: colors.textPrimary,
         height: 1.4,
         letterSpacing: 0.3,
       ),
-      labelMedium: GoogleFonts.dmSans(
+      labelMedium: fonts.sans(
         fontSize: 12,
         fontWeight: FontWeight.w500,
         color: colors.textSecondary,
         height: 1.4,
       ),
-      labelSmall: GoogleFonts.dmSans(
+      labelSmall: fonts.sans(
         fontSize: 11,
         fontWeight: FontWeight.w500,
         color: colors.textMuted,
@@ -220,5 +224,52 @@ class AppTheme {
         letterSpacing: 0.5,
       ),
     );
+  }
+}
+
+/// The 1.x DM fonts, fetched by google_fonts at runtime. Retired screen by
+/// screen during the redesign; Phase 9 removes this.
+class _LegacyFonts {
+  const _LegacyFonts({required this.bundled});
+
+  /// Use bundled Inter instead (golden tests have no network).
+  final bool bundled;
+
+  TextStyle sans({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? height,
+    double? letterSpacing,
+  }) {
+    final style = TextStyle(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      height: height,
+      letterSpacing: letterSpacing,
+    );
+    return bundled
+        ? style.copyWith(fontFamily: 'Inter')
+        : GoogleFonts.dmSans(textStyle: style);
+  }
+
+  TextStyle serif({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? height,
+    double? letterSpacing,
+  }) {
+    final style = TextStyle(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      height: height,
+      letterSpacing: letterSpacing,
+    );
+    return bundled
+        ? style.copyWith(fontFamily: 'Inter')
+        : GoogleFonts.dmSerifDisplay(textStyle: style);
   }
 }

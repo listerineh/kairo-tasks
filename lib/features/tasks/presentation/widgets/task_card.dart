@@ -167,10 +167,10 @@ class TaskCard extends StatelessWidget {
                                 ),
                               ),
                               child: isCompleted
-                                  ? const Icon(
+                                  ? Icon(
                                       Icons.check,
                                       size: 14,
-                                      color: Colors.white,
+                                      color: colors.onTint,
                                     )
                                   : null,
                             ),

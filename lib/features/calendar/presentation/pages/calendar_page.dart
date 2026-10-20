@@ -278,7 +278,7 @@ class _CalendarPageState extends State<CalendarPage> {
                         style: context.textTheme.labelMedium?.copyWith(
                           color: isSelected
                               ? (isToday
-                                  ? Colors.white
+                                  ? colors.onTint
                                   : colors.textPrimary)
                               : (isToday
                                   ? colors.accent
@@ -578,7 +578,7 @@ class _ViewChip extends StatelessWidget {
           child: Text(
             label,
             style: context.textTheme.labelSmall?.copyWith(
-              color: isSelected ? Colors.white : colors.textSecondary,
+              color: isSelected ? colors.onTint : colors.textSecondary,
               fontWeight: FontWeight.w600,
               fontSize: 12,
             ),

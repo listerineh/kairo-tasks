@@ -69,7 +69,7 @@ class _LoginPageState extends State<LoginPage>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                colors.surface,
+                colors.background,
                 colors.surfaceSubtle,
               ],
             ),
@@ -453,12 +453,12 @@ class _SubmitButton extends StatelessWidget {
             ),
             child: Center(
               child: isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color: Colors.white,
+                        color: colors.onTint,
                       ),
                     )
                   : Text(
@@ -466,7 +466,7 @@ class _SubmitButton extends StatelessWidget {
                           ? context.l10n.createAccountButton
                           : context.l10n.signIn,
                       style: context.textTheme.bodyLarge?.copyWith(
-                        color: Colors.white,
+                        color: colors.onTint,
                         fontWeight: FontWeight.w700,
                       ),
                     ),

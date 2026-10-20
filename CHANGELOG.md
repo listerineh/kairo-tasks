@@ -10,6 +10,26 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.19.00 - Kairo 2.0 design system: tokens, motion and shared components (2026-10-20)
+
+### Added in V 01.19.00
+
+- `KairoColors` (`ThemeExtension`) with the accessible 2.0 palette. Every text pair passes WCAG AA, and a test enforces it. Dark red and blue use Apple's high-contrast variants (`#FF6961`, `#409CFF`) because the standard ones fail on sheets.
+- `KairoTypography`: Apple's Dynamic Type scale, using SF on iOS and bundled Inter (`assets/fonts`, OFL) on other platforms. Exposed as `context.typography`.
+- `app_motion.dart`: `smooth`, `snappy` and `bouncy` springs, a spring curve for implicit animations, and `context.motion`, which turns springs into 150 ms cross-fades under reduced motion.
+- `HapticsService` (DI): `selection`, `completed` and `celebrated`, with an on/off switch.
+- Shared components in `core/widgets/`: `KairoButton` (filled, tinted, plain), `GroupedSection`/`GroupedRow`, `CheckCircle`, `PriorityBadge`, `KairoAvatar`, `EmptyState`, `KairoSegmentedControl`, `KairoLargeTitleScaffold`, `KairoTabBar` and `showKairoSheet` (medium and large detents).
+- Debug-only `/gallery` route (Profile → Component gallery) that shows every component.
+- Golden tests for each component in light, dark and 200% text (`test/goldens/`), plus behavior tests.
+
+### Changed in V 01.19.00
+
+- `AppColorScheme` is now an alias of `KairoColors`. Legacy names (`accent`, `textMuted`, and so on) point to the new tokens, so every screen already uses the accessible palette. Screens keep the DM fonts until they are redesigned.
+- Hardcoded `Colors.white` on accent and red fills replaced with `onTint` / `onDestructive`.
+- Bumped version to `1.19.0+99`.
+
+---
+
 ## V 01.18.00 - Kairo 2.0 foundation: bug fixes, DI and tests (2026-10-20)
 
 ### Fixed in V 01.18.00
