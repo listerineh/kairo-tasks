@@ -4,18 +4,27 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/app.dart';
 import 'app/di/injection.dart';
 import 'app/locale/locale_service.dart';
+import 'app/router/app_router.dart';
+import 'app/theme/theme_service.dart';
 import 'core/constants/app_constants.dart';
 import 'core/services/logger_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/notification_store.dart';
 
 Future<void> main() async {
+  // Bindings, init and runApp must share one zone, or Flutter reports a
+  // zone mismatch and zone-specific config behaves inconsistently.
+  await runZonedGuarded<Future<void>>(_bootstrap, _onZoneError);
+}
+
+Future<void> _bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Lock orientation to portrait
@@ -35,7 +44,6 @@ Future<void> main() async {
     }
   }
 
-  await LocaleService.instance.init();
   await NotificationService.instance.initialize();
 
   // Initialize Supabase
@@ -43,6 +51,11 @@ Future<void> main() async {
     url: AppConstants.supabaseUrl,
     publishableKey: AppConstants.supabaseAnonKey,
   );
+
+  // Theme and locale load once here. Locale runs after Supabase so it can
+  // fall back to the language stored in the user profile.
+  await ThemeService.instance.init();
+  await LocaleService.instance.init();
 
   // Initialize logging
   await LoggerService.instance.init();
@@ -60,6 +73,7 @@ Future<void> main() async {
   final initialLocation = session != null
       ? '/dashboard'
       : (hasSeenOnboarding ? '/login' : '/onboarding');
+  getIt.registerSingleton<GoRouter>(AppRouter.create(initialLocation));
 
   // Capture Flutter and platform errors
   FlutterError.onError = (details) {
@@ -84,16 +98,15 @@ Future<void> main() async {
     return true;
   };
 
-  runZonedGuarded<void>(
-    () => runApp(KairoApp(initialLocation: initialLocation)),
-    (error, stackTrace) {
-      LoggerService.instance.error(
-        'Uncaught zone error',
-        data: <String, dynamic>{
-          'error': error.toString(),
-          'stack': stackTrace.toString(),
-        },
-      );
+  runApp(KairoApp(router: getIt<GoRouter>()));
+}
+
+void _onZoneError(Object error, StackTrace stackTrace) {
+  LoggerService.instance.error(
+    'Uncaught zone error',
+    data: <String, dynamic>{
+      'error': error.toString(),
+      'stack': stackTrace.toString(),
     },
   );
 }

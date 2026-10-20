@@ -183,6 +183,7 @@
   "notificationUrgentTitle": "Urgent: {title}",
   "notificationUrgentBody": "Due {due}",
   "noNotifications": "No notifications yet",
+  "viewNotificationHistory": "View notification history",
   "markAllAsRead": "Mark all as read",
   "remindMe": "Remind me in",
   "remindInMinutes": "{minutes} min",
