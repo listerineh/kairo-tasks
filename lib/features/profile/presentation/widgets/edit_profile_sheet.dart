@@ -309,10 +309,10 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                           CircleAvatar(
                             radius: 16,
                             backgroundColor: colors.accent,
-                            child: const Icon(
+                            child: Icon(
                               Icons.camera_alt,
                               size: 16,
-                              color: Colors.white,
+                              color: colors.onTint,
                             ),
                           ),
                         ],
@@ -404,12 +404,12 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                   ElevatedButton(
                     onPressed: _isSaving ? null : _save,
                     child: _isSaving
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: colors.onTint,
                             ),
                           )
                         : Text(context.l10n.saveChanges),

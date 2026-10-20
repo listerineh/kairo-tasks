@@ -167,7 +167,7 @@ class _WeekRow extends StatelessWidget {
                             style:
                                 context.textTheme.labelSmall?.copyWith(
                               color: isToday
-                                  ? Colors.white
+                                  ? colors.onDestructive
                                   : colors.textPrimary,
                               fontWeight: isToday
                                   ? FontWeight.w700

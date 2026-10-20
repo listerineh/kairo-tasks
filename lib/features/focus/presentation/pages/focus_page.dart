@@ -290,7 +290,7 @@ class _ControlButton extends StatelessWidget {
           height: 64,
           child: Icon(
             icon,
-            color: Colors.white,
+            color: colors.onTint,
             size: 32,
           ),
         ),
