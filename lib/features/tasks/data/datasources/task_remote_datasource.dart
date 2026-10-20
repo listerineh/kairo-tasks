@@ -1,3 +1,4 @@
+import 'package:injectable/injectable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/errors/exceptions.dart';
@@ -12,6 +13,7 @@ abstract class TaskRemoteDataSource {
   Stream<List<TaskModel>> watchTasks();
 }
 
+@LazySingleton(as: TaskRemoteDataSource)
 class TaskRemoteDataSourceImpl implements TaskRemoteDataSource {
   TaskRemoteDataSourceImpl(this._client);
 

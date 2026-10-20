@@ -7,6 +7,7 @@ import 'package:kairotasks/generated/app_localizations.dart';
 import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/dashboard/presentation/widgets/streak_celebration.dart';
 import '../features/tasks/presentation/bloc/tasks_bloc.dart';
+import 'di/injection.dart';
 import 'locale/locale_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_service.dart';
@@ -23,10 +24,10 @@ class KairoApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => AuthBloc()..add(const AuthCheckRequested()),
+          create: (_) => getIt<AuthBloc>()..add(const AuthCheckRequested()),
         ),
         BlocProvider(
-          create: (_) => TasksBloc()..add(const TasksLoadRequested()),
+          create: (_) => getIt<TasksBloc>()..add(const TasksLoadRequested()),
         ),
       ],
       child: BlocListener<TasksBloc, TasksState>(
