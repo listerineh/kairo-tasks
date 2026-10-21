@@ -1,313 +1,328 @@
 import 'package:flutter/material.dart';
 
-import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/widgets/grouped_section.dart';
 import '../../../tasks/domain/entities/task_entity.dart';
+import '../../domain/calendar_range.dart';
+import '../../domain/timeline_layout.dart';
+import 'calendar_colors.dart';
 
-/// Month view showing task title previews inside each day cell,
-/// similar to Google Calendar's month view.
+/// Month grid with up to three colored dots per day; the selected day's
+/// agenda is listed below (the iOS Calendar pattern).
 class MonthView extends StatelessWidget {
   const MonthView({
-    required this.month,
-    required this.tasks,
     required this.selectedDate,
+    required this.tasks,
     required this.onDateTap,
+    required this.onTaskTap,
+    this.now,
     super.key,
   });
 
-  final DateTime month;
-  final List<TaskEntity> tasks;
   final DateTime selectedDate;
-  final void Function(DateTime) onDateTap;
+  final List<TaskEntity> tasks;
+  final ValueChanged<DateTime> onDateTap;
+  final ValueChanged<TaskEntity> onTaskTap;
 
-  static const _dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  /// Marks today (tests).
+  final DateTime? now;
+
+  static const int maxDots = 3;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final now = DateTime.now();
+    final today = now ?? DateTime.now();
+    final agenda = tasksOnDay(tasks, selectedDate);
 
-    final firstOfMonth = DateTime(month.year, month.month);
-    final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
-    // Sunday = 0 based offset
-    final startWeekday = firstOfMonth.weekday % 7;
-    final totalCells = startWeekday + daysInMonth;
-    final rows = (totalCells / 7).ceil();
-
-    return Column(
-      children: [
-        // Day name headers
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.spacing4,
-          ),
-          child: Row(
-            children: _dayNames
-                .map(
-                  (name) => Expanded(
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Text(
-                          name,
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: colors.textMuted,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-        ),
-
-        // Weeks (fills remaining height)
-        Expanded(
-          child: Column(
-            children: List.generate(rows, (row) {
-              return Expanded(
-                child: _WeekRow(
-                  row: row,
-                  startWeekday: startWeekday,
-                  daysInMonth: daysInMonth,
-                  month: month,
-                  now: now,
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.spacing8,
+            ),
+            child: Column(
+              children: [
+                const _WeekdayHeader(),
+                _MonthGrid(
                   selectedDate: selectedDate,
+                  today: today,
                   tasks: tasks,
                   onDateTap: onDateTap,
                 ),
-              );
-            }),
+              ],
+            ),
           ),
         ),
+        SliverToBoxAdapter(
+          child: Divider(
+            height: AppSpacing.spacing16,
+            thickness: AppSpacing.hairline,
+            color: context.appColors.separator,
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: _Agenda(
+            day: selectedDate,
+            tasks: agenda,
+            onTaskTap: onTaskTap,
+          ),
+        ),
+        const SliverPadding(padding: EdgeInsets.only(bottom: 96)),
       ],
     );
   }
 }
 
-class _WeekRow extends StatelessWidget {
-  const _WeekRow({
-    required this.row,
-    required this.startWeekday,
-    required this.daysInMonth,
-    required this.month,
-    required this.now,
+class _WeekdayHeader extends StatelessWidget {
+  const _WeekdayHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    // Sunday first, like [startOfWeek].
+    final names = MaterialLocalizations.of(context).narrowWeekdays;
+    final style = context.typography.caption1.copyWith(
+      color: context.appColors.labelSecondary,
+    );
+    return ExcludeSemantics(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.spacing4),
+        child: Row(
+          children: [
+            for (final name in names)
+              Expanded(
+                child: Text(name, textAlign: TextAlign.center, style: style),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MonthGrid extends StatelessWidget {
+  const _MonthGrid({
     required this.selectedDate,
+    required this.today,
     required this.tasks,
     required this.onDateTap,
   });
 
-  final int row;
-  final int startWeekday;
-  final int daysInMonth;
-  final DateTime month;
-  final DateTime now;
   final DateTime selectedDate;
+  final DateTime today;
   final List<TaskEntity> tasks;
-  final void Function(DateTime) onDateTap;
+  final ValueChanged<DateTime> onDateTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final first = DateTime(selectedDate.year, selectedDate.month);
+    final days = DateUtils.getDaysInMonth(first.year, first.month);
+    final leading = first.weekday % 7;
+    final rows = ((leading + days) / 7).ceil();
+
+    return Column(
+      children: [
+        for (var r = 0; r < rows; r++)
+          Row(
+            children: [
+              for (var c = 0; c < 7; c++)
+                Expanded(child: _cell(r * 7 + c - leading + 1, days, first)),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Widget _cell(int dayNumber, int daysInMonth, DateTime first) {
+    if (dayNumber < 1 || dayNumber > daysInMonth) {
+      return const SizedBox(height: _DayCell.height);
+    }
+    final date = DateTime(first.year, first.month, dayNumber);
+    return _DayCell(
+      date: date,
+      isToday: DateUtils.isSameDay(date, today),
+      isSelected: DateUtils.isSameDay(date, selectedDate),
+      tasks: tasksOnDay(tasks, date),
+      onTap: () => onDateTap(date),
+    );
+  }
+}
+
+class _DayCell extends StatelessWidget {
+  const _DayCell({
+    required this.date,
+    required this.isToday,
+    required this.isSelected,
+    required this.tasks,
+    required this.onTap,
+  });
+
+  static const double height = 52;
+
+  final DateTime date;
+  final bool isToday;
+  final bool isSelected;
+  final List<TaskEntity> tasks;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final type = context.typography;
+    final localizations = MaterialLocalizations.of(context);
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: List.generate(7, (col) {
-          final cellIndex = row * 7 + col;
-          final dayNumber = cellIndex - startWeekday + 1;
+    final Color? circle;
+    final Color number;
+    if (isSelected && isToday) {
+      circle = colors.tint;
+      number = colors.onTint;
+    } else if (isSelected) {
+      circle = colors.label;
+      number = colors.background;
+    } else {
+      circle = null;
+      number = isToday ? colors.tint : colors.label;
+    }
 
-          if (dayNumber < 1 || dayNumber > daysInMonth) {
-            return const Expanded(child: SizedBox(height: 80));
-          }
+    final dots = [
+      for (final t in tasks.take(MonthView.maxDots))
+        calendarColor(t.color) ?? colors.tint,
+    ];
 
-          final date = DateTime(month.year, month.month, dayNumber);
-          final isToday = _isSameDay(date, now);
-          final dayTasks = _tasksForDate(date);
-          // Show max 4 tasks, rest as "+N"
-          const maxVisible = 3;
-          final visibleTasks = dayTasks.take(maxVisible).toList();
-          final remaining = dayTasks.length - maxVisible;
-
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => onDateTap(date),
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 80),
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: localizations.formatFullDate(date),
+      value: tasks.isEmpty ? null : '${tasks.length}',
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: SizedBox(
+          height: height,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: colors.border.withValues(alpha: 0.2),
-                    ),
-                    right: col < 6
-                        ? BorderSide(
-                            color: colors.border.withValues(alpha: 0.15),
-                          )
-                        : BorderSide.none,
+                  color: circle,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  '${date.day}',
+                  textScaler: MediaQuery.textScalerOf(context)
+                      .clamp(maxScaleFactor: 1.2),
+                  style: type.callout.copyWith(
+                    color: number,
+                    fontWeight: isToday || isSelected
+                        ? FontWeight.w600
+                        : FontWeight.w400,
                   ),
                 ),
-                padding: const EdgeInsets.all(2),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+              const SizedBox(height: 3),
+              SizedBox(
+                height: 6,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Day number
-                    Center(
-                      child: Container(
-                        width: 24,
-                        height: 24,
+                    for (final dot in dots)
+                      Container(
+                        width: 5,
+                        height: 5,
+                        margin: const EdgeInsets.symmetric(horizontal: 1),
                         decoration: BoxDecoration(
+                          color: dot,
                           shape: BoxShape.circle,
-                          color: isToday ? colors.urgent : null,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '$dayNumber',
-                            style:
-                                context.textTheme.labelSmall?.copyWith(
-                              color: isToday
-                                  ? colors.onDestructive
-                                  : colors.textPrimary,
-                              fontWeight: isToday
-                                  ? FontWeight.w700
-                                  : FontWeight.w400,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    // Task previews
-                    ...visibleTasks.map(
-                      (task) => _TaskPreview(task: task),
-                    ),
-                    if (remaining > 0)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 1),
-                        child: Text(
-                          '+$remaining',
-                          style:
-                              context.textTheme.labelSmall?.copyWith(
-                            color: colors.textMuted,
-                            fontSize: 9,
-                          ),
                         ),
                       ),
                   ],
                 ),
               ),
-            ),
-          );
-        }),
-      );
-  }
-
-  List<TaskEntity> _tasksForDate(DateTime date) {
-    final dayStart = DateTime(date.year, date.month, date.day);
-    final dayEnd = dayStart.add(const Duration(days: 1));
-    return tasks.where((t) {
-      final start = t.startDate ?? t.dueDate ?? t.createdAt;
-      final end = t.dueDate ?? start;
-      return start.isBefore(dayEnd) && end.isAfter(dayStart);
-    }).toList();
-  }
-
-  bool _isSameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
-}
-
-class _TaskPreview extends StatelessWidget {
-  const _TaskPreview({required this.task});
-
-  final TaskEntity task;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final taskColor = _color(colors);
-    final isCompleted = task.status == TaskStatus.completed;
-
-    final priorityColor = _priorityColor(colors);
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 1),
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-      decoration: BoxDecoration(
-        color: taskColor.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(2),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 4,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: priorityColor,
-            ),
+            ],
           ),
-          const SizedBox(width: 2),
-          Expanded(
-            child: Text(
-              _label(),
-              style: context.textTheme.labelSmall?.copyWith(
-                fontSize: 9,
-                color: isCompleted ? colors.textMuted : null,
-                decoration:
-                    isCompleted ? TextDecoration.lineThrough : null,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
+}
 
-  String _label() {
-    if (task.dueDate != null) {
-      final h = task.dueDate!.hour;
-      final period = h >= 12 ? 'PM' : 'AM';
-      final display = h > 12 ? h - 12 : (h == 0 ? 12 : h);
-      return '$display $period ${task.title}';
+class _Agenda extends StatelessWidget {
+  const _Agenda({
+    required this.day,
+    required this.tasks,
+    required this.onTaskTap,
+  });
+
+  final DateTime day;
+  final List<TaskEntity> tasks;
+  final ValueChanged<TaskEntity> onTaskTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final header = MaterialLocalizations.of(context).formatFullDate(day);
+    if (tasks.isEmpty) {
+      return GroupedSection(
+        header: header,
+        children: [GroupedRow(title: l10n.calendarNothingPlanned)],
+      );
     }
-    return task.title;
+    final sorted = [...tasks]..sort(_byTime);
+    return GroupedSection(
+      header: header,
+      separatorInset: 28,
+      children: [
+        for (final t in sorted)
+          GroupedRow(
+            title: t.title,
+            subtitle: _time(context, t),
+            leading: _ColorBar(color: calendarColor(t.color)),
+            onTap: () => onTaskTap(t),
+          ),
+      ],
+    );
   }
 
-  Color _priorityColor(AppColorScheme colors) {
-    switch (task.priority) {
-      case TaskPriority.urgent:
-        return colors.urgent;
-      case TaskPriority.high:
-        return colors.high;
-      case TaskPriority.medium:
-        return colors.medium;
-      case TaskPriority.low:
-        return colors.low;
-    }
+  static int _byTime(TaskEntity a, TaskEntity b) {
+    final x = isAllDay(a) ? null : taskSpan(a)?.$1;
+    final y = isAllDay(b) ? null : taskSpan(b)?.$1;
+    if (x == null) return y == null ? 0 : -1;
+    if (y == null) return 1;
+    return x.compareTo(y);
   }
 
-  Color _color(AppColorScheme colors) {
-    if (task.color != null && task.color!.isNotEmpty) {
-      try {
-        return Color(int.parse(task.color!.replaceFirst('#', '0xFF')));
-      } catch (_) {
-        // fall through to priority color
-      }
-    }
-    switch (task.priority) {
-      case TaskPriority.urgent:
-        return colors.urgent;
-      case TaskPriority.high:
-        return colors.high;
-      case TaskPriority.medium:
-        return colors.medium;
-      case TaskPriority.low:
-        return colors.low;
-    }
+  String _time(BuildContext context, TaskEntity t) {
+    if (isAllDay(t)) return context.l10n.calendarAllDay;
+    final span = taskSpan(t);
+    if (span == null) return '';
+    final localizations = MaterialLocalizations.of(context);
+    final use24 = MediaQuery.alwaysUse24HourFormatOf(context);
+    String fmt(DateTime d) => localizations.formatTimeOfDay(
+      TimeOfDay.fromDateTime(d),
+      alwaysUse24HourFormat: use24,
+    );
+    final (from, to) = span;
+    return '${fmt(from)} – ${fmt(to)}';
   }
+}
+
+class _ColorBar extends StatelessWidget {
+  const _ColorBar({required this.color});
+
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 4,
+    height: 28,
+    decoration: BoxDecoration(
+      color: color ?? context.appColors.tint,
+      borderRadius: BorderRadius.circular(2),
+    ),
+  );
 }

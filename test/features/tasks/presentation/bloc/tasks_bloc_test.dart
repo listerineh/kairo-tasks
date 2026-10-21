@@ -183,7 +183,21 @@ void main() {
           TaskDraft(title: 'Renamed', priority: TaskPriority.low),
         ),
       ),
-      expect: () => <TasksState>[],
+      // Shown right away; the stream confirms it later.
+      expect: () => [
+        loaded.copyWith(
+          tasks: [
+            TaskEntity(
+              id: 't2',
+              ownerId: 'me',
+              title: 'Renamed',
+              priority: TaskPriority.low,
+              createdAt: b.createdAt,
+            ),
+            a,
+          ],
+        ),
+      ],
       verify: (_) {
         verify(
           () => update(
@@ -208,7 +222,22 @@ void main() {
       seed: () => loaded,
       act: (bloc) =>
           bloc.add(const TaskEdited('t2', TaskDraft(title: 'Renamed'))),
-      expect: () => [loaded.copyWith(errorMessage: 'offline')],
+      expect: () => [
+        loaded.copyWith(
+          tasks: [
+            TaskEntity(
+              id: 't2',
+              ownerId: 'me',
+              title: 'Renamed',
+              createdAt: b.createdAt,
+            ),
+            a,
+          ],
+        ),
+        // Rolled back, then the failure.
+        loaded,
+        loaded.copyWith(errorMessage: 'offline'),
+      ],
       verify: (_) => verifyNever(() => reminders.taskUpdated(any())),
     );
   });

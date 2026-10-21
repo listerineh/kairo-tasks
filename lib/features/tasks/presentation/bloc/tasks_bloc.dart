@@ -263,6 +263,9 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
   /// yet; incoming snapshots keep the local status for them.
   final Map<String, TaskStatus> _optimisticStatus = {};
 
+  /// Edited tasks not confirmed by the server yet.
+  final Map<String, TaskEntity> _optimisticEdits = {};
+
   /// Like switchMap: a new load cancels the previous subscription.
   static EventTransformer<E> _restartable<E>() => (events, mapper) {
     StreamSubscription<E>? inner;
@@ -332,9 +335,9 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
       for (final t in tasks)
         if (t.id != hidden)
           if (_optimisticStatus[t.id] case final status?)
-            t.copyWith(status: status)
+            (_optimisticEdits[t.id] ?? t).copyWith(status: status)
           else
-            t,
+            _optimisticEdits[t.id] ?? t,
     ];
   }
 
@@ -376,32 +379,46 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
   Future<void> _onEdited(TaskEdited event, Emitter<TasksState> emit) async {
     final current = _find(event.taskId);
     final draft = event.draft;
+    final edited = current == null ? null : _withDraft(current, draft);
+
+    // Optimistic: the task shows its new fields (e.g. a dragged calendar
+    // block stays where it was dropped) until the server answers.
+    if (edited != null) {
+      _optimisticEdits[edited.id] = edited;
+      emit(state.copyWith(tasks: _replace(edited)));
+    }
     final result = await _updateTask(event.taskId, draft);
+    _optimisticEdits.remove(event.taskId);
     await result.fold(
-      (failure) async => _fail(emit, 'tasks.editTask', failure),
+      (failure) async {
+        if (current != null) {
+          emit(state.copyWith(tasks: _replace(current)));
+        }
+        _fail(emit, 'tasks.editTask', failure);
+      },
+      // Reminders follow the new dates; the stream refreshes the list.
       (_) async {
-        if (current == null) return;
-        // Reminders follow the new dates; the stream refreshes the list.
-        await _reminders.taskUpdated(
-          TaskEntity(
-            id: current.id,
-            ownerId: current.ownerId,
-            title: draft.title,
-            description: draft.description,
-            priority: draft.priority,
-            status: current.status,
-            startDate: draft.startDate,
-            dueDate: draft.dueDate,
-            createdAt: current.createdAt,
-            updatedAt: current.updatedAt,
-            completedAt: current.completedAt,
-            sharedWith: current.sharedWith,
-            color: current.color,
-          ),
-        );
+        if (edited != null) await _reminders.taskUpdated(edited);
       },
     );
   }
+
+  static TaskEntity _withDraft(TaskEntity current, TaskDraft draft) =>
+      TaskEntity(
+        id: current.id,
+        ownerId: current.ownerId,
+        title: draft.title,
+        description: draft.description,
+        priority: draft.priority,
+        status: current.status,
+        startDate: draft.startDate,
+        dueDate: draft.dueDate,
+        createdAt: current.createdAt,
+        updatedAt: current.updatedAt,
+        completedAt: current.completedAt,
+        sharedWith: current.sharedWith,
+        color: current.color,
+      );
 
   Future<void> _onStatusToggled(
     TaskStatusToggled event,

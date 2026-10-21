@@ -245,5 +245,12 @@
   "taskFormThisWeekend": "Este fin de semana",
   "taskFormRemoveDate": "Quitar fecha",
   "sharedWithNames": "Compartida con {names}",
-  "@sharedWithNames": {"placeholders": {"names": {"type": "String"}}}
+  "@sharedWithNames": {"placeholders": {"names": {"type": "String"}}},
+  "calendarDay": "Día",
+  "calendarWeek": "Semana",
+  "calendarMonth": "Mes",
+  "calendarAllDay": "Todo el día",
+  "calendarNothingPlanned": "Nada planeado",
+  "calendarPrevious": "Anterior",
+  "calendarNext": "Siguiente"
 }
