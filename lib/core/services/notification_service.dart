@@ -1022,6 +1022,7 @@ class NotificationService {
     switch (type) {
       case 'friend_request':
       case 'friend_accepted':
+      case 'nudge':
         router.go('/social');
       case 'shared_task':
       case 'task_shared':
