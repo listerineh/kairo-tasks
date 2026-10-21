@@ -9,7 +9,8 @@ import '../services/haptics_service.dart';
 import 'pressable.dart';
 
 /// Selectable capsule ("Hoy", "Mañana", "Este finde"): a hairline outline
-/// when off, solid `ink` when selected. Colors cross-fade with the `snappy`
+/// when off, inverted (`label` fill, `background` text) when selected, which
+/// stands out in both themes. Colors cross-fade with the `snappy`
 /// spring and selecting ticks a haptic.
 class KairoChip extends StatelessWidget {
   const KairoChip({
@@ -29,6 +30,12 @@ class KairoChip extends StatelessWidget {
   /// A small dot or avatar before the label.
   final Widget? leading;
 
+  /// Text and icon color for a chip; pass it to [leading] icons and dots.
+  static Color foreground(BuildContext context, {required bool selected}) {
+    final colors = context.appColors;
+    return selected ? colors.background : colors.label;
+  }
+
   void _tap() {
     final haptics = registeredHaptics;
     if (haptics != null) unawaited(haptics.selection());
@@ -39,7 +46,7 @@ class KairoChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final motion = context.motion;
-    final foreground = selected ? colors.onInk : colors.label;
+    final foreground = KairoChip.foreground(context, selected: selected);
 
     return Semantics(
       button: true,
@@ -59,10 +66,10 @@ class KairoChip extends StatelessWidget {
               vertical: AppSpacing.spacing8,
             ),
             decoration: ShapeDecoration(
-              color: selected ? colors.ink : colors.surface,
+              color: selected ? colors.label : colors.surface,
               shape: StadiumBorder(
                 side: BorderSide(
-                  color: selected ? colors.ink : colors.separator,
+                  color: selected ? colors.label : colors.separator,
                 ),
               ),
             ),
