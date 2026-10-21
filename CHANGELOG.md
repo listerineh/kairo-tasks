@@ -10,6 +10,21 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.33.00 - Kairo 2.0 v2 (V8): Juntos (2026-10-21)
+
+### Changed in V 01.33.00
+
+- Social is now "Juntos". The header shows how many friends you have, next to a button to add one. Friend requests appear as dark cards with decline and accept. Your friends sit in a row of avatars in their calendar colors.
+- "Haciendo juntos" lists the unfinished tasks you share. Each one shows a progress ring, when it is and with whom, and two buttons: Empujoncito and Enfocarnos (opens Focus on that task).
+- Adding a friend happens in a sheet with a debounced username search. Each result shows whether you're friends, waiting for an answer, or can accept their request.
+- A friend's sheet lets you pick one of the five calendar tones, create a task together, or remove them after a confirmation.
+- `social_page.dart` went from 1234 lines with 13 Supabase calls to a page, five widgets, `SocialBloc` and `FriendsRepository`. Answering, removing and recoloring update at once and roll back if the server fails.
+
+### Added in V 01.33.00
+
+- Nudges: the migration `20261021000003_nudges.sql` adds a `nudges` table with RLS (only accepted friends, only about a task both can see), a 30-minute limit per person and task, and a push in the recipient's language. Tapping the push opens Juntos. `20261021000004_private_can_see_task.sql` moves the policy's helper `can_see_task` to a `private` schema so it can't be called through the API. Both are applied to kairo-db.
+- Tests for `SocialBloc`, `sharedTasks`, and the Juntos page, plus goldens for the page full and empty.
+
 ## V 01.32.00 - Kairo 2.0 v2 (V7): Planear (2026-10-21)
 
 ### Changed in V 01.32.00
