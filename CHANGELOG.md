@@ -10,6 +10,23 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.28.00 - Kairo 2.0 v2 (V3): Kairo, the calico cat (2026-10-21)
+
+### Changed in V 01.28.00
+
+- Kairo is a fluffy calico: white fur with orange and black patches, a scalloped chest ruff, cheek and ear tufts, green-yellow eyes with slit pupils, and an orange tail with a black tip. The old green loaf is gone.
+- A thin white line along the tail shows the day's progress (`KairoMascot.progress`).
+- The tail sways gently while he is awake.
+
+### Added in V 01.28.00
+
+- Cat things: every 5-11 s while idle or happy, Kairo stands up, stretches, grooms a paw, yawns, looks aside or flicks his tail. They come from a pure `MascotBehaviorScheduler` that runs on an injected clock and random.
+- Tapping him also starts a small cat thing; `KairoMascot.onLongPress` is ready for opening Focus.
+- Under reduced motion he keeps a still pose for each mood: no sway and no behaviors.
+- Tests for the scheduler and the controller, plus goldens for every mood and the stand, stretch, groom and yawn poses.
+
+---
+
 ## V 01.27.00 - Kairo 2.0 v2 (V2): components (2026-10-21)
 
 ### Added in V 01.27.00
