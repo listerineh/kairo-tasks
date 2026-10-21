@@ -146,9 +146,9 @@ Minimum 44 × 44 for everything tappable, including icon buttons and check circl
 
 ---
 
-## Navigation *(target, V4)*
+## Navigation
 
-A floating `ink` capsule (64 px high, 18 px from the sides, 26 px from the bottom). Five slots:
+`KairoTabBar` is built (V2); the app shell adopts it in V4. A floating `ink` capsule (64 px high, 18 px from the sides, 26 px from the bottom). Five slots:
 
 1. **Hoy** · 2. **Planear** · 3. **＋** (lime circle, opens the create sheet) · 4. **Juntos** · 5. **Yo** (avatar)
 
@@ -156,9 +156,12 @@ The active tab is a `#262A30` pill with a lime icon and label; inactive tabs are
 
 ---
 
-## Components *(target, V2 unless noted)*
+## Components
+
+Shared components live in `lib/core/widgets/` and are listed in the debug `/gallery` route: `KairoButton`, `KairoChip`, `KairoSegmentedControl`, `KairoCard`, `KairoEntrance`, `KairoTabBar`, `GroupedSection`, `showKairoSheet`. Screens adopt them from V4 on.
 
 ### Cards and lists
+- `KairoCard` styles: `tile` (white, 22), `hero` (white, 28, soft elevation), `ink` (dark accent, 28).
 - White card, radius 22, rows separated by 1 px `#EEF0ED` lines; no card per row.
 - Row: 28 px check circle (2 px ring in the priority color), title (`body`), meta line with priority dot + label + time (`subheadline`, secondary).
 
@@ -181,8 +184,8 @@ The active tab is a `#262A30` pill with a lime icon and label; inactive tabs are
 - Chips: capsule with a 1 px outline; selected is `ink` with `onInk` text.
 - Segmented control: `fill` track, white thumb with a soft shadow that slides between options.
 
-### Sheets (V5)
-- Radius 30 top, grabber, background dimmed to 50% and scaled to 0.94. Kairo peeks over the top edge and reacts to typing.
+### Sheets
+- Radius 30 top, grabber, background dimmed to 50%. *(target, V5)* Background scales to 0.94. Kairo peeks over the top edge and reacts to typing.
 
 ### Focus screen (V6)
 - Dark (`#0E1012`) whatever the theme. 310 px lime ring that drains, with a dot at the head of the arc; Kairo (focus mood) inside the ring above the `timer`; session pills; reset, play/pause (lime, 84 px), +5.
