@@ -735,9 +735,12 @@ class NotificationService {
     final title = taskTitle != null
         ? l10n.focusSessionCompleteTitle
         : l10n.focusBreakCompleteTitle;
-    final body = taskTitle != null
-        ? l10n.focusSessionCompleteBody(taskTitle)
-        : l10n.focusBreakCompleteBody;
+    // An empty title is a focus session without a task.
+    final body = taskTitle == null
+        ? l10n.focusBreakCompleteBody
+        : taskTitle.isEmpty
+        ? l10n.focusComplete
+        : l10n.focusSessionCompleteBody(taskTitle);
 
     const details = NotificationDetails(
       android: AndroidNotificationDetails(
