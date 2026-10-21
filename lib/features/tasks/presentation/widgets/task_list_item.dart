@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/widgets/priority_badge.dart';
 import '../../../../core/widgets/swipe_actions.dart';
+import '../../domain/entities/task_draft.dart';
 import '../../domain/entities/task_entity.dart';
 import '../bloc/tasks_bloc.dart';
 import 'task_row.dart';
@@ -87,11 +88,15 @@ class TaskListItem extends StatelessWidget {
     );
     if (picked == null || picked == task.priority) return;
     bloc.add(
-      TaskEditRequested(
-        taskId: task.id,
-        title: task.title,
-        description: task.description,
-        priority: picked,
+      TaskEdited(
+        task.id,
+        TaskDraft(
+          title: task.title,
+          description: task.description,
+          priority: picked,
+          startDate: task.startDate,
+          dueDate: task.dueDate,
+        ),
       ),
     );
   }

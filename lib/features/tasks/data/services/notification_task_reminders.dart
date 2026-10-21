@@ -32,6 +32,14 @@ class NotificationTaskReminders implements TaskReminders {
   }
 
   @override
+  Future<void> taskUpdated(TaskEntity task) async {
+    await _notifications.cancelTaskReminder(task.id);
+    if (task.dueDate != null && task.status != TaskStatus.completed) {
+      await _notifications.scheduleTaskReminder(task);
+    }
+  }
+
+  @override
   Future<void> taskCompleted(String taskId) =>
       _notifications.cancelTaskReminder(taskId);
 

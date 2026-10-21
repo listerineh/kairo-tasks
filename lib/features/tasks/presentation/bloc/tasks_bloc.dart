@@ -73,37 +73,17 @@ class TaskStatusToggled extends TasksEvent {
   List<Object?> get props => [taskId];
 }
 
-/// Null [priority], [startDate] or [dueDate] keep the task's current value;
-/// null [sharedWith] leaves its shares untouched.
-class TaskEditRequested extends TasksEvent {
-  const TaskEditRequested({
-    required this.taskId,
-    required this.title,
-    this.description,
-    this.priority,
-    this.startDate,
-    this.dueDate,
-    this.sharedWith,
-  });
+/// Saves every editable field of a task, so dates can also be cleared.
+/// Null [TaskDraft.sharedWithIds] leaves its shares untouched (only the
+/// owner may change them).
+class TaskEdited extends TasksEvent {
+  const TaskEdited(this.taskId, this.draft);
 
   final String taskId;
-  final String title;
-  final String? description;
-  final TaskPriority? priority;
-  final DateTime? startDate;
-  final DateTime? dueDate;
-  final List<String>? sharedWith;
+  final TaskDraft draft;
 
   @override
-  List<Object?> get props => [
-    taskId,
-    title,
-    description,
-    priority,
-    startDate,
-    dueDate,
-    sharedWith,
-  ];
+  List<Object?> get props => [taskId, draft];
 }
 
 /// Hides the task right away; it is deleted once the undo window passes.
@@ -259,7 +239,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     on<TasksLoadRequested>(_onLoadRequested, transformer: _restartable());
     on<TasksFilterChanged>(_onFilterChanged);
     on<TaskCreateRequested>(_onCreateRequested);
-    on<TaskEditRequested>(_onEditRequested);
+    on<TaskEdited>(_onEdited);
     on<TaskStatusToggled>(_onStatusToggled);
     on<TaskDeleted>(_onDeleted);
     on<TaskDeleteUndone>(_onDeleteUndone);
@@ -393,21 +373,34 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     );
   }
 
-  Future<void> _onEditRequested(
-    TaskEditRequested event,
-    Emitter<TasksState> emit,
-  ) async {
+  Future<void> _onEdited(TaskEdited event, Emitter<TasksState> emit) async {
     final current = _find(event.taskId);
-    final draft = TaskDraft(
-      title: event.title,
-      description: event.description,
-      priority: event.priority ?? current?.priority ?? TaskPriority.medium,
-      startDate: event.startDate ?? current?.startDate,
-      dueDate: event.dueDate ?? current?.dueDate,
-      sharedWithIds: event.sharedWith,
-    );
+    final draft = event.draft;
     final result = await _updateTask(event.taskId, draft);
-    result.fold((f) => _fail(emit, 'tasks.editTask', f), (_) {});
+    await result.fold(
+      (failure) async => _fail(emit, 'tasks.editTask', failure),
+      (_) async {
+        if (current == null) return;
+        // Reminders follow the new dates; the stream refreshes the list.
+        await _reminders.taskUpdated(
+          TaskEntity(
+            id: current.id,
+            ownerId: current.ownerId,
+            title: draft.title,
+            description: draft.description,
+            priority: draft.priority,
+            status: current.status,
+            startDate: draft.startDate,
+            dueDate: draft.dueDate,
+            createdAt: current.createdAt,
+            updatedAt: current.updatedAt,
+            completedAt: current.completedAt,
+            sharedWith: current.sharedWith,
+            color: current.color,
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _onStatusToggled(

@@ -12,6 +12,9 @@ abstract class TaskReminders {
 
   Future<void> taskCreated(TaskEntity task, List<TaskEntity> allTasks);
 
+  /// A task's fields changed: reschedule its reminder for the new dates.
+  Future<void> taskUpdated(TaskEntity task);
+
   Future<void> taskCompleted(String taskId);
 
   Future<void> taskDeleted(String taskId);
