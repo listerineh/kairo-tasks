@@ -209,5 +209,11 @@
   "focusSessionCompleteBody": "Te enfocaste en \"{task}\". ¡Toma un descanso!",
   "focusBreakCompleteTitle": "Descanso terminado",
   "focusBreakCompleteBody": "¿Listo para volver a enfocarte?",
-  "due": "Vence"
+  "due": "Vence",
+  "mascotIdle": "Kairo el gato, tranquilo",
+  "mascotFocused": "Kairo el gato, concentrado en tu temporizador",
+  "mascotHappy": "Kairo el gato, feliz: terminaste las tareas de hoy",
+  "mascotSad": "Kairo el gato, preocupado: aún no completas nada hoy",
+  "mascotSleeping": "Kairo el gato, durmiendo",
+  "mascotMeow": "miau"
 }

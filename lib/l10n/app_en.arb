@@ -203,5 +203,11 @@
   "focusSessionCompleteBody": "You focused on \"{task}\". Time for a break!",
   "focusBreakCompleteTitle": "Break over",
   "focusBreakCompleteBody": "Ready to focus again?",
-  "due": "Due"
+  "due": "Due",
+  "mascotIdle": "Kairo the cat, relaxed",
+  "mascotFocused": "Kairo the cat, focused on your timer",
+  "mascotHappy": "Kairo the cat, happy: all tasks done today",
+  "mascotSad": "Kairo the cat, worried: nothing done today yet",
+  "mascotSleeping": "Kairo the cat, sleeping",
+  "mascotMeow": "meow"
 }

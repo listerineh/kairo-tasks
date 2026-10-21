@@ -10,6 +10,25 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.20.00 - Kairo 2.0: the cat, redesigned (2026-10-20)
+
+### Added in V 01.20.00
+
+- New Kairo cat (`KairoMascot`): a geometric loaf with a superellipse body and head, rounded ears, tapered tail and capsule eyes. It uses one tint plus a tonal shade, with no outlines.
+- `MascotMoodResolver` (pure domain code, 100% covered): focused, night, happy, streak at risk (from 20:00), rest day and idle, in priority order.
+- `MascotPose` (lerpable values), `MascotController` (one spring per field, so mood changes morph) and `MascotPainter` (draws only).
+- Behaviors: breathing and random blinks; tapping twitches the ears and sometimes says "miau" (a "z" while asleep); completing a task makes the cat hop with ^^ eyes. Under reduced motion it holds still and snaps between moods.
+- Semantics label describing the cat's mood in words (es/en).
+- Mood preview in `/gallery` and goldens for each mood (light, dark, 200% text).
+
+### Changed in V 01.20.00
+
+- Dashboard and the streak celebration use the new cat. The streak chip moved to `StreakChip`.
+- Removed the old `MascotWidget` (tears, snot bubble and outlines).
+- Bumped version to `1.20.0+100`.
+
+---
+
 ## V 01.19.00 - Kairo 2.0 design system: tokens, motion and shared components (2026-10-20)
 
 ### Added in V 01.19.00

@@ -12,6 +12,8 @@ import '../../core/widgets/kairo_segmented_control.dart';
 import '../../core/widgets/kairo_sheet.dart';
 import '../../core/widgets/kairo_tab_bar.dart';
 import '../../core/widgets/priority_badge.dart';
+import '../../features/dashboard/domain/mascot/mascot_mood.dart';
+import '../../features/dashboard/presentation/widgets/mascot/kairo_mascot.dart';
 import '../../features/tasks/domain/entities/task_entity.dart';
 import '../theme/app_spacing.dart';
 import '../theme/theme_service.dart';
@@ -29,6 +31,8 @@ class GalleryPage extends StatefulWidget {
 class _GalleryPageState extends State<GalleryPage> {
   int _tab = 0;
   String _range = 'day';
+  MascotMood _mood = MascotMood.idle;
+  int _hops = 0;
   final _done = <String>{'Write report'};
 
   void _toggleTheme() {
@@ -86,6 +90,8 @@ class _GalleryPageState extends State<GalleryPage> {
             _segmented(),
             gap,
             _avatars(),
+            gap,
+            _cat(),
             gap,
             GroupedSection(
               header: 'Empty state',
@@ -222,6 +228,35 @@ class _GalleryPageState extends State<GalleryPage> {
         selected: _range,
         onChanged: (v) => setState(() => _range = v),
       ),
+    );
+  }
+
+  Widget _cat() {
+    return GroupedSection(
+      header: 'Kairo the cat',
+      footer: 'Tap the cat to pet it. Hop simulates a completed task.',
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(AppSpacing.spacing16),
+          child: Column(
+            children: [
+              KairoMascot(mood: _mood, hopTrigger: _hops, size: 140),
+              const SizedBox(height: AppSpacing.spacing16),
+              KairoSegmentedControl<MascotMood>(
+                segments: {for (final m in MascotMood.values) m: m.name},
+                selected: _mood,
+                onChanged: (m) => setState(() => _mood = m),
+              ),
+              const SizedBox(height: AppSpacing.spacing8),
+              KairoButton(
+                label: 'Hop',
+                variant: KairoButtonVariant.plain,
+                onPressed: () => setState(() => _hops++),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
