@@ -185,11 +185,14 @@ Shared components live in `lib/core/widgets/` and are listed in the debug `/gall
 - **Disabled:** `fill` background, secondary text, plus a reason ("Escribe qué quieres hacer").
 
 ### Chips and segmented control
-- Chips: capsule with a 1 px outline; selected is `ink` with `onInk` text.
+- Chips: capsule with a 1 px outline; selected is inverted (`label` fill, `background` text) so it stands out in both themes. Use `KairoChip.foreground` for leading icons and dots.
 - Segmented control: `fill` track, white thumb with a soft shadow that slides between options.
 
 ### Sheets
-- Radius 30 top, grabber, background dimmed to 50%. *(target, V5)* Background scales to 0.94. Kairo peeks over the top edge and reacts to typing.
+- Radius 30 top, grabber, background dimmed to 50%. *(target)* Background scales to 0.94.
+
+### Task form
+- `TaskFormSheet`: Cancel and title on top; a large title field with Kairo's head peeking over its line (watching while you type, happy once there is a title); optional sections as chips (Cuándo, Prioridad, Con alguien); a full-width `ink` button at the bottom that names what it creates ("Crear tarea · Mañana 9:00"), or says what is missing. Kairo peeks over the top edge and reacts to typing.
 
 ### Focus screen (V6)
 - Dark (`#0E1012`) whatever the theme. 310 px lime ring that drains, with a dot at the head of the arc; Kairo (focus mood) inside the ring above the `timer`; session pills; reset, play/pause (lime, 84 px), +5.
