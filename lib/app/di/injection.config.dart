@@ -29,6 +29,9 @@ import '../../features/calendar/domain/usecases/watch_calendar_changes.dart'
     as _i158;
 import '../../features/calendar/presentation/cubit/calendar_cubit.dart'
     as _i131;
+import '../../features/focus/data/notification_focus_alarm.dart' as _i295;
+import '../../features/focus/domain/focus_session.dart' as _i9;
+import '../../features/focus/presentation/cubit/focus_cubit.dart' as _i10;
 import '../../features/social/data/repositories/friends_repository_impl.dart'
     as _i880;
 import '../../features/social/data/social_module.dart' as _i684;
@@ -65,8 +68,12 @@ extension GetItInjectableX on _i174.GetIt {
     final calendarModule = _$CalendarModule();
     gh.lazySingleton<_i454.SupabaseClient>(() => registerModule.supabaseClient);
     gh.lazySingleton<_i239.HapticsService>(() => _i239.HapticsService());
+    gh.lazySingleton<_i9.FocusAlarm>(() => _i295.NotificationFocusAlarm());
     gh.lazySingleton<_i18.TaskReminders>(
       () => _i509.NotificationTaskReminders(),
+    );
+    gh.lazySingleton<_i10.FocusCubit>(
+      () => _i10.FocusCubit(gh<_i9.FocusAlarm>()),
     );
     gh.lazySingleton<_i369.CurrentUser>(
       () => _i369.SupabaseCurrentUser(gh<_i454.SupabaseClient>()),

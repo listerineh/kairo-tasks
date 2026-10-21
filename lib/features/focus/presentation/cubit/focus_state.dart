@@ -1,36 +1,44 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../tasks/domain/entities/task_entity.dart';
-
-enum FocusMode { focus, break_ }
+import '../../domain/focus_session.dart';
 
 class FocusState extends Equatable {
   const FocusState({
-    this.selectedTask,
-    this.remaining = const Duration(minutes: 25),
-    this.isRunning = false,
-    this.mode = FocusMode.focus,
+    required this.now,
+    this.session = const FocusSession(),
+    this.task,
+    this.chosen = false,
   });
 
-  final TaskEntity? selectedTask;
-  final Duration remaining;
-  final bool isRunning;
-  final FocusMode mode;
+  /// The clock at the last tick; the UI derives the countdown from it.
+  final DateTime now;
+  final FocusSession session;
+
+  /// What the session is about; null for "just focus".
+  final TaskEntity? task;
+
+  /// Whether the person picked a task (or chose to just focus).
+  final bool chosen;
+
+  Duration get remaining => session.remaining(now);
+  double get progress => session.progress(now);
+  bool get running => session.running && !finished;
+  bool get finished => session.finished(now);
 
   FocusState copyWith({
-    TaskEntity? selectedTask,
-    Duration? remaining,
-    bool? isRunning,
-    FocusMode? mode,
+    DateTime? now,
+    FocusSession? session,
+    TaskEntity? task,
     bool clearTask = false,
-  }) =>
-      FocusState(
-        selectedTask: clearTask ? null : (selectedTask ?? this.selectedTask),
-        remaining: remaining ?? this.remaining,
-        isRunning: isRunning ?? this.isRunning,
-        mode: mode ?? this.mode,
-      );
+    bool? chosen,
+  }) => FocusState(
+    now: now ?? this.now,
+    session: session ?? this.session,
+    task: clearTask ? null : (task ?? this.task),
+    chosen: chosen ?? this.chosen,
+  );
 
   @override
-  List<Object?> get props => [selectedTask, remaining, isRunning, mode];
+  List<Object?> get props => [now, session, task, chosen];
 }
