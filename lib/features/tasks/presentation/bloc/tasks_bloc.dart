@@ -3,11 +3,19 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/errors/failures.dart';
 import '../../../../core/services/logger_service.dart';
-import '../../../../core/services/notification_service.dart';
+import '../../../../core/session/current_user.dart';
+import '../../domain/entities/task_draft.dart';
 import '../../domain/entities/task_entity.dart';
+import '../../domain/services/task_reminders.dart';
+import '../../domain/streak.dart';
+import '../../domain/usecases/create_task.dart';
+import '../../domain/usecases/delete_task.dart';
+import '../../domain/usecases/set_task_completed.dart';
+import '../../domain/usecases/update_task.dart';
+import '../../domain/usecases/watch_tasks.dart';
 
 // Events
 abstract class TasksEvent extends Equatable {
@@ -47,8 +55,14 @@ class TaskCreateRequested extends TasksEvent {
   final List<String>? sharedWith;
 
   @override
-  List<Object?> get props =>
-      [title, description, priority, startDate, dueDate, sharedWith];
+  List<Object?> get props => [
+    title,
+    description,
+    priority,
+    startDate,
+    dueDate,
+    sharedWith,
+  ];
 }
 
 class TaskStatusToggled extends TasksEvent {
@@ -59,6 +73,8 @@ class TaskStatusToggled extends TasksEvent {
   List<Object?> get props => [taskId];
 }
 
+/// Null [priority], [startDate] or [dueDate] keep the task's current value;
+/// null [sharedWith] leaves its shares untouched.
 class TaskEditRequested extends TasksEvent {
   const TaskEditRequested({
     required this.taskId,
@@ -79,10 +95,18 @@ class TaskEditRequested extends TasksEvent {
   final List<String>? sharedWith;
 
   @override
-  List<Object?> get props =>
-      [taskId, title, description, priority, startDate, dueDate, sharedWith];
+  List<Object?> get props => [
+    taskId,
+    title,
+    description,
+    priority,
+    startDate,
+    dueDate,
+    sharedWith,
+  ];
 }
 
+/// Hides the task right away; it is deleted once the undo window passes.
 class TaskDeleted extends TasksEvent {
   const TaskDeleted(this.taskId);
   final String taskId;
@@ -91,20 +115,21 @@ class TaskDeleted extends TasksEvent {
   List<Object?> get props => [taskId];
 }
 
-class _TasksUpdatedFromStream extends TasksEvent {
-  const _TasksUpdatedFromStream(this.tasks);
-  final List<TaskEntity> tasks;
-
-  @override
-  List<Object?> get props => [tasks];
-}
-
-class _TasksReloadFromStream extends TasksEvent {
-  const _TasksReloadFromStream();
+/// Brings back the task from the last [TaskDeleted] within its undo window.
+class TaskDeleteUndone extends TasksEvent {
+  const TaskDeleteUndone();
 }
 
 class TasksClearStreakCelebration extends TasksEvent {
   const TasksClearStreakCelebration();
+}
+
+class _TaskDeletionCommitted extends TasksEvent {
+  const _TaskDeletionCommitted(this.task);
+  final TaskEntity task;
+
+  @override
+  List<Object?> get props => [task];
 }
 
 // Filter
@@ -122,6 +147,7 @@ class TasksState extends Equatable {
     this.filter = TasksFilter.all,
     this.errorMessage,
     this.streakToCelebrate,
+    this.pendingDeletion,
   });
 
   final List<TaskEntity> tasks;
@@ -130,7 +156,10 @@ class TasksState extends Equatable {
   final String? errorMessage;
   final int? streakToCelebrate;
 
-  static const Object _streakUndefined = _Undefined();
+  /// Deleted but still undoable; already hidden from [tasks].
+  final TaskEntity? pendingDeletion;
+
+  static const Object _undefined = _Undefined();
 
   static const _priorityOrder = {
     TaskPriority.urgent: 0,
@@ -141,64 +170,37 @@ class TasksState extends Equatable {
 
   /// Active (non-completed) tasks for the current filter, sorted by priority.
   List<TaskEntity> get activeTasks {
-    List<TaskEntity> result;
-    switch (filter) {
-      case TasksFilter.all:
-        result =
-            tasks.where((t) => t.status != TaskStatus.completed).toList();
-      case TasksFilter.urgent:
-        result = tasks
-            .where(
-              (t) =>
-                  t.priority == TaskPriority.urgent &&
-                  t.status != TaskStatus.completed,
-            )
-            .toList();
-      case TasksFilter.high:
-        result = tasks
-            .where(
-              (t) =>
-                  t.priority == TaskPriority.high &&
-                  t.status != TaskStatus.completed,
-            )
-            .toList();
-      case TasksFilter.medium:
-        result = tasks
-            .where(
-              (t) =>
-                  t.priority == TaskPriority.medium &&
-                  t.status != TaskStatus.completed,
-            )
-            .toList();
-      case TasksFilter.low:
-        result = tasks
-            .where(
-              (t) =>
-                  t.priority == TaskPriority.low &&
-                  t.status != TaskStatus.completed,
-            )
-            .toList();
-      case TasksFilter.completed:
-        return [];
-    }
-    result.sort(
-      (a, b) => (_priorityOrder[a.priority] ?? 2)
-          .compareTo(_priorityOrder[b.priority] ?? 2),
-    );
-    return result;
+    final wanted = switch (filter) {
+      TasksFilter.all => null,
+      TasksFilter.urgent => TaskPriority.urgent,
+      TasksFilter.high => TaskPriority.high,
+      TasksFilter.medium => TaskPriority.medium,
+      TasksFilter.low => TaskPriority.low,
+      TasksFilter.completed => null,
+    };
+    if (filter == TasksFilter.completed) return [];
+    return tasks
+        .where(
+          (t) =>
+              t.status != TaskStatus.completed &&
+              (wanted == null || t.priority == wanted),
+        )
+        .toList()
+      ..sort(
+        (a, b) => (_priorityOrder[a.priority] ?? 2).compareTo(
+          _priorityOrder[b.priority] ?? 2,
+        ),
+      );
   }
 
-  /// Completed tasks, sorted by most recently completed first (updatedAt desc).
-  List<TaskEntity> get completedTasks {
-    final completed =
-        tasks.where((t) => t.status == TaskStatus.completed).toList()
-          ..sort((a, b) {
-            final aDate = a.updatedAt ?? a.createdAt;
-            final bDate = b.updatedAt ?? b.createdAt;
-            return bDate.compareTo(aDate);
-          });
-    return completed;
-  }
+  /// Completed tasks, most recently completed first.
+  List<TaskEntity> get completedTasks =>
+      tasks.where((t) => t.status == TaskStatus.completed).toList()
+        ..sort((a, b) {
+          final aDate = a.completedAt ?? a.updatedAt ?? a.createdAt;
+          final bDate = b.completedAt ?? b.updatedAt ?? b.createdAt;
+          return bDate.compareTo(aDate);
+        });
 
   /// Legacy getter for backward compat - returns active tasks only.
   List<TaskEntity> get filteredTasks => activeTasks;
@@ -208,21 +210,32 @@ class TasksState extends Equatable {
     TasksStatus? status,
     TasksFilter? filter,
     String? errorMessage,
-    Object? streakToCelebrate = _streakUndefined,
+    Object? streakToCelebrate = _undefined,
+    Object? pendingDeletion = _undefined,
   }) {
     return TasksState(
       tasks: tasks ?? this.tasks,
       status: status ?? this.status,
       filter: filter ?? this.filter,
       errorMessage: errorMessage,
-      streakToCelebrate: identical(streakToCelebrate, _streakUndefined)
+      streakToCelebrate: identical(streakToCelebrate, _undefined)
           ? this.streakToCelebrate
           : streakToCelebrate as int?,
+      pendingDeletion: identical(pendingDeletion, _undefined)
+          ? this.pendingDeletion
+          : pendingDeletion as TaskEntity?,
     );
   }
 
   @override
-  List<Object?> get props => [tasks, status, filter, errorMessage, streakToCelebrate];
+  List<Object?> get props => [
+    tasks,
+    status,
+    filter,
+    errorMessage,
+    streakToCelebrate,
+    pendingDeletion,
+  ];
 }
 
 enum TasksStatus { initial, loading, loaded, error }
@@ -230,42 +243,71 @@ enum TasksStatus { initial, loading, loaded, error }
 // BLoC
 @injectable
 class TasksBloc extends Bloc<TasksEvent, TasksState> {
-  TasksBloc(this._client) : super(const TasksState()) {
-    on<TasksLoadRequested>(_onLoadRequested);
+  TasksBloc(
+    this._watchTasks,
+    this._createTask,
+    this._updateTask,
+    this._setCompleted,
+    this._deleteTask,
+    this._reminders,
+    this._user, {
+    @ignoreParam Duration undoWindow = const Duration(seconds: 4),
+    @ignoreParam DateTime Function()? clock,
+  }) : _undoAfter = undoWindow,
+       _now = clock ?? DateTime.now,
+       super(const TasksState()) {
+    on<TasksLoadRequested>(_onLoadRequested, transformer: _restartable());
     on<TasksFilterChanged>(_onFilterChanged);
     on<TaskCreateRequested>(_onCreateRequested);
     on<TaskEditRequested>(_onEditRequested);
     on<TaskStatusToggled>(_onStatusToggled);
     on<TaskDeleted>(_onDeleted);
-    on<_TasksUpdatedFromStream>(_onStreamUpdate);
-    on<_TasksReloadFromStream>(_onReloadFromStream);
+    on<TaskDeleteUndone>(_onDeleteUndone);
+    on<_TaskDeletionCommitted>(_onDeletionCommitted);
     on<TasksClearStreakCelebration>(_onClearStreakCelebration);
   }
 
-  final SupabaseClient _client;
-  String get _userId => _client.auth.currentUser!.id;
-  StreamSubscription<List<Map<String, dynamic>>>? _subscription;
-  StreamSubscription<List<Map<String, dynamic>>>? _sharedSubscription;
+  final WatchTasks _watchTasks;
+  final CreateTask _createTask;
+  final UpdateTask _updateTask;
+  final SetTaskCompleted _setCompleted;
+  final DeleteTask _deleteTask;
+  final TaskReminders _reminders;
+  final CurrentUser _user;
+  final Duration _undoAfter;
+  final DateTime Function() _now;
 
-  Future<List<TaskEntity>> _fetchTasks() async {
-    final response = await _client
-        .from('tasks')
-        .select('''
-          *,
-          shared_tasks!task_id(
-            task_id,
-            shared_by_id,
-            shared_with_id,
-            shared_with:profiles!shared_with_id(id, username, display_name, avatar_url),
-            shared_by:profiles!shared_by_id(id, username, display_name, avatar_url)
-          )
-        ''')
-        .order('created_at', ascending: false);
+  Timer? _undoTimer;
 
-    return (response as List)
-        .map((json) => _taskFromJson(json as Map<String, dynamic>))
-        .toList();
-  }
+  /// Ids whose status changed locally and is not confirmed by the server
+  /// yet; incoming snapshots keep the local status for them.
+  final Map<String, TaskStatus> _optimisticStatus = {};
+
+  /// Like switchMap: a new load cancels the previous subscription.
+  static EventTransformer<E> _restartable<E>() => (events, mapper) {
+    StreamSubscription<E>? inner;
+    late final StreamController<E> out;
+    out = StreamController<E>(
+      onListen: () {
+        final outer = events.listen(
+          (event) {
+            unawaited(inner?.cancel());
+            inner = mapper(event).listen(out.add, onError: out.addError);
+          },
+          onError: out.addError,
+          onDone: () async {
+            await inner?.cancel();
+            await out.close();
+          },
+        );
+        out.onCancel = () async {
+          await inner?.cancel();
+          await outer.cancel();
+        };
+      },
+    );
+    return out.stream;
+  };
 
   Future<void> _onLoadRequested(
     TasksLoadRequested event,
@@ -276,103 +318,186 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
       data: {'operation': 'tasks.loadTasks'},
     );
     emit(state.copyWith(status: TasksStatus.loading));
+    var first = true;
 
-    try {
-      final tasks = await _fetchTasks();
-      emit(state.copyWith(status: TasksStatus.loaded, tasks: tasks));
-      LoggerService.instance.info(
-        'Tasks loaded',
-        data: {'operation': 'tasks.loadTasks', 'count': tasks.length},
-      );
-      await NotificationService.instance.rescheduleMorningSummary(tasks);
-
-      final today = _dateOnly(DateTime.now());
-      final streak = _streakFromDays(
-        tasks
-            .where(
-              (t) =>
-                  t.status == TaskStatus.completed &&
-                  t.ownerId == _userId,
-            )
-            .map(
-              (t) => _dateOnly(
-                t.completedAt ?? t.updatedAt ?? t.createdAt,
-              ),
-            )
-            .where((d) => !d.isAfter(today))
-            .toList(),
-        today,
-      );
-      final completedTodayCount = tasks.where((t) {
-        if (t.status != TaskStatus.completed || t.ownerId != _userId) {
-          return false;
+    await emit.onEach<List<TaskEntity>>(
+      _watchTasks(),
+      onData: (tasks) {
+        final visible = _applyLocalChanges(tasks);
+        emit(state.copyWith(status: TasksStatus.loaded, tasks: visible));
+        if (first) {
+          first = false;
+          unawaited(_notifyLoaded(visible));
         }
-        return _isSameDay(t.completedAt ?? t.updatedAt ?? t.createdAt, today);
-      }).length;
-      await NotificationService.instance.rescheduleStreakReminders(
-        streak: streak,
-        hasCompletedToday: completedTodayCount > 0,
-      );
-
-      // Subscribe to realtime changes on tasks
-      await _subscription?.cancel();
-      _subscription = _client
-          .from('tasks')
-          .stream(primaryKey: ['id'])
-          .order('created_at', ascending: false)
-          .listen((data) {
-            final updatedTasks = data.map(_taskFromJson).toList();
-            add(_TasksUpdatedFromStream(updatedTasks));
-          });
-
-      // Subscribe to shared_tasks to catch new shares from friends
-      await _sharedSubscription?.cancel();
-      _sharedSubscription = _client
-          .from('shared_tasks')
-          .stream(primaryKey: ['id'])
-          .eq('shared_with_id', _userId)
-          .order('created_at', ascending: false)
-          .listen((_) => add(const _TasksReloadFromStream()));
-    } catch (e) {
-      LoggerService.instance.error(
-        'Failed to load tasks',
-        data: {'operation': 'tasks.loadTasks', 'error': e.toString()},
-      );
-      emit(
-        state.copyWith(
-          status: TasksStatus.error,
-          errorMessage: e.toString(),
-        ),
-      );
-    }
+      },
+      onError: (error, _) {
+        LoggerService.instance.error(
+          'Failed to load tasks',
+          data: {'operation': 'tasks.loadTasks', 'error': error.toString()},
+        );
+        emit(
+          state.copyWith(
+            status: TasksStatus.error,
+            errorMessage: _message(error),
+          ),
+        );
+      },
+    );
   }
 
-  Future<void> _onReloadFromStream(
-    _TasksReloadFromStream event,
+  /// Hides a pending deletion and keeps unconfirmed status changes.
+  List<TaskEntity> _applyLocalChanges(List<TaskEntity> tasks) {
+    final hidden = state.pendingDeletion?.id;
+    return [
+      for (final t in tasks)
+        if (t.id != hidden)
+          if (_optimisticStatus[t.id] case final status?)
+            t.copyWith(status: status)
+          else
+            t,
+    ];
+  }
+
+  Future<void> _notifyLoaded(List<TaskEntity> tasks) async {
+    final userId = _user.id;
+    if (userId == null) return;
+    final now = _now();
+    await _reminders.tasksLoaded(
+      tasks,
+      streak: Streak.forTasks(tasks, userId, now),
+      completedToday: Streak.completedToday(tasks, userId, now),
+    );
+  }
+
+  void _onFilterChanged(TasksFilterChanged event, Emitter<TasksState> emit) {
+    emit(state.copyWith(filter: event.filter));
+  }
+
+  Future<void> _onCreateRequested(
+    TaskCreateRequested event,
     Emitter<TasksState> emit,
   ) async {
-    try {
-      final tasks = await _fetchTasks();
-      emit(state.copyWith(tasks: tasks, status: TasksStatus.loaded));
-    } catch (e) {
-      emit(state.copyWith(errorMessage: 'Failed to reload shared tasks: $e'));
+    final draft = TaskDraft(
+      title: event.title,
+      description: event.description,
+      priority: event.priority,
+      startDate: event.startDate,
+      dueDate: event.dueDate,
+      sharedWithIds: event.sharedWith,
+    );
+    final result = await _createTask(draft);
+    // The realtime stream brings the new task into the list.
+    await result.fold(
+      (failure) async => _fail(emit, 'tasks.createTask', failure),
+      (task) => _reminders.taskCreated(task, [...state.tasks, task]),
+    );
+  }
+
+  Future<void> _onEditRequested(
+    TaskEditRequested event,
+    Emitter<TasksState> emit,
+  ) async {
+    final current = _find(event.taskId);
+    final draft = TaskDraft(
+      title: event.title,
+      description: event.description,
+      priority: event.priority ?? current?.priority ?? TaskPriority.medium,
+      startDate: event.startDate ?? current?.startDate,
+      dueDate: event.dueDate ?? current?.dueDate,
+      sharedWithIds: event.sharedWith,
+    );
+    final result = await _updateTask(event.taskId, draft);
+    result.fold((f) => _fail(emit, 'tasks.editTask', f), (_) {});
+  }
+
+  Future<void> _onStatusToggled(
+    TaskStatusToggled event,
+    Emitter<TasksState> emit,
+  ) async {
+    final task = _find(event.taskId);
+    if (task == null) return;
+    final completing = task.status != TaskStatus.completed;
+    final userId = _user.id;
+    final now = _now();
+    final hadCompletedToday =
+        userId != null && Streak.completedToday(state.tasks, userId, now);
+
+    // Optimistic: the row flips now; the server confirms later.
+    final updated = task.copyWith(
+      status: completing ? TaskStatus.completed : TaskStatus.pending,
+      completedAt: completing ? now : null,
+    );
+    _optimisticStatus[task.id] = updated.status;
+    emit(state.copyWith(tasks: _replace(updated)));
+
+    final result = await _setCompleted(task.id, completed: completing);
+    _optimisticStatus.remove(task.id);
+
+    if (result.isLeft()) {
+      emit(state.copyWith(tasks: _replace(task)));
+      return result.fold((f) => _fail(emit, 'tasks.toggleStatus', f), (_) {});
+    }
+
+    if (!completing) {
+      emit(state.copyWith(streakToCelebrate: null));
+      return;
+    }
+    await _reminders.taskCompleted(task.id);
+    if (userId != null && !hadCompletedToday) {
+      final streak = Streak.forTasks(state.tasks, userId, now);
+      await _reminders.streakExtended(streak);
+      emit(state.copyWith(streakToCelebrate: streak));
     }
   }
 
-  void _onStreamUpdate(
-    _TasksUpdatedFromStream event,
+  void _onDeleted(TaskDeleted event, Emitter<TasksState> emit) {
+    final task = _find(event.taskId);
+    if (task == null) return;
+    // Only one deletion is undoable at a time; commit the previous one.
+    _commitPending();
+    emit(
+      state.copyWith(
+        tasks: state.tasks.where((t) => t.id != task.id).toList(),
+        pendingDeletion: task,
+      ),
+    );
+    _undoTimer = Timer(_undoAfter, () => add(_TaskDeletionCommitted(task)));
+  }
+
+  void _onDeleteUndone(TaskDeleteUndone event, Emitter<TasksState> emit) {
+    final task = state.pendingDeletion;
+    if (task == null) return;
+    _undoTimer?.cancel();
+    emit(
+      state.copyWith(
+        tasks: _sorted([...state.tasks, task]),
+        pendingDeletion: null,
+      ),
+    );
+  }
+
+  Future<void> _onDeletionCommitted(
+    _TaskDeletionCommitted event,
     Emitter<TasksState> emit,
-  ) {
-    final previousMap = {for (final t in state.tasks) t.id: t};
-    final mergedTasks = event.tasks.map((task) {
-      if (task.sharedWith.isNotEmpty) return task;
-      final previous = previousMap[task.id];
-      if (previous != null && previous.sharedWith.isNotEmpty) {
-        return task.copyWith(sharedWith: previous.sharedWith);
-      }
-      return task;
-    }).toList();
-    emit(state.copyWith(tasks: mergedTasks, status: TasksStatus.loaded));
+  ) async {
+    final task = event.task;
+    if (state.pendingDeletion?.id == task.id) {
+      emit(state.copyWith(pendingDeletion: null));
+    }
+    final result = await _deleteTask(task.id);
+    await result.fold((failure) async {
+      // Put it back so nothing silently disappears.
+      emit(state.copyWith(tasks: _sorted([...state.tasks, task])));
+      _fail(emit, 'tasks.deleteTask', failure);
+    }, (_) => _reminders.taskDeleted(task.id));
+  }
+
+  /// Commits the undoable deletion now (a new deletion, or closing).
+  void _commitPending() {
+    final pending = state.pendingDeletion;
+    if (pending == null) return;
+    _undoTimer?.cancel();
+    add(_TaskDeletionCommitted(pending));
   }
 
   void _onClearStreakCelebration(
@@ -382,367 +507,39 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     emit(state.copyWith(streakToCelebrate: null));
   }
 
-  void _onFilterChanged(
-    TasksFilterChanged event,
-    Emitter<TasksState> emit,
-  ) {
-    emit(state.copyWith(filter: event.filter));
+  TaskEntity? _find(String id) {
+    for (final t in state.tasks) {
+      if (t.id == id) return t;
+    }
+    return null;
   }
 
-  Future<void> _onCreateRequested(
-    TaskCreateRequested event,
-    Emitter<TasksState> emit,
-  ) async {
-    LoggerService.instance.info(
-      'Creating task',
-      data: {
-        'operation': 'tasks.createTask',
-        'title': event.title,
-        'priority': event.priority.name,
-        'status': 'pending',
-      },
+  List<TaskEntity> _replace(TaskEntity task) => [
+    for (final t in state.tasks)
+      if (t.id == task.id) task else t,
+  ];
+
+  /// Newest first, as the server returns them.
+  static List<TaskEntity> _sorted(List<TaskEntity> tasks) =>
+      tasks..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+  void _fail(Emitter<TasksState> emit, String operation, Failure failure) {
+    LoggerService.instance.error(
+      'Task operation failed',
+      data: {'operation': operation, 'error': failure.message},
     );
-
-    try {
-      final result = await _client
-          .from('tasks')
-          .insert({
-            'owner_id': _userId,
-            'title': event.title,
-            if (event.description != null) 'description': event.description,
-            'priority': event.priority.name,
-            'status': 'pending',
-            if (event.startDate != null)
-              'start_date': event.startDate!.toUtc().toIso8601String(),
-            if (event.dueDate != null)
-              'due_date': event.dueDate!.toUtc().toIso8601String(),
-          })
-          .select('id')
-          .single();
-
-      final taskId = result['id'] as String;
-
-      if (event.sharedWith != null && event.sharedWith!.isNotEmpty) {
-        final records = event.sharedWith!
-            .where((id) => id != _userId)
-            .map((id) => {
-                  'task_id': taskId,
-                  'shared_by_id': _userId,
-                  'shared_with_id': id,
-                })
-            .toList();
-        if (records.isNotEmpty) {
-          await _client.from('shared_tasks').insert(records);
-        }
-      }
-
-      final createdTask = TaskEntity(
-        id: taskId,
-        ownerId: _userId,
-        title: event.title,
-        description: event.description,
-        priority: event.priority,
-        status: TaskStatus.pending,
-        startDate: event.startDate,
-        dueDate: event.dueDate,
-        createdAt: DateTime.now(),
-      );
-      await NotificationService.instance.scheduleTaskReminder(createdTask);
-      await NotificationService.instance.rescheduleInactivityNudge([
-        ...state.tasks,
-        createdTask,
-      ]);
-
-      if (createdTask.priority == TaskPriority.urgent) {
-        await NotificationService.instance.showUrgentNotification(createdTask);
-      }
-
-      // Realtime stream will update the list automatically
-    } catch (e) {
-      LoggerService.instance.error(
-        'Failed to create task',
-        data: {
-          'operation': 'tasks.createTask',
-          'title': event.title,
-          'priority': event.priority.name,
-          'status': 'pending',
-          'error': e.toString(),
-        },
-      );
-      emit(state.copyWith(errorMessage: 'Failed to create task: $e'));
-    }
+    emit(state.copyWith(errorMessage: failure.message));
   }
 
-  Future<void> _onEditRequested(
-    TaskEditRequested event,
-    Emitter<TasksState> emit,
-  ) async {
-    LoggerService.instance.info(
-      'Editing task',
-      data: {'operation': 'tasks.editTask', 'task_id': event.taskId},
-    );
-
-    try {
-      await _client.from('tasks').update({
-        'title': event.title,
-        'description': event.description,
-        if (event.priority != null) 'priority': event.priority!.name,
-        if (event.startDate != null)
-          'start_date': event.startDate!.toUtc().toIso8601String(),
-        if (event.dueDate != null)
-          'due_date': event.dueDate!.toUtc().toIso8601String(),
-      }).eq('id', event.taskId);
-
-      if (event.sharedWith != null) {
-        final current = await _client
-            .from('shared_tasks')
-            .select('shared_with_id')
-            .eq('task_id', event.taskId)
-            .eq('shared_by_id', _userId);
-        final currentRows = (current as List).cast<Map<String, dynamic>>();
-        final currentIds = currentRows
-            .map((r) => r['shared_with_id'] as String)
-            .toSet();
-        final desiredIds = event.sharedWith!.toSet();
-        final toAdd = desiredIds.difference(currentIds).toList();
-        final toRemove = currentIds.difference(desiredIds).toList();
-
-        if (toAdd.isNotEmpty) {
-          final records = toAdd
-              .where((id) => id != _userId)
-              .map((id) => {
-                    'task_id': event.taskId,
-                    'shared_by_id': _userId,
-                    'shared_with_id': id,
-                  })
-              .toList();
-          if (records.isNotEmpty) {
-            await _client.from('shared_tasks').insert(records);
-          }
-        }
-
-        if (toRemove.isNotEmpty) {
-          await _client
-              .from('shared_tasks')
-              .delete()
-              .eq('task_id', event.taskId)
-              .filter('shared_with_id', 'in', toRemove);
-        }
-      }
-
-      final tasks = await _fetchTasks();
-      emit(
-        state.copyWith(
-          status: TasksStatus.loaded,
-          tasks: tasks,
-          errorMessage: null,
-        ),
-      );
-    } catch (e) {
-      LoggerService.instance.error(
-        'Failed to edit task',
-        data: {
-          'operation': 'tasks.editTask',
-          'task_id': event.taskId,
-          'error': e.toString(),
-        },
-      );
-      emit(state.copyWith(errorMessage: 'Failed to edit task: $e'));
-    }
-  }
-
-  Future<void> _onStatusToggled(
-    TaskStatusToggled event,
-    Emitter<TasksState> emit,
-  ) async {
-    final task = state.tasks.firstWhere((t) => t.id == event.taskId);
-    final previousStatus = task.status;
-    final newStatus =
-        previousStatus == TaskStatus.completed ? 'pending' : 'completed';
-    final today = _dateOnly(DateTime.now());
-    final wasCompletedTodayBefore = state.tasks.any((t) {
-      if (t.id == event.taskId ||
-          t.status != TaskStatus.completed ||
-          t.ownerId != _userId) {
-        return false;
-      }
-      return _isSameDay(t.completedAt ?? t.updatedAt ?? t.createdAt, today);
-    });
-
-    LoggerService.instance.info(
-      'Toggling task status',
-      data: {
-        'operation': 'tasks.toggleStatus',
-        'task_id': event.taskId,
-        'new_status': newStatus,
-      },
-    );
-
-    try {
-      await _client
-          .from('tasks')
-          .update({'status': newStatus})
-          .eq('id', event.taskId);
-      if (newStatus == 'completed') {
-        await NotificationService.instance.cancelTaskReminder(event.taskId);
-        if (!wasCompletedTodayBefore) {
-          final days = <DateTime>{today};
-          for (final t in state.tasks) {
-            if (t.ownerId != _userId || t.status != TaskStatus.completed) {
-              continue;
-            }
-            final d = _dateOnly(t.completedAt ?? t.updatedAt ?? t.createdAt);
-            if (!d.isAfter(today)) days.add(d);
-          }
-          final newStreak = _streakFromDays(days.toList(), today);
-          LoggerService.instance.info(
-            'Streak celebration triggered',
-            data: {
-              'operation': 'tasks.streak',
-              'streak': newStreak,
-            },
-          );
-          await NotificationService.instance.showStreakNotification(newStreak);
-          emit(state.copyWith(streakToCelebrate: newStreak));
-        }
-      } else if (newStatus == 'pending' &&
-          previousStatus == TaskStatus.completed) {
-        emit(state.copyWith(streakToCelebrate: null));
-      }
-    } catch (e) {
-      LoggerService.instance.error(
-        'Failed to toggle task status',
-        data: {
-          'operation': 'tasks.toggleStatus',
-          'task_id': event.taskId,
-          'new_status': newStatus,
-          'error': e.toString(),
-        },
-      );
-      emit(state.copyWith(errorMessage: 'Failed to update task: $e'));
-    }
-  }
-
-  Future<void> _onDeleted(
-    TaskDeleted event,
-    Emitter<TasksState> emit,
-  ) async {
-    LoggerService.instance.info(
-      'Deleting task',
-      data: {'operation': 'tasks.deleteTask', 'task_id': event.taskId},
-    );
-
-    try {
-      await _client.from('tasks').delete().eq('id', event.taskId);
-      await NotificationService.instance.cancelTaskReminder(event.taskId);
-    } catch (e) {
-      LoggerService.instance.error(
-        'Failed to delete task',
-        data: {
-          'operation': 'tasks.deleteTask',
-          'task_id': event.taskId,
-          'error': e.toString(),
-        },
-      );
-      emit(state.copyWith(errorMessage: 'Failed to delete task: $e'));
-    }
-  }
-
-  TaskEntity _taskFromJson(Map<String, dynamic> json) {
-    final sharedWith = <Map<String, dynamic>>[];
-    final sharedTasks = json['shared_tasks'] as List<dynamic>?;
-    if (sharedTasks != null) {
-      for (final item in sharedTasks) {
-        final share = item as Map<String, dynamic>;
-        final sharedById = share['shared_by_id'] as String?;
-        final sharedWithId = share['shared_with_id'] as String?;
-        final profile = sharedById == _userId
-            ? share['shared_with'] as Map<String, dynamic>?
-            : (sharedWithId == _userId
-                ? share['shared_by'] as Map<String, dynamic>?
-                : null);
-        if (profile != null) {
-          sharedWith.add(profile);
-        }
-      }
-    }
-
-    return TaskEntity(
-      id: json['id'] as String,
-      ownerId: json['owner_id'] as String,
-      title: json['title'] as String,
-      description: json['description'] as String?,
-      priority: _parsePriority(json['priority'] as String? ?? 'medium'),
-      status: _parseStatus(json['status'] as String? ?? 'pending'),
-      startDate: json['start_date'] != null
-          ? DateTime.parse(json['start_date'] as String).toLocal()
-          : null,
-      dueDate: json['due_date'] != null
-          ? DateTime.parse(json['due_date'] as String).toLocal()
-          : null,
-      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String).toLocal()
-          : null,
-      completedAt: json['completed_at'] != null
-          ? DateTime.parse(json['completed_at'] as String).toLocal()
-          : null,
-      sharedWith: sharedWith,
-    );
-  }
-
-  TaskPriority _parsePriority(String value) {
-    switch (value) {
-      case 'urgent':
-        return TaskPriority.urgent;
-      case 'high':
-        return TaskPriority.high;
-      case 'low':
-        return TaskPriority.low;
-      default:
-        return TaskPriority.medium;
-    }
-  }
-
-  TaskStatus _parseStatus(String value) {
-    switch (value) {
-      case 'in_progress':
-        return TaskStatus.inProgress;
-      case 'completed':
-        return TaskStatus.completed;
-      default:
-        return TaskStatus.pending;
-    }
-  }
-
-  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-
-  bool _isSameDay(DateTime a, DateTime b) => _dateOnly(a) == _dateOnly(b);
-
-  int _streakFromDays(List<DateTime> days, DateTime today) {
-    if (days.isEmpty) return 0;
-    final unique = days.map(_dateOnly).toSet();
-    final sorted = unique.toList()..sort((a, b) => b.compareTo(a));
-    final yesterday = today.subtract(const Duration(days: 1));
-    if (sorted.first != today && sorted.first != yesterday) return 0;
-
-    var count = 0;
-    var expected = sorted.first;
-    for (final d in sorted) {
-      if (d == expected) {
-        count++;
-        expected = expected.subtract(const Duration(days: 1));
-      } else if (d.isBefore(expected)) {
-        break;
-      }
-    }
-    return count;
-  }
+  static String _message(Object error) =>
+      error is Failure ? error.message : error.toString();
 
   @override
-  Future<void> close() {
-    _subscription?.cancel();
-    _sharedSubscription?.cancel();
+  Future<void> close() async {
+    _undoTimer?.cancel();
+    final pending = state.pendingDeletion;
+    // Leaving the screen ends the undo window: delete for real.
+    if (pending != null) unawaited(_deleteTask(pending.id).then((_) {}));
     return super.close();
   }
 }
