@@ -35,6 +35,8 @@ Future<T?> showKairoSheet<T>({
 
   return showModalBottomSheet<T>(
     context: context,
+    // Above the tab bar, like a system sheet.
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     // Grouped content sits on the grouped background, rows one level up
