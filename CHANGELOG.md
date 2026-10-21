@@ -10,6 +10,17 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.26.00 - Kairo 2.0 v2 (V1): visual foundation (2026-10-21)
+
+### Changed in V 01.26.00
+
+- New direction "Calma viva, con carácter", approved from the interactive prototype. `docs/redesign-plan.md` and `docs/design.md` are rewritten for it.
+- New palette: Niebla ground, Tinta text, Pino brand, plus `ink`, `onInk`, `onInkSecondary`, `lime`, `onLime` and `apricot` tokens for the dark accent surface and celebrations. Every text pair still passes WCAG AA (tests cover the new pairs).
+- Manrope (bundled variable font) replaces SF/Inter and the DM fonts on every platform, with a new type scale: heavy, tight titles and 600-weight text.
+- Removed the `google_fonts` dependency and the Inter files.
+
+---
+
 ## V 01.25.00 - Kairo 2.0 calendar (4b): new views and drag to reschedule (2026-10-21)
 
 ### Added in V 01.25.00
