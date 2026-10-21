@@ -10,6 +10,18 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.30.00 - Kairo 2.0 v2 (V5): task form (2026-10-21)
+
+### Changed in V 01.30.00
+
+- The task form uses the new style. The title field is large and Kairo peeks over its line: he watches while you type and cheers once there is a title.
+- When, priority and sharing are chips; priority chips carry their color dot. The time rows sit in a card under the date chips.
+- Saving moved to a full-width button at the bottom that says what it creates ("Create task · Tomorrow 9:00"), or what is missing ("Write what you want to do"). Cancel stays on top.
+- Selected chips are inverted (`label` fill), so they stand out in dark mode too.
+- `GroupedSection` takes a `margin` for screens that already pad their content.
+
+---
+
 ## V 01.29.00 - Kairo 2.0 v2 (V4): navigation and Hoy (2026-10-21)
 
 ### Changed in V 01.29.00
