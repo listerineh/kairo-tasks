@@ -10,6 +10,26 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.31.00 - Kairo 2.0 v2 (V6): Focus (2026-10-21)
+
+### Changed in V 01.31.00
+
+- Focus is a dark screen in every theme. A lime ring drains with a dot at its head and breathes softly while the timer runs. Kairo sits inside it, concentrating with you, and cheers when the round ends.
+- Sessions come in four rounds of 25 minutes, with 5-minute rests and a 15-minute rest after the fourth. When a round ends you can take a rest or complete the task; after a rest, start the next round.
+- Reset, play/pause and +5 minutes; round pills at the top.
+- With no task chosen, Focus asks what to focus on (today's tasks first) or lets you just focus. Hoy's "Focus" button opens it on that task.
+
+### Fixed in V 01.31.00
+
+- The countdown no longer drifts when the app goes to the background: the session stores its end time. Leaving the screen keeps the session running.
+- A focus session without a task no longer sends a notification with an empty title.
+
+### Added in V 01.31.00
+
+- `FocusSession` (pure) and its tests, plus tests for `FocusCubit` with a fake clock and alarm, the page, and goldens.
+
+---
+
 ## V 01.30.00 - Kairo 2.0 v2 (V5): task form (2026-10-21)
 
 ### Changed in V 01.30.00
