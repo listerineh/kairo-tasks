@@ -78,8 +78,8 @@ void main() {
       ),
     ]);
     final top = tester.getTopLeft(find.text('a')).dy - gridOrigin(tester).dy;
-    // 10:00 at 56 px per hour, plus the block's 2 px text padding.
-    expect(top, closeTo(10 * hour + 2, 1));
+    // 10:00 at 56 px per hour, plus a tall block's 6 px text padding.
+    expect(top, closeTo(10 * hour + 6, 1));
   });
 
   testWidgets('date-only tasks go to the all-day strip', (tester) async {
