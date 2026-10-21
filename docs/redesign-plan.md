@@ -109,7 +109,7 @@ Each phase ends green: `flutter analyze` with 0 issues, `flutter test`, and gold
 | **V4. Navigation + Hoy** | 4 tabs + create; Hoy merges Dashboard and Tasks | Bloc tests for Hoy; golden of Hoy |
 | **V5. Create sheet** | Restyle `TaskFormSheet` (Qué / Cuándo / Hora / Prioridad / Con alguien); Kairo peeks over the sheet | Widget tests kept green |
 | **V6. Foco** | Dark screen, lime ring with a progress dot, Kairo in focus mood, rounds and rests, +5, task picker | Timer survives backgrounding (end timestamp) ✓ |
-| **V7. Planear** | Restyle calendar views; "Algún día" list with drag onto a day | Existing calendar tests green |
+| **V7. Planear** | Restyle calendar views (tones, week strip, header); "Algún día" sheet. Dragging from Algún día onto a day is deferred | Existing calendar tests green ✓ |
 | **V8. Juntos** | Split `social_page.dart` (repository + bloc), new layout, nudges | Bloc tests |
 | **V9. Yo, settings, onboarding, login** | Grouped settings (reduce motion, haptics, text size), Kairo page | |
 | **V10. Offline cache** | Local store, outbox, last-write-wins on `updated_at` | |

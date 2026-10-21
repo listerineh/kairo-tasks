@@ -68,9 +68,9 @@ Always a dot **and** a label; never color alone.
 | Media | `#3F6FA8` | `#86AEE3` |
 | Baja | `#646C75` | `#A7AFB7` |
 
-### Calendar and people *(target)*
+### Calendar and people
 
-Five muted tones; text on them is always `label`, and a darker dot of the same hue marks the owner.
+Five muted tones (`CalendarTone` in `calendar_colors.dart`). A darker dot of the same hue marks the owner. Text on a block is `label` in dark mode and dark ink in light mode. In dark mode the fill is the dot at 32% over `surface`.
 
 | Name | Fill | Dot | Text |
 | --- | --- | --- | --- |
@@ -80,7 +80,16 @@ Five muted tones; text on them is always `label`, and a darker dot of the same h
 | Iris | `#E6E3F5` | `#6A62B8` | `#3B3570` |
 | Arena | `#F1EAD2` | `#A1842A` | `#5E4C12` |
 
-Owner colors still come from `profiles.color` and the per-side `friendships.*_color` (see Visibility below); V7 maps stored colors onto the nearest tone.
+Owner colors still come from `profiles.color` and the per-side `friendships.*_color` (see Visibility below). `CalendarTone.of` maps a stored color onto the tone nearest in hue; grays and invalid colors fall back to Azul.
+
+**Planear** (`calendar_page.dart`) is built like this:
+- **Header:** month and year with chevrons, the large title "Planear", and two outline pills: Algún día (with the count of undated tasks) and Hoy.
+- **Below the header:** the Día / Semana / Mes segmented control.
+- **Week strip** (Day and Week): rounded day pills with up to three tone dots. The selected day is inverted; today is in `tint`.
+- **Hour grid:** tone blocks with a 14 px radius and an owner dot; there is no side border, and done tasks fade to 55%.
+- **Month:** the grid sits in a card with tone dots, and the agenda below it is a grouped list with a dot per row.
+- **Algún día:** a sheet listing your unfinished tasks without a date. Tap a task to open it; edit it to give it a day.
+- **Bottom padding:** both views pad their bottom by `KairoTabBar.contentPadding`.
 
 ### Visibility & Privacy
 
