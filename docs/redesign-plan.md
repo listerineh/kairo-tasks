@@ -56,7 +56,7 @@ Calendar and people use five muted tones with ink text: sage, blue, clay, iris, 
 
 ### 2.2 Typography
 
-**Manrope** on every platform (bundled variable font, OFL). One family keeps iOS and Android identical and goldens deterministic. Titles 800 with negative tracking, text 600, tabular figures for numbers. Scale with `MediaQuery.textScaler` up to 200%. Inter and the DM fonts are retired.
+**Manrope** on every platform (bundled static weights 400-800, OFL). One family keeps iOS and Android identical and goldens deterministic. Titles 800 with negative tracking, text 600, tabular figures for numbers. Scale with `MediaQuery.textScaler` up to 200%. Inter and the DM fonts are retired.
 
 ### 2.3 Structure and navigation
 

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 /// Kairo 2.0 type scale (docs/design.md § Typography).
 ///
-/// Manrope on every platform, bundled as a variable font so iOS, Android and
-/// golden tests render the same glyphs. Each style sets the `wght` axis to
-/// match its [FontWeight].
+/// Manrope on every platform, bundled as static weights (400-800, cut from
+/// the variable font) so iOS, Android and golden tests render the same
+/// glyphs and `copyWith(fontWeight: ...)` picks the matching file.
 ///
 /// Styles carry no color, so they inherit from the surrounding
 /// `DefaultTextStyle`. Font sizes go through `MediaQuery.textScaler`, so
@@ -64,7 +64,6 @@ class KairoTypography extends ThemeExtension<KairoTypography> {
       fontSize: size,
       height: height ?? lineHeight / size,
       fontWeight: weight,
-      fontVariations: [FontVariation.weight(weight.value.toDouble())],
       letterSpacing: tracking,
       leadingDistribution: TextLeadingDistribution.even,
     );

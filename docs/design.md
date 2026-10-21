@@ -94,7 +94,7 @@ Owner colors still come from `profiles.color` and the per-side `friendships.*_co
 
 ## Typography
 
-**Manrope** on every platform, bundled as a variable font (`assets/fonts/Manrope-Variable.ttf`, OFL). Styles live in `lib/app/theme/kairo_typography.dart`; read them with `context.typography`. Styles carry no color.
+**Manrope** on every platform, bundled as static weights 400-800 (`assets/fonts/Manrope-*.ttf`, OFL, cut from the official variable font). Styles live in `lib/app/theme/kairo_typography.dart`; read them with `context.typography`. Styles carry no color.
 
 | Role | Size / line | Weight | Tracking | Usage |
 | --- | --- | --- | --- | --- |

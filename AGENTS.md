@@ -47,7 +47,7 @@ See [docs/design.md](docs/design.md) for the complete design system including to
 ### Quick Reference
 
 - Style: **"Calma viva, con carácter"**: mature, elegant, alive (Kairo 2.0)
-- Font: Manrope (bundled variable font) on every platform
+- Font: Manrope (bundled, weights 400-800) on every platform
 - Palette: Niebla `#F1F2EF` ground, white cards, Tinta `#121417` text and the one dark `ink` surface, Pino `#1E5B45` brand, Lima `#C6E96F` accent on ink only, Albaricoque `#E58A52` for streaks (never text)
 - Min touch target: 44x44px
 - Line height: at least 1.35x for multi-line text

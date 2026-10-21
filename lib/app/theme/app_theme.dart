@@ -243,7 +243,6 @@ class _LegacyFonts {
       fontFamily: KairoTypography.family,
       fontSize: fontSize,
       fontWeight: weight,
-      fontVariations: [FontVariation.weight(weight.value.toDouble())],
       color: color,
       height: height,
       letterSpacing: letterSpacing,

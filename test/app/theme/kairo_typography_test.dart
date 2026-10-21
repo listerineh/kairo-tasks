@@ -20,12 +20,10 @@ void main() {
       t.timer,
     ];
 
-    test('every style is Manrope with the wght axis matching its weight', () {
+    test('every style is Manrope in a bundled weight (400-800)', () {
       for (final style in all) {
         expect(style.fontFamily, 'Manrope');
-        expect(style.fontVariations, [
-          FontVariation.weight(style.fontWeight!.value.toDouble()),
-        ]);
+        expect(style.fontWeight!.value, inInclusiveRange(400, 800));
       }
     });
 

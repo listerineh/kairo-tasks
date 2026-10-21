@@ -16,7 +16,7 @@ Format: **V xx.yy.zz**
 
 - New direction "Calma viva, con carácter", approved from the interactive prototype. `docs/redesign-plan.md` and `docs/design.md` are rewritten for it.
 - New palette: Niebla ground, Tinta text, Pino brand, plus `ink`, `onInk`, `onInkSecondary`, `lime`, `onLime` and `apricot` tokens for the dark accent surface and celebrations. Every text pair still passes WCAG AA (tests cover the new pairs).
-- Manrope (bundled variable font) replaces SF/Inter and the DM fonts on every platform, with a new type scale: heavy, tight titles and 600-weight text.
+- Manrope (bundled static weights 400-800) replaces SF/Inter and the DM fonts on every platform, with a new type scale: heavy, tight titles and 600-weight text.
 - Removed the `google_fonts` dependency and the Inter files.
 
 ---
