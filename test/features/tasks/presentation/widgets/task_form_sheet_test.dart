@@ -33,6 +33,7 @@ void main() {
     WidgetTester tester, {
     TaskEntity? task,
     String? initialFriendId,
+    DateTime? initialStart,
     String currentUserId = 'me',
     List<Friend> friends = const [ana],
   }) async {
@@ -54,6 +55,7 @@ void main() {
                       body: TaskFormSheet(
                         task: task,
                         initialFriendId: initialFriendId,
+                        initialStart: initialStart,
                         currentUserId: currentUserId,
                         now: now,
                         loadFriends: () async =>
@@ -125,6 +127,31 @@ void main() {
     final event = lastEvent() as TaskCreateRequested;
     expect(event.dueDate, DateTime(2026, 10, 24));
     expect(event.startDate, isNull);
+  });
+
+  group('from an empty calendar slot', () {
+    testWidgets('pre-fills a 30 minute slot', (tester) async {
+      await open(tester, initialStart: DateTime(2026, 10, 22, 9, 15));
+      await tester.enterText(find.byType(TextField).first, 'Plan');
+      await tester.pump();
+      await tester.tap(headerButton('Add'));
+      await tester.pumpAndSettle();
+
+      final event = lastEvent() as TaskCreateRequested;
+      expect(event.startDate, DateTime(2026, 10, 22, 9, 15));
+      expect(event.dueDate, DateTime(2026, 10, 22, 9, 45));
+    });
+
+    testWidgets('a late slot ends at 23:59, not tomorrow', (tester) async {
+      await open(tester, initialStart: DateTime(2026, 10, 22, 23, 45));
+      await tester.enterText(find.byType(TextField).first, 'Plan');
+      await tester.pump();
+      await tester.tap(headerButton('Add'));
+      await tester.pumpAndSettle();
+
+      final event = lastEvent() as TaskCreateRequested;
+      expect(event.dueDate, DateTime(2026, 10, 22, 23, 59));
+    });
   });
 
   testWidgets('editing can remove a date and keeps the rest', (tester) async {

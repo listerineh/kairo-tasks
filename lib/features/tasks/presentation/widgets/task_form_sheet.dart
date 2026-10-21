@@ -24,11 +24,13 @@ import '../bloc/tasks_bloc.dart';
 /// Opens the task form: a new task, or [task] to edit it.
 ///
 /// [initialFriendId] pre-selects a friend to share a new task with (from
-/// the Social tab).
+/// the Social tab). [initialStart] pre-fills a new task's date and a
+/// 30 minute slot (from tapping an empty calendar slot).
 Future<void> showTaskForm(
   BuildContext context, {
   TaskEntity? task,
   String? initialFriendId,
+  DateTime? initialStart,
 }) {
   final bloc = context.read<TasksBloc>();
   return showKairoSheet<void>(
@@ -39,6 +41,7 @@ Future<void> showTaskForm(
       child: TaskFormSheet(
         task: task,
         initialFriendId: initialFriendId,
+        initialStart: initialStart,
         scrollController: controller,
       ),
     ),
@@ -55,6 +58,7 @@ class TaskFormSheet extends StatefulWidget {
   const TaskFormSheet({
     this.task,
     this.initialFriendId,
+    this.initialStart,
     this.scrollController,
     this.loadFriends,
     this.currentUserId,
@@ -64,6 +68,9 @@ class TaskFormSheet extends StatefulWidget {
 
   final TaskEntity? task;
   final String? initialFriendId;
+
+  /// Start of a new task's time slot; ignored when editing.
+  final DateTime? initialStart;
   final ScrollController? scrollController;
 
   /// Defaults to the registered [GetFriends] use case.
@@ -134,6 +141,17 @@ class _TaskFormSheetState extends State<TaskFormSheet> {
   }
 
   void _initDates(TaskEntity? task) {
+    final slot = task == null ? widget.initialStart : null;
+    if (slot != null) {
+      _day = DateTime(slot.year, slot.month, slot.day);
+      _start = TimeOfDay.fromDateTime(slot);
+      final end = slot.add(const Duration(minutes: 30));
+      // A slot at the end of the day ends at 23:59, not tomorrow.
+      _time = DateUtils.isSameDay(end, slot)
+          ? TimeOfDay.fromDateTime(end)
+          : const TimeOfDay(hour: 23, minute: 59);
+      return;
+    }
     final due = task?.dueDate;
     final start = task?.startDate;
     final date = due ?? start;
