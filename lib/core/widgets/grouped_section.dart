@@ -12,6 +12,7 @@ class GroupedSection extends StatelessWidget {
     required this.children,
     this.header,
     this.footer,
+    this.separatorInset,
     super.key,
   });
 
@@ -20,6 +21,10 @@ class GroupedSection extends StatelessWidget {
   /// Sentence case, never all caps.
   final String? header;
   final String? footer;
+
+  /// Where hairlines start for children that are not [GroupedRow]s (which
+  /// know their own inset). Defaults to 16, the row text start.
+  final double? separatorInset;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +40,9 @@ class GroupedSection extends StatelessWidget {
       final child = children[i];
       rows.add(child);
       if (i < children.length - 1) {
-        final inset = child is GroupedRow ? child.separatorInset : 16.0;
+        final inset = child is GroupedRow
+            ? child.separatorInset
+            : separatorInset ?? 16.0;
         rows.add(
           Padding(
             padding: EdgeInsetsDirectional.only(start: inset),

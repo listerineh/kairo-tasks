@@ -10,6 +10,30 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.22.00 - Kairo 2.0 tasks (3b): sections, swipe actions and context menu (2026-10-20)
+
+### Changed in V 01.22.00
+
+- The Tasks list was redesigned: a collapsing large title with ＋ and a priority filter in the bar, iOS pull-to-refresh, and inset grouped sections **Overdue / Today / Upcoming / No date**, plus a collapsible **Completed** section.
+- New `TaskRow` (Reminders style): check circle, title, a metadata line (time range, "Tomorrow, 9:00", date in red when overdue, who it's shared with) and a priority symbol.
+- Loading, empty ("All clear" + New task) and error (plain message + Try again) states.
+- Errors show plain language: failed actions get a friendly snackbar, and technical details only go to the log.
+
+### Added in V 01.22.00
+
+- `SwipeActions` (shared component): swipe right to complete, swipe left to delete or edit. A full swipe commits the action with a haptic at the threshold, the release velocity carries into the spring, and every action is also exposed to VoiceOver.
+- Long-press context menu: complete/reopen, edit, duplicate, change priority, share with…, and delete.
+- Undo snackbars: deleting (tied to the bloc's undo window) and completing.
+- Pure grouping into sections (`groupTasks`) with tests; widget tests for the row, swipe and page; goldens for the rows.
+- The gallery task demo uses the real `TaskRow` and swipe actions, with no data access.
+
+### Removed in V 01.22.00
+
+- `TaskCard` and `TaskFilterChips`.
+- Bumped version to `1.22.0+102`.
+
+---
+
 ## V 01.21.00 - Kairo 2.0 tasks (3a): clean layers, optimistic updates and undo (2026-10-20)
 
 ### Changed in V 01.21.00
