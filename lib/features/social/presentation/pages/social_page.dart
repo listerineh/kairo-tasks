@@ -8,7 +8,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/widgets/kairo_header.dart';
 import '../../../../core/extensions/context_extensions.dart';
-import '../../../tasks/presentation/widgets/create_task_sheet.dart';
+import '../../../tasks/presentation/widgets/task_form_sheet.dart';
 
 class SocialPage extends StatefulWidget {
   const SocialPage({super.key});
@@ -439,11 +439,7 @@ class _SocialPageState extends State<SocialPage>
 
   void _showCreateTaskWithFriend(String? friendId) {
     if (friendId == null) return;
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => CreateTaskSheet(initialSharedWith: friendId),
-    );
+    unawaited(showTaskForm(context, initialFriendId: friendId));
   }
 
   @override

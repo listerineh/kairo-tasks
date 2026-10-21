@@ -14,9 +14,8 @@ import '../../../../core/widgets/kairo_large_title_scaffold.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../domain/task_sections.dart';
 import '../bloc/tasks_bloc.dart';
-import '../widgets/create_task_sheet.dart';
-import '../widgets/edit_task_sheet.dart';
 import '../widgets/task_detail_sheet.dart';
+import '../widgets/task_form_sheet.dart';
 import '../widgets/task_list_item.dart';
 import '../widgets/task_row.dart';
 
@@ -234,19 +233,8 @@ class _TasksPageState extends State<TasksPage> {
     await bloc.stream.firstWhere((s) => s.status != TasksStatus.loading);
   }
 
-  void _showCreateSheet(BuildContext context) {
-    unawaited(
-      showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => BlocProvider.value(
-          value: context.read<TasksBloc>(),
-          child: const CreateTaskSheet(),
-        ),
-      ),
-    );
-  }
+  void _showCreateSheet(BuildContext context) =>
+      unawaited(showTaskForm(context));
 
   void _showDetail(BuildContext context, TaskEntity task) {
     unawaited(
@@ -265,19 +253,8 @@ class _TasksPageState extends State<TasksPage> {
     );
   }
 
-  void _showEditSheet(BuildContext context, TaskEntity task) {
-    unawaited(
-      showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => BlocProvider.value(
-          value: context.read<TasksBloc>(),
-          child: EditTaskSheet(task: task),
-        ),
-      ),
-    );
-  }
+  void _showEditSheet(BuildContext context, TaskEntity task) =>
+      unawaited(showTaskForm(context, task: task));
 }
 
 /// "Completed · 3" with a chevron; tapping shows or hides the section.
