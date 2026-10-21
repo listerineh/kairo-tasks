@@ -1,20 +1,18 @@
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../app/di/injection.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/widgets/kairo_header.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/session/current_user.dart';
 import '../../../tasks/domain/entities/task_entity.dart';
 import '../../../tasks/presentation/bloc/tasks_bloc.dart';
+import '../../domain/calendar_range.dart';
+import '../cubit/calendar_cubit.dart';
 import '../widgets/day_view.dart';
 import '../widgets/month_view.dart';
 import '../widgets/week_view.dart';
-
-enum CalendarViewType { day, week, month }
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -24,42 +22,42 @@ class CalendarPage extends StatefulWidget {
 }
 
 class _CalendarPageState extends State<CalendarPage> {
-  CalendarViewType _viewType = CalendarViewType.week;
-  DateTime _selectedDate = DateTime.now();
-  List<TaskEntity> _friendTasks = [];
-  String _ownColor = '#4A6741';
-  final Map<String, String> _friendColors = {};
-  DateTime _lastColorLoad = DateTime(2000);
-  bool _isLoadingColors = false;
-  StreamSubscription<dynamic>? _profileSub;
-  StreamSubscription<dynamic>? _friendshipAsRequesterSub;
-  StreamSubscription<dynamic>? _friendshipAsAddresseeSub;
+  late final CalendarCubit _cubit = getIt<CalendarCubit>()..start();
+
+  CalendarViewType get _viewType => _cubit.state.viewType;
+  DateTime get _selectedDate => _cubit.state.selectedDate;
 
   static const _dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   static const _monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _listenForColorChanges();
-    _loadCalendarFriends();
-  }
-
-  @override
   void dispose() {
-    _profileSub?.cancel();
-    _friendshipAsRequesterSub?.cancel();
-    _friendshipAsAddresseeSub?.cancel();
+    _cubit.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeReloadColors());
+    return BlocBuilder<CalendarCubit, CalendarState>(
+      bloc: _cubit,
+      builder: (context, _) => _buildPage(context),
+    );
+  }
 
+  Widget _buildPage(BuildContext context) {
     final colors = context.appColors;
 
     return Scaffold(
@@ -83,22 +81,19 @@ class _CalendarPageState extends State<CalendarPage> {
                       _ViewChip(
                         label: context.l10n.dayInitial,
                         isSelected: _viewType == CalendarViewType.day,
-                        onTap: () =>
-                            setState(() => _viewType = CalendarViewType.day),
+                        onTap: () => _cubit.setView(CalendarViewType.day),
                       ),
                       const SizedBox(width: 6),
                       _ViewChip(
                         label: context.l10n.weekInitial,
                         isSelected: _viewType == CalendarViewType.week,
-                        onTap: () =>
-                            setState(() => _viewType = CalendarViewType.week),
+                        onTap: () => _cubit.setView(CalendarViewType.week),
                       ),
                       const SizedBox(width: 6),
                       _ViewChip(
                         label: context.l10n.monthInitial,
                         isSelected: _viewType == CalendarViewType.month,
-                        onTap: () =>
-                            setState(() => _viewType = CalendarViewType.month),
+                        onTap: () => _cubit.setView(CalendarViewType.month),
                       ),
                     ],
                   ),
@@ -106,7 +101,7 @@ class _CalendarPageState extends State<CalendarPage> {
                   Row(
                     children: [
                       GestureDetector(
-                        onTap: _goBack,
+                        onTap: _cubit.previous,
                         child: Icon(
                           Icons.chevron_left,
                           color: colors.textSecondary,
@@ -115,9 +110,7 @@ class _CalendarPageState extends State<CalendarPage> {
                       ),
                       const SizedBox(width: AppSpacing.spacing4),
                       GestureDetector(
-                        onTap: () => setState(
-                          () => _viewType = CalendarViewType.month,
-                        ),
+                        onTap: () => _cubit.setView(CalendarViewType.month),
                         child: Text(
                           _headerTitle(),
                           style: context.textTheme.titleMedium?.copyWith(
@@ -126,7 +119,7 @@ class _CalendarPageState extends State<CalendarPage> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: _goForward,
+                        onTap: _cubit.next,
                         child: Icon(
                           Icons.chevron_right,
                           color: colors.textSecondary,
@@ -140,38 +133,29 @@ class _CalendarPageState extends State<CalendarPage> {
             ),
 
             // Week strip header (day/week views)
-            if (_viewType != CalendarViewType.month)
-              _buildWeekStrip(context),
+            if (_viewType != CalendarViewType.month) _buildWeekStrip(context),
 
             // Calendar content
             Expanded(
               child: BlocBuilder<TasksBloc, TasksState>(
                 builder: (context, state) {
-                  final myTasks = _coloredTasks(state.tasks);
-                  final taskMap = <String, TaskEntity>{};
-                  for (final task in myTasks) {
-                    taskMap[task.id] = task;
-                  }
-                  for (final task in _friendTasks) {
-                    taskMap.putIfAbsent(task.id, () => task);
-                  }
-                  final tasks = taskMap.values.toList();
+                  final tasks = mergeTasks(
+                    _coloredTasks(state.tasks),
+                    _friendTasks(context),
+                  );
 
                   switch (_viewType) {
                     case CalendarViewType.day:
                       return DayView(
                         date: _selectedDate,
-                        tasks: _tasksForDate(tasks, _selectedDate),
+                        tasks: tasksOnDay(tasks, _selectedDate),
                         onTaskTap: _onTaskTap,
                       );
                     case CalendarViewType.week:
                       return WeekView(
                         selectedDate: _selectedDate,
                         tasks: tasks,
-                        onDateTap: (date) => setState(() {
-                          _selectedDate = date;
-                          _viewType = CalendarViewType.day;
-                        }),
+                        onDateTap: _cubit.showDay,
                         onTaskTap: _onTaskTap,
                       );
                     case CalendarViewType.month:
@@ -179,10 +163,7 @@ class _CalendarPageState extends State<CalendarPage> {
                         month: _selectedDate,
                         tasks: tasks,
                         selectedDate: _selectedDate,
-                        onDateTap: (date) => setState(() {
-                          _selectedDate = date;
-                          _viewType = CalendarViewType.day;
-                        }),
+                        onDateTap: _cubit.showDay,
                       );
                   }
                 },
@@ -198,7 +179,7 @@ class _CalendarPageState extends State<CalendarPage> {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: _goToToday,
+                    onTap: _cubit.today,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.spacing16,
@@ -236,7 +217,7 @@ class _CalendarPageState extends State<CalendarPage> {
   Widget _buildWeekStrip(BuildContext context) {
     final colors = context.appColors;
     final now = DateTime.now();
-    final weekStart = _startOfWeek(_selectedDate);
+    final weekStart = startOfWeek(_selectedDate);
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -246,12 +227,12 @@ class _CalendarPageState extends State<CalendarPage> {
       child: Row(
         children: List.generate(7, (i) {
           final date = weekStart.add(Duration(days: i));
-          final isToday = _isSameDay(date, now);
-          final isSelected = _isSameDay(date, _selectedDate);
+          final isToday = DateUtils.isSameDay(date, now);
+          final isSelected = DateUtils.isSameDay(date, _selectedDate);
 
           return Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => _selectedDate = date),
+              onTap: () => _cubit.selectDate(date),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -277,12 +258,8 @@ class _CalendarPageState extends State<CalendarPage> {
                         '${date.day}',
                         style: context.textTheme.labelMedium?.copyWith(
                           color: isSelected
-                              ? (isToday
-                                  ? colors.onTint
-                                  : colors.textPrimary)
-                              : (isToday
-                                  ? colors.accent
-                                  : colors.textPrimary),
+                              ? (isToday ? colors.onTint : colors.textPrimary)
+                              : (isToday ? colors.accent : colors.textPrimary),
                           fontWeight: isSelected || isToday
                               ? FontWeight.w700
                               : FontWeight.w400,
@@ -314,7 +291,7 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   String _nextMonthLabel() {
-    final weekStart = _startOfWeek(_selectedDate);
+    final weekStart = startOfWeek(_selectedDate);
     final weekEnd = weekStart.add(const Duration(days: 6));
     if (weekStart.month != weekEnd.month) {
       return _monthNames[weekEnd.month - 1].substring(0, 3);
@@ -322,228 +299,31 @@ class _CalendarPageState extends State<CalendarPage> {
     return '';
   }
 
-  void _goToToday() => setState(() => _selectedDate = DateTime.now());
-
-  void _goBack() {
-    setState(() {
-      switch (_viewType) {
-        case CalendarViewType.day:
-          _selectedDate = _selectedDate.subtract(const Duration(days: 1));
-        case CalendarViewType.week:
-          _selectedDate = _selectedDate.subtract(const Duration(days: 7));
-        case CalendarViewType.month:
-          _selectedDate = DateTime(
-            _selectedDate.year,
-            _selectedDate.month - 1,
-            1,
-          );
-      }
-    });
-  }
-
-  void _goForward() {
-    setState(() {
-      switch (_viewType) {
-        case CalendarViewType.day:
-          _selectedDate = _selectedDate.add(const Duration(days: 1));
-        case CalendarViewType.week:
-          _selectedDate = _selectedDate.add(const Duration(days: 7));
-        case CalendarViewType.month:
-          _selectedDate = DateTime(
-            _selectedDate.year,
-            _selectedDate.month + 1,
-            1,
-          );
-      }
-    });
-  }
-
-  DateTime _startOfWeek(DateTime date) {
-    // Sunday = 0 based
-    final offset = date.weekday % 7;
-    return DateTime(date.year, date.month, date.day - offset);
-  }
-
-  bool _isSameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
-
-  List<TaskEntity> _tasksForDate(List<TaskEntity> tasks, DateTime date) {
-    final dayStart = DateTime(date.year, date.month, date.day);
-    final dayEnd = dayStart.add(const Duration(days: 1));
-
-    return tasks.where((t) {
-      final start = t.startDate ?? t.dueDate ?? t.createdAt;
-      final end = t.dueDate ?? start;
-      return start.isBefore(dayEnd) && end.isAfter(dayStart);
-    }).toList();
-  }
-
+  /// My tasks in my color.
   List<TaskEntity> _coloredTasks(List<TaskEntity> tasks) {
-    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
-    return tasks.map((task) {
-      final hex = task.ownerId == currentUserId
-          ? _ownColor
-          : (_friendColors[task.ownerId] ?? '#6B8FA3');
-      if (hex == task.color) {
-        return task;
-      }
-      return task.copyWith(color: hex);
-    }).toList();
+    final palette = _cubit.state.friendCalendar.palette;
+    final me = getIt<CurrentUser>().id;
+    return [
+      for (final t in tasks) t.copyWith(color: palette.colorFor(t.ownerId, me)),
+    ];
   }
 
-  void _listenForColorChanges() {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId == null) return;
-
-    _profileSub?.cancel();
-    _profileSub = Supabase.instance.client
-        .from('profiles')
-        .stream(primaryKey: ['id'])
-        .eq('id', userId)
-        .listen((_) => _loadCalendarFriends());
-
-    _friendshipAsRequesterSub?.cancel();
-    _friendshipAsRequesterSub = Supabase.instance.client
-        .from('friendships')
-        .stream(primaryKey: ['requester_id', 'addressee_id'])
-        .eq('requester_id', userId)
-        .listen((_) => _loadCalendarFriends());
-
-    _friendshipAsAddresseeSub?.cancel();
-    _friendshipAsAddresseeSub = Supabase.instance.client
-        .from('friendships')
-        .stream(primaryKey: ['requester_id', 'addressee_id'])
-        .eq('addressee_id', userId)
-        .listen((_) => _loadCalendarFriends());
-  }
-
-  void _maybeReloadColors() {
-    if (!mounted || _isLoadingColors) return;
-    if (DateTime.now().difference(_lastColorLoad) <
-        const Duration(seconds: 2)) {
-      return;
-    }
-    _loadCalendarFriends();
-  }
-
-  Future<void> _loadCalendarFriends() async {
-    if (!mounted) return;
-    _isLoadingColors = true;
-    _lastColorLoad = DateTime.now();
-
-    try {
-      final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId == null) return;
-
-      final profileData = await Supabase.instance.client
-          .from('profiles')
-          .select('color')
-          .eq('id', userId)
-          .single();
-
-      final friendships = await Supabase.instance.client
-          .from('friendships')
-          .select(
-              'requester_id, addressee_id, requester_color, addressee_color')
-          .or('requester_id.eq.$userId,addressee_id.eq.$userId')
-          .eq('status', 'accepted');
-
-      final friendshipRows = friendships.cast<Map<String, dynamic>>();
-
-      final ownColor = profileData['color'] as String? ?? '#4A6741';
-      final friendColors = <String, String>{};
-      for (final f in friendshipRows) {
-        final isRequester = f['requester_id'] == userId;
-        final friendId = isRequester
-            ? f['addressee_id'] as String
-            : f['requester_id'] as String;
-        final color = isRequester
-            ? (f['requester_color'] as String? ?? '#6B8FA3')
-            : (f['addressee_color'] as String? ?? '#6B8FA3');
-        friendColors[friendId] = color;
-      }
-
-      setState(() {
-        _ownColor = ownColor;
-        _friendColors
-          ..clear()
-          ..addAll(friendColors);
-      });
-
-      final friendTasks = await Supabase.instance.client
-          .rpc<List<dynamic>>('get_public_friend_tasks');
-
-      final friendTaskRows = friendTasks.cast<Map<String, dynamic>>();
-      final parsedFriendTasks = friendTaskRows
-          .map((json) =>
-              _taskFromJson(json, friendColors[json['owner_id'] as String?]))
-          .toList();
-
-      setState(() => _friendTasks = parsedFriendTasks);
-    } catch (e, s) {
-      if (kDebugMode) {
-        debugPrint('Failed to load friend calendar tasks: $e\n$s');
-      }
-    } finally {
-      _isLoadingColors = false;
-    }
-  }
-
-  TaskEntity _taskFromJson(Map<String, dynamic> json, String? color) {
-    final isPublic =
-        (json['calendar_visibility'] as String? ?? 'public') == 'public';
-    final isSharedWithMe = json['is_shared_with_me'] as bool? ?? false;
-    final showFull = isPublic || isSharedWithMe;
-    return TaskEntity(
-      id: json['id'] as String,
-      ownerId: json['owner_id'] as String,
-      title: showFull ? json['title'] as String : context.l10n.busy,
-      description: showFull ? json['description'] as String? : null,
-      priority: _parsePriority(json['priority'] as String? ?? 'medium'),
-      status: _parseStatus(json['status'] as String? ?? 'pending'),
-      startDate: json['start_date'] != null
-          ? DateTime.parse(json['start_date'] as String).toLocal()
-          : null,
-      dueDate: json['due_date'] != null
-          ? DateTime.parse(json['due_date'] as String).toLocal()
-          : null,
-      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String).toLocal()
-          : null,
-      completedAt: json['completed_at'] != null
-          ? DateTime.parse(json['completed_at'] as String).toLocal()
-          : null,
-      color: color,
-    );
-  }
-
-  TaskPriority _parsePriority(String value) {
-    switch (value) {
-      case 'urgent':
-        return TaskPriority.urgent;
-      case 'high':
-        return TaskPriority.high;
-      case 'low':
-        return TaskPriority.low;
-      default:
-        return TaskPriority.medium;
-    }
-  }
-
-  TaskStatus _parseStatus(String value) {
-    switch (value) {
-      case 'in_progress':
-        return TaskStatus.inProgress;
-      case 'completed':
-        return TaskStatus.completed;
-      default:
-        return TaskStatus.pending;
-    }
+  /// Friends' tasks in the color I chose for them; private ones only say
+  /// the time is busy.
+  List<TaskEntity> _friendTasks(BuildContext context) {
+    final calendar = _cubit.state.friendCalendar;
+    final busy = context.l10n.busy;
+    return [
+      for (final f in calendar.friendTasks)
+        f.task.copyWith(
+          title: f.isPrivate ? busy : null,
+          color: calendar.palette.colorFor(f.task.ownerId, null),
+        ),
+    ];
   }
 
   void _onTaskTap(TaskEntity task) {
-    if (task.ownerId != Supabase.instance.client.auth.currentUser?.id) {
+    if (task.ownerId != getIt<CurrentUser>().id) {
       return;
     }
     context.read<TasksBloc>().add(TaskStatusToggled(task.id));

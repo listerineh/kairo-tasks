@@ -10,6 +10,23 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.24.00 - Kairo 2.0 calendar (4a): repository and cubit (2026-10-20)
+
+### Fixed in V 01.24.00
+
+- The calendar no longer re-queries profile, friendships and the friends RPC on every frame: it reloads only on realtime changes, with a debounce.
+- Date-only tasks (due at 00:00) now appear on their day; they were hidden before.
+- A friend task with unknown visibility is treated as private (only "Busy").
+
+### Changed in V 01.24.00
+
+- `CalendarRepository` + `LoadFriendCalendar` / `WatchCalendarChanges`: colors, friends' tasks and the realtime stream leave the page.
+- `CalendarCubit`: view, selected date, navigation and the friends overlay. The page no longer uses `Supabase.instance`.
+- Pure date helpers (`startOfWeek`, `stepDate`, `tasksOnDay`, `mergeTasks`) with tests. No visual change.
+- Bumped version to `1.24.0+104`.
+
+---
+
 ## V 01.23.00 - Kairo 2.0 tasks (3c): one task form (2026-10-20)
 
 ### Added in V 01.23.00
