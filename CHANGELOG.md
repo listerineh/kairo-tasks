@@ -10,6 +10,25 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.21.00 - Kairo 2.0 tasks (3a): clean layers, optimistic updates and undo (2026-10-20)
+
+### Changed in V 01.21.00
+
+- `TasksBloc` no longer talks to Supabase or the notification and logger singletons directly. It uses use cases (`WatchTasks`, `CreateTask`, `UpdateTask`, `SetTaskCompleted`, `DeleteTask`), a `TaskReminders` port and `CurrentUser`.
+- `TaskRepository` and `TaskRemoteDataSource` cover the real queries: the `shared_tasks` join with profiles, `start_date`, sharing changes, and a realtime stream that refetches when tasks or shares change.
+- Completing or reopening a task updates the list immediately and rolls back if the server refuses.
+- Deleting hides the task immediately and only deletes it after a 4-second undo window (`TaskDeleteUndone`). If the delete fails, the task comes back.
+- The streak logic moved to the domain (`Streak`) and is shared by the bloc and reminders.
+- Use cases are registered in a DI module, so `domain/` stays free of annotations.
+- `Failure` implements `Exception` so it can be thrown as a stream error.
+- Bumped version to `1.21.0+101`.
+
+### Added in V 01.21.00
+
+- Tests for the bloc (load, create, edit, toggle with rollback, delete with undo), the repository, the model and the streak.
+
+---
+
 ## V 01.20.00 - Kairo 2.0: the cat, redesigned (2026-10-20)
 
 ### Added in V 01.20.00
