@@ -38,6 +38,7 @@ import '../../features/social/data/social_module.dart' as _i684;
 import '../../features/social/domain/repositories/friends_repository.dart'
     as _i555;
 import '../../features/social/domain/usecases/get_friends.dart' as _i893;
+import '../../features/social/presentation/bloc/social_bloc.dart' as _i17;
 import '../../features/tasks/data/datasources/task_remote_datasource.dart'
     as _i25;
 import '../../features/tasks/data/repositories/task_repository_impl.dart'
@@ -107,6 +108,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i893.GetFriends>(
       () => socialModule.getFriends(gh<_i555.FriendsRepository>()),
+    );
+    gh.factory<_i17.SocialBloc>(
+      () => _i17.SocialBloc(gh<_i555.FriendsRepository>()),
     );
     gh.factory<_i517.WatchTasks>(
       () => tasksModule.watchTasks(gh<_i148.TaskRepository>()),
