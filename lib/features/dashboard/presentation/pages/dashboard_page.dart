@@ -11,7 +11,10 @@ import '../../../../app/widgets/notification_bell.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../tasks/domain/entities/task_entity.dart';
 import '../../../tasks/presentation/bloc/tasks_bloc.dart';
-import '../widgets/mascot_widget.dart';
+import '../../domain/mascot/mascot_mood.dart';
+import '../../domain/mascot/mascot_mood_resolver.dart';
+import '../widgets/mascot/kairo_mascot.dart';
+import '../widgets/streak_chip.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -44,11 +47,13 @@ class DashboardPage extends StatelessWidget {
         }).length;
         final lastCompletionDate = _lastCompletionDate(tasks, userId);
         final streak = _streak(tasks, today, userId);
-        final mascotState = _mascotState(
-          completedTodayCount: completedTodayCount,
-          todayList: todayList,
-          lastCompletionDate: lastCompletionDate,
-          today: today,
+        final mascotMood = const MascotMoodResolver().resolve(
+          MascotSituation(
+            now: now,
+            pendingToday: todayList.length,
+            completedToday: completedTodayCount,
+            lastCompletionDay: lastCompletionDate,
+          ),
         );
 
         return Scaffold(
@@ -101,7 +106,12 @@ class DashboardPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const SizedBox(height: AppSpacing.spacing16),
-                        MascotWidget(state: mascotState, streak: streak),
+                        KairoMascot(
+                          mood: mascotMood,
+                          hopTrigger: completedTodayCount,
+                        ),
+                        const SizedBox(height: AppSpacing.spacing8),
+                        StreakChip(streak: streak),
                       ],
                     ),
                   ),
@@ -589,19 +599,4 @@ int _streak(List<TaskEntity> tasks, DateTime today, String? userId) {
     }
   }
   return count;
-}
-
-MascotState _mascotState({
-  required int completedTodayCount,
-  required List<TaskEntity> todayList,
-  required DateTime? lastCompletionDate,
-  required DateTime today,
-}) {
-  if (completedTodayCount > 0 && todayList.isEmpty) return MascotState.happy;
-  if (todayList.isNotEmpty) return MascotState.normal;
-  if (lastCompletionDate != null &&
-      lastCompletionDate.isBefore(today.subtract(const Duration(days: 1)))) {
-    return MascotState.sad;
-  }
-  return MascotState.sleeping;
 }

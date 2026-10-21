@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
-import 'mascot_widget.dart';
+import '../../domain/mascot/mascot_mood.dart';
+import 'mascot/kairo_mascot.dart';
 
 class StreakCelebration extends StatefulWidget {
   const StreakCelebration({
@@ -79,11 +80,7 @@ class _StreakCelebrationState extends State<StreakCelebration>
                         color: colors.accentSoft,
                         shape: BoxShape.circle,
                       ),
-                      child: MascotWidget(
-                        state: MascotState.happy,
-                        streak: widget.streak,
-                        showStreak: false,
-                      ),
+                      child: const KairoMascot(mood: MascotMood.happy),
                     ),
                     const SizedBox(height: AppSpacing.spacing24),
                     Text(
