@@ -194,10 +194,17 @@ Shared components live in `lib/core/widgets/` and are listed in the debug `/gall
 
 ## Kairo, the cat
 
-### Today (code)
-`lib/features/dashboard/presentation/widgets/mascot/`: `MascotPose` (lerpable pose), `MascotController` (one spring per field), `MascotPainter` (paints a pose), `MascotMoodResolver` (pure, in domain). Moods: idle, focused, happy, sad, sleeping. Reduced motion holds a still pose.
+### Implementation
 
-### Target (V3)
+`lib/features/dashboard/presentation/widgets/mascot/`:
+- `MascotPose`: lerpable pose. Mood fields plus `stand`, `lean`, `paw`, `yawn`, `flick` and `headY` for the cat things.
+- `MascotController`: one spring per field, plus blinks, breathing and the tail sway.
+- `MascotBehaviorScheduler`: pure; takes time in seconds and an injected `Random`.
+- `MascotPainter`: paints the calico for a pose and the day's progress.
+- `KairoMascot`: the widget, with `progress`, `hopTrigger`, `onLongPress` and a `cue` for the gallery.
+
+The mood itself comes from `MascotMoodResolver` (domain, pure). The debug `/gallery` route can trigger each behavior.
+
 - **Look:** a fluffy calico. Fur `#FBF8F3` with a `#D9CFC2` outline, orange `#E0893F` and black `#24272B` patches (black left ear and eye patch, orange right ear and cheek, patches on the flanks), white scalloped chest ruff, cheek tufts, ear tufts, green-yellow eyes `#A9C95B` with slit pupils and a highlight, pink nose `#E58F86` and inner ears `#E9AFA3`, thick orange tail with a black tip.
 - **Progress:** a thin white line runs along the tail with the day's progress.
 - **Idle life:** breathing, blinking every 3-7 s, eyes following the finger. Every 5-11 s when idle or happy: stand up, stretch, groom a paw, yawn, look aside, or flick the tail.
