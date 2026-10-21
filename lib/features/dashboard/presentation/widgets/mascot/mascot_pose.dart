@@ -22,6 +22,12 @@ class MascotPose {
     this.headTilt = 0,
     this.blush = 0,
     this.lift = 0,
+    this.stand = 0,
+    this.lean = 0,
+    this.paw = 0,
+    this.yawn = 0,
+    this.flick = 0,
+    this.headY = 0,
   });
 
   /// Rebuilds a pose from [values] (the order of [values] getter).
@@ -38,17 +44,24 @@ class MascotPose {
     headTilt: v[9],
     blush: v[10],
     lift: v[11],
+    stand: v[12],
+    lean: v[13],
+    paw: v[14],
+    yawn: v[15],
+    flick: v[16],
+    headY: v[17],
   );
 
-  /// Target pose for a mood (docs/redesign-plan.md §2.6).
+  /// Target pose for a mood (docs/design.md § Kairo, the cat).
   factory MascotPose.forMood(MascotMood mood) => switch (mood) {
     MascotMood.idle => const MascotPose(),
     MascotMood.focused => const MascotPose(
-      eyeOpen: 0.55,
-      pupilY: 0.5,
+      eyeOpen: 0.45,
+      pupilY: 0.8,
       earAngle: 0.08,
       mouthCurve: 0,
       tailAngle: 0,
+      headY: 0.006,
     ),
     MascotMood.happy => const MascotPose(
       eyeCurve: 1,
@@ -65,13 +78,15 @@ class MascotPose {
       mouthCurve: -0.8,
       tailAngle: -0.4,
       headTilt: -0.06,
+      headY: 0.02,
     ),
     MascotMood.sleeping => const MascotPose(
       eyeOpen: 0,
-      earDroop: 0.4,
+      earDroop: 0.2,
       mouthCurve: 0.1,
-      bodySquash: 0.04,
-      tailAngle: -0.2,
+      bodySquash: 0.12,
+      tailAngle: 0.45,
+      headY: 0.055,
     ),
   };
 
@@ -118,6 +133,24 @@ class MascotPose {
   /// Hop height as a fraction of the cat's size.
   final double lift;
 
+  /// 0 sitting .. 1 standing on all fours.
+  final double stand;
+
+  /// 0 upright .. 1 stretched forward (front down, back up).
+  final double lean;
+
+  /// 0 paw resting .. 1 raised to the mouth (grooming).
+  final double paw;
+
+  /// 0 closed mouth .. 1 full yawn.
+  final double yawn;
+
+  /// Tail energy: 0 a lazy sway .. 1 a quick flick.
+  final double flick;
+
+  /// Head drop as a fraction of the cat's size (sleepy, worried).
+  final double headY;
+
   List<double> get values => [
     eyeOpen,
     eyeCurve,
@@ -131,6 +164,12 @@ class MascotPose {
     headTilt,
     blush,
     lift,
+    stand,
+    lean,
+    paw,
+    yawn,
+    flick,
+    headY,
   ];
 
   @override
