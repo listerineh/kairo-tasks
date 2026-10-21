@@ -612,7 +612,7 @@ class _NowCard extends StatelessWidget {
       label: l10n.focusAction,
       icon: CupertinoIcons.play_fill,
       variant: KairoButtonVariant.accent,
-      onPressed: () => context.push('/focus'),
+      onPressed: () => context.push('/focus', extra: task),
     );
 
     return KairoCard(

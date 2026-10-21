@@ -277,5 +277,21 @@
   "taskFormCreate": "Create task",
   "taskFormNeedsTitle": "Write what you want to do",
   "taskFormWhen": "When",
-  "taskFormWho": "With someone"
+  "taskFormWho": "With someone",
+  "focusPickTitle": "What will you focus on?",
+  "focusJustFocus": "Just focus",
+  "focusOn": "Focused on",
+  "focusChange": "Change",
+  "focusBreathe": "Breathe. You're doing well.",
+  "focusPaused": "Paused",
+  "focusRestTitle": "Rest",
+  "focusRestHint": "Stand up, stretch, drink some water.",
+  "focusRoundOf": "Round {round} of {total}",
+  "focusReset": "Restart",
+  "focusAddFive": "Add 5 minutes",
+  "focusPause": "Pause",
+  "focusResume": "Resume",
+  "focusTakeRest": "Take a rest",
+  "focusNextRound": "Next round",
+  "focusLeave": "Leave focus"
 }

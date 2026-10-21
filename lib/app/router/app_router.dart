@@ -11,6 +11,7 @@ import '../../features/notifications/presentation/pages/notifications_page.dart'
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/social/presentation/pages/social_page.dart';
+import '../../features/tasks/domain/entities/task_entity.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
 import '../gallery/gallery_page.dart';
 import '../router/shell_scaffold.dart';
@@ -55,7 +56,11 @@ class AppRouter {
           path: '/notifications',
           builder: (context, state) => const NotificationsPage(),
         ),
-        GoRoute(path: '/focus', builder: (context, state) => const FocusPage()),
+        GoRoute(
+          path: '/focus',
+          builder: (context, state) =>
+              FocusPage(initialTask: state.extra as TaskEntity?),
+        ),
         if (kDebugMode)
           GoRoute(
             path: '/gallery',

@@ -290,5 +290,22 @@
   "taskFormCreate": "Crear tarea",
   "taskFormNeedsTitle": "Escribe qué quieres hacer",
   "taskFormWhen": "Cuándo",
-  "taskFormWho": "Con alguien"
+  "taskFormWho": "Con alguien",
+  "focusPickTitle": "¿En qué te enfocas?",
+  "focusJustFocus": "Solo enfocarme",
+  "focusOn": "Enfocado en",
+  "focusChange": "Cambiar",
+  "focusBreathe": "Respira. Vas bien.",
+  "focusPaused": "En pausa",
+  "focusRestTitle": "Descanso",
+  "focusRestHint": "Levántate, estira, bebe agua.",
+  "focusRoundOf": "Ronda {round} de {total}",
+  "@focusRoundOf": {"placeholders": {"round": {"type": "int"}, "total": {"type": "int"}}},
+  "focusReset": "Reiniciar",
+  "focusAddFive": "Sumar 5 minutos",
+  "focusPause": "Pausar",
+  "focusResume": "Seguir",
+  "focusTakeRest": "Tomar descanso",
+  "focusNextRound": "Siguiente ronda",
+  "focusLeave": "Salir del foco"
 }
