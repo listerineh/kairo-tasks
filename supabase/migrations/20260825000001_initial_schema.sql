@@ -139,7 +139,6 @@ CREATE POLICY "Users can insert own profile"
   ON public.profiles FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = id);
-  WITH CHECK (auth.uid() = id);
 
 -- TASKS POLICIES
 CREATE POLICY "Users can view own tasks"
