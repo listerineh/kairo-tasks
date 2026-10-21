@@ -235,6 +235,15 @@
   "tasksLoadError": "No pudimos cargar tus tareas. Revisa tu conexión e inténtalo de nuevo.",
   "tryAgain": "Reintentar",
   "taskActionFailed": "Algo salió mal y tu cambio no se guardó. Inténtalo de nuevo.",
+  "taskFormDate": "Fecha",
+  "taskFormTime": "Hora",
+  "taskFormStarts": "Empieza",
+  "taskFormAdd": "Añadir",
+  "taskFormSave": "Guardar",
+  "taskFormDone": "Listo",
+  "taskFormPickDate": "Elegir fecha",
+  "taskFormThisWeekend": "Este fin de semana",
+  "taskFormRemoveDate": "Quitar fecha",
   "sharedWithNames": "Compartida con {names}",
   "@sharedWithNames": {"placeholders": {"names": {"type": "String"}}}
 }

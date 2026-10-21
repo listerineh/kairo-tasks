@@ -18,6 +18,12 @@ import '../../core/session/current_user.dart' as _i369;
 import '../../features/auth/data/datasources/auth_remote_datasource.dart'
     as _i161;
 import '../../features/auth/presentation/bloc/auth_bloc.dart' as _i797;
+import '../../features/social/data/repositories/friends_repository_impl.dart'
+    as _i880;
+import '../../features/social/data/social_module.dart' as _i684;
+import '../../features/social/domain/repositories/friends_repository.dart'
+    as _i555;
+import '../../features/social/domain/usecases/get_friends.dart' as _i893;
 import '../../features/tasks/data/datasources/task_remote_datasource.dart'
     as _i25;
 import '../../features/tasks/data/repositories/task_repository_impl.dart'
@@ -43,6 +49,7 @@ extension GetItInjectableX on _i174.GetIt {
   }) {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final registerModule = _$RegisterModule();
+    final socialModule = _$SocialModule();
     final tasksModule = _$TasksModule();
     gh.lazySingleton<_i454.SupabaseClient>(() => registerModule.supabaseClient);
     gh.lazySingleton<_i239.HapticsService>(() => _i239.HapticsService());
@@ -61,11 +68,20 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i161.AuthRemoteDataSource>(
       () => _i161.AuthRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
     );
+    gh.lazySingleton<_i555.FriendsRepository>(
+      () => _i880.FriendsRepositoryImpl(
+        gh<_i454.SupabaseClient>(),
+        gh<_i369.CurrentUser>(),
+      ),
+    );
     gh.lazySingleton<_i148.TaskRepository>(
       () => _i20.TaskRepositoryImpl(
         gh<_i25.TaskRemoteDataSource>(),
         gh<_i369.CurrentUser>(),
       ),
+    );
+    gh.factory<_i893.GetFriends>(
+      () => socialModule.getFriends(gh<_i555.FriendsRepository>()),
     );
     gh.factory<_i517.WatchTasks>(
       () => tasksModule.watchTasks(gh<_i148.TaskRepository>()),
@@ -98,5 +114,7 @@ extension GetItInjectableX on _i174.GetIt {
 }
 
 class _$RegisterModule extends _i291.RegisterModule {}
+
+class _$SocialModule extends _i684.SocialModule {}
 
 class _$TasksModule extends _i473.TasksModule {}

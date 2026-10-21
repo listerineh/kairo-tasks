@@ -229,6 +229,15 @@
   "tasksLoadError": "We couldn't load your tasks. Check your connection and try again.",
   "tryAgain": "Try again",
   "taskActionFailed": "Something went wrong and your change wasn't saved. Please try again.",
+  "taskFormDate": "Date",
+  "taskFormTime": "Time",
+  "taskFormStarts": "Starts",
+  "taskFormAdd": "Add",
+  "taskFormSave": "Save",
+  "taskFormDone": "Done",
+  "taskFormPickDate": "Pick date",
+  "taskFormThisWeekend": "This weekend",
+  "taskFormRemoveDate": "Remove date",
   "sharedWithNames": "Shared with {names}",
   "@sharedWithNames": {"placeholders": {"names": {"type": "String"}}}
 }

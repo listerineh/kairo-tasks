@@ -1,3 +1,4 @@
+import 'package:bloc_test/bloc_test.dart';
 import 'package:kairotasks/core/session/current_user.dart';
 import 'package:kairotasks/features/tasks/data/datasources/task_remote_datasource.dart';
 import 'package:kairotasks/features/tasks/domain/services/task_reminders.dart';
@@ -6,6 +7,7 @@ import 'package:kairotasks/features/tasks/domain/usecases/delete_task.dart';
 import 'package:kairotasks/features/tasks/domain/usecases/set_task_completed.dart';
 import 'package:kairotasks/features/tasks/domain/usecases/update_task.dart';
 import 'package:kairotasks/features/tasks/domain/usecases/watch_tasks.dart';
+import 'package:kairotasks/features/tasks/presentation/bloc/tasks_bloc.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -35,3 +37,6 @@ class FakeCurrentUser implements CurrentUser {
   @override
   final String? id;
 }
+
+class MockTasksBloc extends MockBloc<TasksEvent, TasksState>
+    implements TasksBloc {}

@@ -126,12 +126,18 @@ class _Segment extends StatelessWidget {
                 horizontal: AppSpacing.spacing8,
                 vertical: AppSpacing.spacing4,
               ),
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: context.typography.footnote.copyWith(
-                  color: colors.label,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              // One line, never split mid-word: at large text sizes a label that
+              // does not fit shrinks instead (like UISegmentedControl).
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  style: context.typography.footnote.copyWith(
+                    color: colors.label,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  ),
                 ),
               ),
             ),

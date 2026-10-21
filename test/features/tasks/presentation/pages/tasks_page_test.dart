@@ -9,8 +9,7 @@ import 'package:kairotasks/features/tasks/presentation/pages/tasks_page.dart';
 import 'package:kairotasks/generated/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockTasksBloc extends MockBloc<TasksEvent, TasksState>
-    implements TasksBloc {}
+import '../../../../helpers/mocks.dart';
 
 void main() {
   late MockTasksBloc bloc;
