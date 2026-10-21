@@ -10,6 +10,24 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.27.00 - Kairo 2.0 v2 (V2): components (2026-10-21)
+
+### Added in V 01.27.00
+
+- `KairoChip`: outline capsule that turns `ink` when selected.
+- `KairoCard`: tile, hero and ink styles with the new radius hierarchy and the soft hero elevation.
+- `KairoEntrance`: cards rise 14 px and fade in a 60 ms cascade (static under reduced motion).
+- `KairoButton` gains the `accent` (lime) and `outline` variants.
+
+### Changed in V 01.27.00
+
+- `KairoTabBar` is now a floating `ink` capsule: the selected tab grows into a pill with a lime label, and an optional lime ＋ sits in the middle.
+- Primary buttons are `ink`; disabled ones become a readable `fill` capsule instead of fading.
+- Segmented control, grouped sections and sheets use the new radii (14/11, 22, 30); sheets dim the background to 50%. Presses scale to 0.95.
+- Golden tests render real blurred shadows.
+
+---
+
 ## V 01.26.00 - Kairo 2.0 v2 (V1): visual foundation (2026-10-21)
 
 ### Changed in V 01.26.00
