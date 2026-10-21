@@ -81,6 +81,7 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     when(() => reminders.taskCreated(any(), any())).thenAnswer((_) async {});
+    when(() => reminders.taskUpdated(any())).thenAnswer((_) async {});
     when(() => reminders.taskCompleted(any())).thenAnswer((_) async {});
     when(() => reminders.taskDeleted(any())).thenAnswer((_) async {});
     when(() => reminders.streakExtended(any())).thenAnswer((_) async {});
@@ -168,26 +169,49 @@ void main() {
     );
   });
 
-  blocTest<TasksBloc, TasksState>(
-    'edit keeps current priority and dates when the sheet leaves them null',
-    build: build,
-    setUp: () =>
-        when(() => update(any(), any()))
-            .thenAnswer((_) async => const Right(unit)),
-    seed: () => loaded,
-    act: (bloc) =>
-        bloc.add(const TaskEditRequested(taskId: 't2', title: 'Renamed')),
-    verify: (_) => verify(
-      () => update(
-        't2',
-        TaskDraft(
-          title: 'Renamed',
-          priority: TaskPriority.high,
-          dueDate: DateTime(2026, 11),
+  group('edit', () {
+    blocTest<TasksBloc, TasksState>(
+      'saves the whole draft, so a date can be removed, and reschedules',
+      build: build,
+      setUp: () =>
+          when(() => update(any(), any()))
+              .thenAnswer((_) async => const Right(unit)),
+      seed: () => loaded,
+      act: (bloc) => bloc.add(
+        const TaskEdited(
+          't2',
+          TaskDraft(title: 'Renamed', priority: TaskPriority.low),
         ),
       ),
-    ).called(1),
-  );
+      expect: () => <TasksState>[],
+      verify: (_) {
+        verify(
+          () => update(
+            't2',
+            const TaskDraft(title: 'Renamed', priority: TaskPriority.low),
+          ),
+        ).called(1);
+        final rescheduled =
+            verify(() => reminders.taskUpdated(captureAny())).captured.single
+                as TaskEntity;
+        expect(rescheduled.title, 'Renamed');
+        expect(rescheduled.dueDate, isNull);
+      },
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'shows the failure and leaves reminders alone',
+      build: build,
+      setUp: () => when(
+        () => update(any(), any()),
+      ).thenAnswer((_) async => const Left(ServerFailure(message: 'offline'))),
+      seed: () => loaded,
+      act: (bloc) =>
+          bloc.add(const TaskEdited('t2', TaskDraft(title: 'Renamed'))),
+      expect: () => [loaded.copyWith(errorMessage: 'offline')],
+      verify: (_) => verifyNever(() => reminders.taskUpdated(any())),
+    );
+  });
 
   group('toggle', () {
     blocTest<TasksBloc, TasksState>(
