@@ -14,7 +14,7 @@ enum KairoSheetDetent {
   final double fraction;
 }
 
-/// System-style sheet: grabber, raised surface, 12 pt top corners, and
+/// Sheet: grabber, raised surface, 30 pt top corners, a 50% dim behind, and
 /// detents it snaps between. Opens with the `smooth` spring (a cross-fade
 /// timing under reduced motion).
 ///
@@ -42,7 +42,7 @@ Future<T?> showKairoSheet<T>({
     // Grouped content sits on the grouped background, rows one level up
     // (see KairoSheetScope), like iOS form sheets.
     backgroundColor: context.isDarkMode ? colors.surface : colors.background,
-    barrierColor: Colors.black.withValues(alpha: 0.3),
+    barrierColor: const Color(0x800A0C0E),
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(
         top: Radius.circular(AppSpacing.radiusSheet),

@@ -69,7 +69,7 @@ class GroupedSection extends StatelessWidget {
               ),
             ),
           ClipRRect(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusRow),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusTile),
             child: ColoredBox(
               color: KairoSheetScope.isInSheet(context)
                   ? colors.surfaceRaised
