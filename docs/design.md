@@ -209,6 +209,15 @@ Shared components live in `lib/core/widgets/` and are listed in the debug `/gall
 - `FocusSession` (domain, pure) stores the end time, so backgrounding never desyncs the countdown. 4 rounds of 25 min, 5 min rests and a 15 min rest after the fourth. `FocusCubit` is a lazy singleton, so leaving the screen keeps the session; the phase-end notification goes through the `FocusAlarm` port.
 - When a phase ends: "Tomar descanso" or "Completar tarea" after focus; "Siguiente ronda" after a rest.
 
+### Juntos
+- **Header:** the number of people above the large title "Juntos", and a round outline button to add a friend.
+- **Requests:** each pending request is an `ink` card ("Mateo quiere unirse", @username) with decline (raised ink) and accept (lime) buttons.
+- **Friends:** a white card with a horizontal row of avatars. Initials sit on the friend's calendar tone (`PersonAvatar`; a friend without a color gets a tone from their id). Tapping one opens their sheet: pick one of the five tones, "Crear tarea juntos", or "Eliminar amigo" (with a confirmation).
+- **"Haciendo juntos":** one card per unfinished shared task, soonest first, undated last. Each card has a progress ring (no steps yet, so it follows the status: 0, ½, done), when it is and with whom, and stacked faces. Its buttons are **Empujoncito** (outline; "Enviado" once sent) and **Enfocarnos** (`ink`, opens Focus on the task). Below 1.3× text the buttons sit side by side, above it they stack.
+- **Add friend:** a sheet that searches by username (debounced 300 ms). Each result shows its relation: add, pending, accept, or already friends.
+- **Nudges:** a nudge inserts one `nudges` row per other person on the task. A trigger sends them a push in their language. The database allows one per sender, recipient and task every 30 minutes; a repeat comes back as "Ya le diste un empujoncito hace poco".
+- **Data:** `SocialBloc` (friends, requests, search, nudges) talks to `FriendsRepository`. Writes are optimistic and roll back with a snackbar; realtime changes to `friendships` reload the page (debounced).
+
 ---
 
 ## Kairo, the cat
