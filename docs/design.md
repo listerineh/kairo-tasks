@@ -148,7 +148,7 @@ Minimum 44 × 44 for everything tappable, including icon buttons and check circl
 
 ## Navigation
 
-`KairoTabBar` is built (V2); the app shell adopts it in V4. A floating `ink` capsule (64 px high, 18 px from the sides, 26 px from the bottom). Five slots:
+`ShellScaffold` uses `KairoTabBar`: Hoy (`/dashboard`), Planear (`/calendar`), Juntos (`/social`) and Yo (`/profile`), with ＋ opening the task form. The full task list lives at `/dashboard/tasks` ("Ver todas las tareas" on Hoy; old `/tasks` links redirect there). A floating `ink` capsule (64 px high, 18 px from the sides, 26 px from the bottom). Five slots:
 
 1. **Hoy** · 2. **Planear** · 3. **＋** (lime circle, opens the create sheet) · 4. **Juntos** · 5. **Yo** (avatar)
 
@@ -164,6 +164,10 @@ Shared components live in `lib/core/widgets/` and are listed in the debug `/gall
 - `KairoCard` styles: `tile` (white, 22), `hero` (white, 28, soft elevation), `ink` (dark accent, 28).
 - White card, radius 22, rows separated by 1 px `#EEF0ED` lines; no card per row.
 - Row: 28 px check circle (2 px ring in the priority color), title (`body`), meta line with priority dot + label + time (`subheadline`, secondary).
+
+### Hoy
+- `TodayPage` (`features/dashboard/presentation/pages/`) reads `TodaySummary` (domain, pure): overdue + today pending, done today, streak, next timed task, Kairo's suggestions.
+- Metrics are streak, overdue and % of the day; focus time joins them once Focus records sessions (V6).
 
 ### Kairo hero (Hoy)
 - White card, radius 28: Kairo (132 px) on the left; "Kairo sugiere" chip (`tintSoft` / `tint`), one-sentence suggestion (`bodyMultiline`), and a segmented progress bar (one segment per task, `tint` when done).

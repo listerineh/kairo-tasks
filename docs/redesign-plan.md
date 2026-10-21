@@ -64,7 +64,7 @@ Four destinations plus create, in a floating `ink` bar (64 px, capsule, 18 px fr
 
 | Tab | Content |
 | --- | --- |
-| **Hoy** | Kairo hero with a suggestion, three metrics (streak, focus time, % of day), dark "Ahora" card with Enfocar, pending list, collapsible "Hechas". Replaces Dashboard + Tasks. |
+| **Hoy** | Kairo hero with a suggestion, three metrics (streak, overdue, % of day; focus time once V6 records it), dark "Ahora" card with Enfocar, pending list, collapsible "Hechas", link to all tasks. Replaces Dashboard + Tasks. |
 | **Planear** | Calendar (Día / Semana / Mes) and "Algún día" (tasks without a date). |
 | **＋** | Create sheet (lime button in the bar). |
 | **Juntos** | Friends, requests, shared tasks with progress, nudges, focus together. |
