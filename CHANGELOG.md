@@ -16,6 +16,13 @@ Format: **V xx.yy.zz**
 
 - Push notifications no longer depend on the original project: `fcm_send` reads the project URL from the vault secret `project_url` instead of a hardcoded `gatdyxuqmdbllbmzejwh` URL (migration `20261021000001_fcm_project_url_from_vault.sql`). It also runs with an empty `search_path`.
 - `supabase/config.toml` deploys `fcm` with `verify_jwt = false`, matching the trigger calls that carry no user JWT; the function keeps checking `x-fcm-internal-key`.
+- `20260825000001_initial_schema.sql` had a duplicated `WITH CHECK` line in the "Users can insert own profile" policy, a syntax error that stopped a fresh project at the first migration.
+- New migration `20261021000002_harden_functions.sql`:
+  - `fcm_send` can no longer be called over the API (anyone could send pushes with any text); only the push triggers call it.
+  - The friendship push triggers run as `SECURITY DEFINER` like the others.
+  - Trigger functions lose their API grants.
+  - Every function has a fixed `search_path`.
+  - `get_public_friend_tasks` is for signed-in users only.
 
 ### Added in V 01.25.02
 
