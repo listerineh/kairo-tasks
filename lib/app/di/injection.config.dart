@@ -18,6 +18,17 @@ import '../../core/session/current_user.dart' as _i369;
 import '../../features/auth/data/datasources/auth_remote_datasource.dart'
     as _i161;
 import '../../features/auth/presentation/bloc/auth_bloc.dart' as _i797;
+import '../../features/calendar/data/calendar_module.dart' as _i371;
+import '../../features/calendar/data/repositories/calendar_repository_impl.dart'
+    as _i712;
+import '../../features/calendar/domain/repositories/calendar_repository.dart'
+    as _i241;
+import '../../features/calendar/domain/usecases/load_friend_calendar.dart'
+    as _i410;
+import '../../features/calendar/domain/usecases/watch_calendar_changes.dart'
+    as _i158;
+import '../../features/calendar/presentation/cubit/calendar_cubit.dart'
+    as _i131;
 import '../../features/social/data/repositories/friends_repository_impl.dart'
     as _i880;
 import '../../features/social/data/social_module.dart' as _i684;
@@ -51,6 +62,7 @@ extension GetItInjectableX on _i174.GetIt {
     final registerModule = _$RegisterModule();
     final socialModule = _$SocialModule();
     final tasksModule = _$TasksModule();
+    final calendarModule = _$CalendarModule();
     gh.lazySingleton<_i454.SupabaseClient>(() => registerModule.supabaseClient);
     gh.lazySingleton<_i239.HapticsService>(() => _i239.HapticsService());
     gh.lazySingleton<_i18.TaskReminders>(
@@ -70,6 +82,12 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i555.FriendsRepository>(
       () => _i880.FriendsRepositoryImpl(
+        gh<_i454.SupabaseClient>(),
+        gh<_i369.CurrentUser>(),
+      ),
+    );
+    gh.lazySingleton<_i241.CalendarRepository>(
+      () => _i712.CalendarRepositoryImpl(
         gh<_i454.SupabaseClient>(),
         gh<_i369.CurrentUser>(),
       ),
@@ -98,6 +116,12 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i840.DeleteTask>(
       () => tasksModule.deleteTask(gh<_i148.TaskRepository>()),
     );
+    gh.factory<_i410.LoadFriendCalendar>(
+      () => calendarModule.loadFriendCalendar(gh<_i241.CalendarRepository>()),
+    );
+    gh.factory<_i158.WatchCalendarChanges>(
+      () => calendarModule.watchCalendarChanges(gh<_i241.CalendarRepository>()),
+    );
     gh.factory<_i447.TasksBloc>(
       () => _i447.TasksBloc(
         gh<_i517.WatchTasks>(),
@@ -109,6 +133,12 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i369.CurrentUser>(),
       ),
     );
+    gh.factory<_i131.CalendarCubit>(
+      () => _i131.CalendarCubit(
+        gh<_i410.LoadFriendCalendar>(),
+        gh<_i158.WatchCalendarChanges>(),
+      ),
+    );
     return this;
   }
 }
@@ -118,3 +148,5 @@ class _$RegisterModule extends _i291.RegisterModule {}
 class _$SocialModule extends _i684.SocialModule {}
 
 class _$TasksModule extends _i473.TasksModule {}
+
+class _$CalendarModule extends _i371.CalendarModule {}
