@@ -14,7 +14,6 @@ dependencies:
 
   # UI
   cupertino_icons: ^1.0.8
-  google_fonts: ^6.2.1
   flutter_svg: ^2.0.10
   shimmer: ^3.0.0
 
@@ -86,15 +85,6 @@ flutter:
     - assets/icons/google_logo.svg
 
   fonts:
-    - family: Inter
+    - family: Manrope
       fonts:
-        - asset: assets/fonts/Inter-Light.ttf
-          weight: 300
-        - asset: assets/fonts/Inter-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Inter-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Inter-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Inter-Bold.ttf
-          weight: 700
+        - asset: assets/fonts/Manrope-Variable.ttf

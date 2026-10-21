@@ -4,63 +4,51 @@ import 'package:kairotasks/app/theme/kairo_typography.dart';
 
 void main() {
   group('KairoTypography', () {
-    test('Android uses bundled Inter with Inter tracking', () {
-      final t = KairoTypography.forPlatform(TargetPlatform.android);
+    final t = KairoTypography.standard();
+    final all = [
+      t.largeTitle,
+      t.title1,
+      t.title2,
+      t.title3,
+      t.headline,
+      t.body,
+      t.bodyMultiline,
+      t.callout,
+      t.subheadline,
+      t.footnote,
+      t.caption1,
+      t.timer,
+    ];
 
-      expect(t.body.fontFamily, 'Inter');
-      expect(t.largeTitle.fontFamily, 'Inter');
-      expect(t.body.letterSpacing, KairoTypography.interTracking(17));
+    test('every style is Manrope with the wght axis matching its weight', () {
+      for (final style in all) {
+        expect(style.fontFamily, 'Manrope');
+        expect(style.fontVariations, [
+          FontVariation.weight(style.fontWeight!.value.toDouble()),
+        ]);
+      }
     });
 
-    test('iOS uses SF Text below 20 pt and SF Display from 20 pt', () {
-      final t = KairoTypography.forPlatform(TargetPlatform.iOS);
-
-      expect(t.body.fontFamily, 'CupertinoSystemText');
-      expect(t.title3.fontFamily, 'CupertinoSystemDisplay');
-      expect(t.body.letterSpacing, -0.41);
+    test('titles are heavy and tight, text is not tracked', () {
+      expect(t.largeTitle.fontWeight, FontWeight.w800);
+      expect(t.largeTitle.letterSpacing, lessThan(0));
+      expect(t.body.letterSpacing, 0);
     });
 
-    test('Inter tracking tightens as size grows', () {
-      expect(KairoTypography.interTracking(12).abs(), lessThan(0.05));
-      expect(KairoTypography.interTracking(17), lessThan(0));
-      expect(
-        KairoTypography.interTracking(34),
-        lessThan(KairoTypography.interTracking(17)),
-      );
-    });
-
-    test('follows Apple leading for the Large size', () {
-      final t = KairoTypography.forPlatform(TargetPlatform.android);
-
-      expect(t.largeTitle.fontSize! * t.largeTitle.height!, closeTo(41, 0.01));
+    test('line heights follow the scale', () {
+      expect(t.largeTitle.fontSize! * t.largeTitle.height!, closeTo(36, 0.01));
       expect(t.footnote.fontSize! * t.footnote.height!, closeTo(18, 0.01));
     });
 
     test('multi-line body keeps line height of at least 1.35', () {
-      final t = KairoTypography.forPlatform(TargetPlatform.android);
       expect(t.bodyMultiline.height, greaterThanOrEqualTo(1.35));
     });
 
     test('no text style is smaller than caption1', () {
-      final t = KairoTypography.forPlatform(TargetPlatform.android);
-      final sizes = [
-        t.largeTitle,
-        t.title1,
-        t.title2,
-        t.title3,
-        t.headline,
-        t.body,
-        t.bodyMultiline,
-        t.callout,
-        t.subheadline,
-        t.footnote,
-        t.caption1,
-      ].map((s) => s.fontSize!);
-      expect(sizes.every((s) => s >= 12), isTrue);
+      expect(all.every((s) => s.fontSize! >= 12), isTrue);
     });
 
     test('timer uses tabular figures', () {
-      final t = KairoTypography.forPlatform(TargetPlatform.android);
       expect(
         t.timer.fontFeatures,
         contains(const FontFeature.tabularFigures()),

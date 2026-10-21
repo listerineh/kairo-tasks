@@ -1,6 +1,4 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app_spacing.dart';
 import 'kairo_colors.dart';
@@ -12,14 +10,13 @@ class AppTheme {
   static ThemeData get light => _buildTheme(Brightness.light);
   static ThemeData get dark => _buildTheme(Brightness.dark);
 
-  /// Same theme with the legacy DM fonts swapped for bundled Inter, because
-  /// golden tests cannot download Google Fonts.
+  /// The theme golden tests use. Fonts are bundled, so it matches the app;
+  /// it stays a separate entry point for test-only tweaks.
   @visibleForTesting
-  static ThemeData golden(Brightness brightness) =>
-      _buildTheme(brightness, goldens: true);
+  static ThemeData golden(Brightness brightness) => _buildTheme(brightness);
 
-  static ThemeData _buildTheme(Brightness brightness, {bool goldens = false}) {
-    final fonts = _LegacyFonts(bundled: goldens);
+  static ThemeData _buildTheme(Brightness brightness) {
+    const fonts = _LegacyFonts();
     final isLight = brightness == Brightness.light;
     final colors = isLight ? KairoColors.light : KairoColors.dark;
 
@@ -27,7 +24,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: brightness,
       scaffoldBackgroundColor: colors.background,
-      extensions: [colors, KairoTypography.forPlatform(defaultTargetPlatform)],
+      extensions: [colors, KairoTypography.standard()],
       colorScheme: ColorScheme(
         brightness: brightness,
         primary: colors.accent,
@@ -227,13 +224,12 @@ class AppTheme {
   }
 }
 
-/// The 1.x DM fonts, fetched by google_fonts at runtime. Retired screen by
-/// screen during the redesign; Phase 9 removes this.
+/// The Material text theme for screens not yet migrated to
+/// [KairoTypography]. Both the old sans and serif roles render in Manrope;
+/// the serif (display) roles become heavy and tight like the new titles.
+/// V11 removes this.
 class _LegacyFonts {
-  const _LegacyFonts({required this.bundled});
-
-  /// Use bundled Inter instead (golden tests have no network).
-  final bool bundled;
+  const _LegacyFonts();
 
   TextStyle sans({
     double? fontSize,
@@ -242,16 +238,16 @@ class _LegacyFonts {
     double? height,
     double? letterSpacing,
   }) {
-    final style = TextStyle(
+    final weight = fontWeight ?? FontWeight.w500;
+    return TextStyle(
+      fontFamily: KairoTypography.family,
       fontSize: fontSize,
-      fontWeight: fontWeight,
+      fontWeight: weight,
+      fontVariations: [FontVariation.weight(weight.value.toDouble())],
       color: color,
       height: height,
       letterSpacing: letterSpacing,
     );
-    return bundled
-        ? style.copyWith(fontFamily: 'Inter')
-        : GoogleFonts.dmSans(textStyle: style);
   }
 
   TextStyle serif({
@@ -261,15 +257,12 @@ class _LegacyFonts {
     double? height,
     double? letterSpacing,
   }) {
-    final style = TextStyle(
+    return sans(
       fontSize: fontSize,
-      fontWeight: fontWeight,
+      fontWeight: FontWeight.w800,
       color: color,
       height: height,
-      letterSpacing: letterSpacing,
+      letterSpacing: letterSpacing ?? -0.5,
     );
-    return bundled
-        ? style.copyWith(fontFamily: 'Inter')
-        : GoogleFonts.dmSerifDisplay(textStyle: style);
   }
 }
