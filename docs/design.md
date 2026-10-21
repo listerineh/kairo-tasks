@@ -194,8 +194,11 @@ Shared components live in `lib/core/widgets/` and are listed in the debug `/gall
 ### Task form
 - `TaskFormSheet`: Cancel and title on top; a large title field with Kairo's head peeking over its line (watching while you type, happy once there is a title); optional sections as chips (Cuándo, Prioridad, Con alguien); a full-width `ink` button at the bottom that names what it creates ("Crear tarea · Mañana 9:00"), or says what is missing. Kairo peeks over the top edge and reacts to typing.
 
-### Focus screen (V6)
-- Dark (`#0E1012`) whatever the theme. 310 px lime ring that drains, with a dot at the head of the arc; Kairo (focus mood) inside the ring above the `timer`; session pills; reset, play/pause (lime, 84 px), +5.
+### Focus screen
+- Dark whatever the theme (`AppTheme.dark`). A lime ring (up to 310 px) drains clockwise with a dot at its head and a halo that breathes while running; Kairo inside the ring (focused while running, happy when done) above the `timer`; four round pills; reset, play/pause (lime, 84 px), +5.
+- No task yet: "¿En qué te enfocas?" lists today's pending tasks first, plus "Solo enfocarme". Hoy's "Enfocar" opens it on its task.
+- `FocusSession` (domain, pure) stores the end time, so backgrounding never desyncs the countdown. 4 rounds of 25 min, 5 min rests and a 15 min rest after the fourth. `FocusCubit` is a lazy singleton, so leaving the screen keeps the session; the phase-end notification goes through the `FocusAlarm` port.
+- When a phase ends: "Tomar descanso" or "Completar tarea" after focus; "Siguiente ronda" after a rest.
 
 ---
 
