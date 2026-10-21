@@ -13,6 +13,7 @@ class GroupedSection extends StatelessWidget {
     this.header,
     this.footer,
     this.separatorInset,
+    this.margin = AppSpacing.screenMargin,
     super.key,
   });
 
@@ -25,6 +26,9 @@ class GroupedSection extends StatelessWidget {
   /// Where hairlines start for children that are not [GroupedRow]s (which
   /// know their own inset). Defaults to 16, the row text start.
   final double? separatorInset;
+
+  /// Side margin; 0 inside a screen that already pads its content.
+  final double margin;
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +60,7 @@ class GroupedSection extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenMargin),
+      padding: EdgeInsets.symmetric(horizontal: margin),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
