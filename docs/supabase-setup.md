@@ -34,6 +34,10 @@ supabase db push
 
 > The migration that locks down `public.logs` (`20261020000001_logs_table_rls.sql`) is in PR #10. Merge it before pushing, or run `supabase db push` again after it lands.
 
+> If the migrations were applied outside the CLI (for example from the Supabase MCP or the SQL editor), their recorded versions do not match the file names, and `supabase db push` would try to apply everything again. Mark them as applied first: `supabase migration repair --status applied <version>` for each file in `supabase/migrations/`.
+
+After applying, **Advisors → Security** should only list `logs` (RLS with no policies, on purpose: only the Edge Function writes it), `get_public_friend_tasks` (the calendar needs it), `pg_net` in `public` (the extension cannot be moved) and Supabase's own `rls_auto_enable`.
+
 ## 3. Vault secrets (push notifications)
 
 The push triggers read two secrets from the vault. Run this once in **SQL Editor**, with a long random value for the key (for example `openssl rand -hex 32`):
