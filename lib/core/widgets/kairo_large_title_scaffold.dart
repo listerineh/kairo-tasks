@@ -1,5 +1,6 @@
 import 'dart:ui' show ImageFilter;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme/app_spacing.dart';
@@ -126,6 +127,13 @@ class _LargeTitleHeader extends SliverPersistentHeaderDelegate {
           child: Row(
             children: [
               const SizedBox(width: AppSpacing.spacing8),
+              // Pushed screens (e.g. Tasks over Hoy) get a back button.
+              if (Navigator.canPop(context))
+                IconButton(
+                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                  icon: Icon(CupertinoIcons.chevron_back, color: colors.tint),
+                  onPressed: () => Navigator.maybePop(context),
+                ),
               Expanded(
                 child: Opacity(
                   opacity: inlineTitle,
