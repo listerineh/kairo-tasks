@@ -6,6 +6,9 @@ import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/grouped_section.dart';
 import '../../core/widgets/kairo_avatar.dart';
 import '../../core/widgets/kairo_button.dart';
+import '../../core/widgets/kairo_card.dart';
+import '../../core/widgets/kairo_chip.dart';
+import '../../core/widgets/kairo_entrance.dart';
 import '../../core/widgets/kairo_large_title_scaffold.dart';
 import '../../core/widgets/kairo_segmented_control.dart';
 import '../../core/widgets/kairo_sheet.dart';
@@ -60,21 +63,28 @@ class _GalleryPageState extends State<GalleryPage> {
       bottomNavigationBar: KairoTabBar(
         currentIndex: _tab,
         onTap: (i) => setState(() => _tab = i),
+        onCreate: _openSheet,
+        createLabel: 'New task',
         items: const [
           KairoTabItem(
-            icon: CupertinoIcons.square_grid_2x2,
-            activeIcon: CupertinoIcons.square_grid_2x2_fill,
-            label: 'Today',
+            icon: CupertinoIcons.sun_max,
+            activeIcon: CupertinoIcons.sun_max_fill,
+            label: 'Hoy',
           ),
           KairoTabItem(
-            icon: CupertinoIcons.checkmark_circle,
-            activeIcon: CupertinoIcons.checkmark_circle_fill,
-            label: 'Tasks',
+            icon: CupertinoIcons.calendar,
+            activeIcon: CupertinoIcons.calendar,
+            label: 'Planear',
           ),
           KairoTabItem(
             icon: CupertinoIcons.person_2,
             activeIcon: CupertinoIcons.person_2_fill,
-            label: 'Friends',
+            label: 'Juntos',
+          ),
+          KairoTabItem(
+            icon: CupertinoIcons.person_crop_circle,
+            activeIcon: CupertinoIcons.person_crop_circle_fill,
+            label: 'Yo',
           ),
         ],
       ),
@@ -83,6 +93,8 @@ class _GalleryPageState extends State<GalleryPage> {
           children: [
             const SizedBox(height: AppSpacing.spacing16),
             _buttons(),
+            gap,
+            const _CardsAndChips(),
             gap,
             _settingsRows(),
             gap,
@@ -135,6 +147,12 @@ class _GalleryPageState extends State<GalleryPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           KairoButton(label: 'Filled', onPressed: () {}),
+          const SizedBox(height: AppSpacing.spacing12),
+          KairoButton(
+            label: 'Outline',
+            variant: KairoButtonVariant.outline,
+            onPressed: () {},
+          ),
           const SizedBox(height: AppSpacing.spacing12),
           KairoButton(
             label: 'Tinted',
@@ -330,6 +348,74 @@ class _GalleryPageState extends State<GalleryPage> {
             children: [
               for (var i = 1; i <= 12; i++) GroupedRow(title: 'Row $i'),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CardsAndChips extends StatefulWidget {
+  const _CardsAndChips();
+
+  @override
+  State<_CardsAndChips> createState() => _CardsAndChipsState();
+}
+
+class _CardsAndChipsState extends State<_CardsAndChips> {
+  String _day = 'Hoy';
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenMargin),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            spacing: AppSpacing.spacing8,
+            runSpacing: AppSpacing.spacing8,
+            children: [
+              for (final day in const ['Hoy', 'Mañana', 'Este finde'])
+                KairoChip(
+                  label: day,
+                  selected: _day == day,
+                  onSelected: () => setState(() => _day = day),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.spacing12),
+          KairoEntrance(
+            child: KairoCard(
+              style: KairoCardStyle.hero,
+              child: Text('Hero card', style: context.typography.title3),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.spacing12),
+          KairoEntrance(
+            index: 1,
+            child: KairoCard(
+              style: KairoCardStyle.ink,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Escribir informe Q3',
+                      style: context.typography.title3.copyWith(
+                        color: colors.onInk,
+                      ),
+                    ),
+                  ),
+                  KairoButton(
+                    label: 'Enfocar',
+                    icon: CupertinoIcons.play_fill,
+                    variant: KairoButtonVariant.accent,
+                    onPressed: () {},
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
