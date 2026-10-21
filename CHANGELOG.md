@@ -10,6 +10,23 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.25.00 - Kairo 2.0 calendar (4b): new views and drag to reschedule (2026-10-21)
+
+### Added in V 01.25.00
+
+- Day and week views on a new hour grid: pinch to change the hour height, tap an empty slot to create a task there (a 30 minute slot, snapped to 15 minutes), and long-press a block to drag it to a new time or the next day (15 minute steps with a haptic tick). Friends' blocks can't be dragged.
+- All-day strip for date-only tasks, side-by-side columns for overlapping tasks, and a "now" line on today.
+- Month view with up to three colored dots per day; tapping a day lists its agenda below (all-day first, then by time).
+- Tapping one of your tasks opens its detail sheet (it used to toggle it complete).
+
+### Changed in V 01.25.00
+
+- New calendar header: localized month and weekdays, Day/Week/Month segmented control, Today button and labeled previous/next buttons.
+- Editing a task updates it right away and rolls back if the server refuses, so a dropped block stays where it was dropped.
+- Removed the old day, week and month widgets.
+
+---
+
 ## V 01.24.00 - Kairo 2.0 calendar (4a): repository and cubit (2026-10-20)
 
 ### Fixed in V 01.24.00
