@@ -54,7 +54,7 @@ class _LoginPageState extends State<LoginPage>
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state.status == AuthStatus.authenticated) {
-          context.go('/tasks');
+          context.go('/dashboard');
         } else if (state.status == AuthStatus.error &&
             state.errorMessage != null) {
           ScaffoldMessenger.of(context).showSnackBar(
