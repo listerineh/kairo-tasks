@@ -7,21 +7,30 @@ import '../../../../../app/theme/app_motion.dart';
 import '../../../../../core/extensions/context_extensions.dart';
 import '../../../../../core/services/haptics_service.dart';
 import '../../../domain/mascot/mascot_mood.dart';
+import 'mascot_behavior.dart';
 import 'mascot_controller.dart';
 import 'mascot_painter.dart';
 
-/// Kairo the cat. Shows [mood] and reacts to what happens
-/// (docs/redesign-plan.md §2.6):
+/// Kairo, the calico cat. Shows [mood] and reacts to what happens
+/// (docs/design.md § Kairo, the cat):
 ///
-/// - Idle life: breathing and random blinks (off under reduced motion).
-/// - Tap: ear twitch + head tilt + selection haptic; one tap in five says
-///   "miau"; tapping while asleep lets a "z" drift up.
+/// - Idle life: breathing, blinks, a swaying tail, and every few seconds a
+///   cat thing (stand, stretch, groom, yawn, look, flick). All of it stops
+///   under reduced motion.
+/// - Tap: ear twitch + a small cat thing + selection haptic; one tap in five
+///   says "miau"; tapping while asleep lets a "z" drift up.
+/// - Long press: [onLongPress] (the app opens Focus).
 /// - [hopTrigger] increases (a task was completed): hop with ^^ eyes.
+/// - [progress] lights the tail from its base.
 /// - Mood changes morph through springs; under reduced motion they snap.
 class KairoMascot extends StatefulWidget {
   const KairoMascot({
     required this.mood,
     this.hopTrigger = 0,
+    this.progress = 0,
+    this.onLongPress,
+    this.cue,
+    this.cueTrigger = 0,
     this.size = 120,
     this.random,
     super.key,
@@ -31,6 +40,14 @@ class KairoMascot extends StatefulWidget {
 
   /// Any increase makes the cat hop once; pass e.g. today's completed count.
   final int hopTrigger;
+
+  /// 0..1 of the day done.
+  final double progress;
+  final VoidCallback? onLongPress;
+
+  /// A cat thing to perform each time [cueTrigger] increases.
+  final MascotBehavior? cue;
+  final int cueTrigger;
   final double size;
 
   /// Injectable for deterministic tests.
@@ -65,6 +82,10 @@ class _KairoMascotState extends State<KairoMascot>
     super.didUpdateWidget(oldWidget);
     _controller.setMood(widget.mood);
     if (widget.hopTrigger > oldWidget.hopTrigger) _controller.hop();
+    final cue = widget.cue;
+    if (cue != null && widget.cueTrigger > oldWidget.cueTrigger) {
+      _controller.perform(cue);
+    }
   }
 
   @override
@@ -77,7 +98,7 @@ class _KairoMascotState extends State<KairoMascot>
   void _onTap() {
     final haptics = registeredHaptics;
     if (haptics != null) unawaited(haptics.selection());
-    _controller.twitch();
+    _controller.poke();
 
     final bubble = widget.mood == MascotMood.sleeping
         ? _Bubble.sleepy
@@ -106,16 +127,16 @@ class _KairoMascotState extends State<KairoMascot>
 
   @override
   Widget build(BuildContext context) {
-    final tint = context.appColors.tint;
-
     return Semantics(
       label: _label(context),
       image: true,
       onTap: _onTap,
+      onLongPress: widget.onLongPress,
       excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _onTap,
+        onLongPress: widget.onLongPress,
         child: SizedBox.square(
           dimension: widget.size,
           child: Stack(
@@ -125,7 +146,10 @@ class _KairoMascotState extends State<KairoMascot>
                 child: ListenableBuilder(
                   listenable: _controller,
                   builder: (context, _) => CustomPaint(
-                    painter: MascotPainter(pose: _controller.pose, tint: tint),
+                    painter: MascotPainter(
+                      pose: _controller.pose,
+                      progress: widget.progress,
+                    ),
                   ),
                 ),
               ),
