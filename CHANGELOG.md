@@ -10,6 +10,19 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.25.02 - Supabase project portability (2026-10-21)
+
+### Fixed in V 01.25.02
+
+- Push notifications no longer depend on the original project: `fcm_send` reads the project URL from the vault secret `project_url` instead of a hardcoded `gatdyxuqmdbllbmzejwh` URL (migration `20261021000001_fcm_project_url_from_vault.sql`). It also runs with an empty `search_path`.
+- `supabase/config.toml` deploys `fcm` with `verify_jwt = false`, matching the trigger calls that carry no user JWT; the function keeps checking `x-fcm-internal-key`.
+
+### Added in V 01.25.02
+
+- `docs/supabase-setup.md`: step-by-step setup for a new Supabase project (schema, vault secrets, Edge Functions, auth providers, app config, checks).
+
+---
+
 ## V 01.25.00 - Kairo 2.0 calendar (4b): new views and drag to reschedule (2026-10-21)
 
 ### Added in V 01.25.00
