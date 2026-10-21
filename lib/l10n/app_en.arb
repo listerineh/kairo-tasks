@@ -293,5 +293,8 @@
   "focusResume": "Resume",
   "focusTakeRest": "Take a rest",
   "focusNextRound": "Next round",
-  "focusLeave": "Leave focus"
+  "focusLeave": "Leave focus",
+  "someday": "Someday",
+  "somedayHint": "Tasks without a date. Tap one to give it a day.",
+  "somedayEmpty": "Nothing waiting without a date."
 }

@@ -307,5 +307,8 @@
   "focusResume": "Seguir",
   "focusTakeRest": "Tomar descanso",
   "focusNextRound": "Siguiente ronda",
-  "focusLeave": "Salir del foco"
+  "focusLeave": "Salir del foco",
+  "someday": "Algún día",
+  "somedayHint": "Tareas sin fecha. Toca una para darle un día.",
+  "somedayEmpty": "No hay nada esperando sin fecha."
 }
