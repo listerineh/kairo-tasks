@@ -10,6 +10,32 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.23.00 - Kairo 2.0 tasks (3c): one task form (2026-10-20)
+
+### Added in V 01.23.00
+
+- `TaskFormSheet`: one form for creating and editing, opened with `showTaskForm` as a system sheet.
+  - **Title first**, with autofocus when creating; Return saves. Add/Save stays disabled until there's a title.
+  - **Progressive fields**: Date, Priority and Share with appear when you open them, or right away if the task already uses them.
+  - **Date chips**: Today, Tomorrow, This weekend (the coming Saturday, or today if it's already the weekend), and Pick date. Time and start time are optional, chosen with iOS pickers, and the start always stays before the due time.
+  - **Sharing** with a list of friends with avatars. Only the owner can change it.
+- `TaskEdited` saves the whole draft, so **you can now remove a task's date** (before, an empty value meant "don't change"). Reminders are rescheduled from the bloc through `TaskReminders.taskUpdated`.
+- `FriendsRepository` + `GetFriends` (social): the form no longer queries `friendships` directly.
+- Tests for quick dates, the form (creating with Return, date chips, removing a date, sharing, owner-only sharing) and the bloc; goldens for the new and edit form.
+
+### Changed in V 01.23.00
+
+- `KairoSegmentedControl` keeps each label on one line and shrinks it if it doesn't fit, instead of splitting words at large text sizes.
+- The Social tab opens the new form with the friend preselected.
+- `showKairoSheet` opens on the root navigator, so sheets cover the tab bar like system ones.
+
+### Removed in V 01.23.00
+
+- `CreateTaskSheet`, `EditTaskSheet` (about 1,000 duplicated lines) and the `TaskEditRequested` event.
+- Bumped version to `1.23.0+103`.
+
+---
+
 ## V 01.22.00 - Kairo 2.0 tasks (3b): sections, swipe actions and context menu (2026-10-20)
 
 ### Changed in V 01.22.00
