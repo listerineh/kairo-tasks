@@ -1,354 +1,264 @@
 # Kairo - Design System
 
-> Zen/Calm Editorial design language with accessibility-first principles.
+> Kairo 2.0 direction: **"Calma viva, con carácter"**. Mature and elegant, but alive.
+> The plan and phase status live in [redesign-plan.md](redesign-plan.md). Sections marked *(target)* describe the approved prototype and are not in the code yet; everything else describes the code as it is.
 
 ---
 
 ## Design Philosophy
 
+Kairo is a calm, ADHD- and autism-friendly productivity app that people use together. It should feel like a quiet, well-made object with a little life in it.
+
 ### Core Principles
 
-1. **Calm over chaos**: Every element has purpose. No decorative clutter.
-2. **Accessibility first**: Designed for neurodivergent users (ADHD, Autism). Clear hierarchy, generous spacing, predictable patterns.
-3. **Editorial typography**: Typography that breathes and guides the eye naturally.
-4. **Intentional motion**: Animations serve a purpose (feedback, orientation). Never distracting.
-5. **Inclusive contrast**: All text meets WCAG 2.2 AA minimum contrast ratios (4.5:1 for body, 3:1 for large text).
+1. **One thing at a time.** Every screen has one obvious next action ("Ahora", "Enfocar", "Crear tarea").
+2. **Quiet surfaces, one accent.** Light neutral ground and white cards; a single dark `ink` surface per screen carries the accent.
+3. **Motion answers an action.** Things move because you did something or because state changed. The cat is the only ambient life, and reduced motion stops it.
+4. **Kind language.** No guilt and no red badges for being behind. Kairo suggests; he never scolds.
+5. **Accessible by construction.** WCAG AA text, 44 px targets, Dynamic Type up to 200%, never color alone.
 
 ### Anti-Patterns (What We Avoid)
-- Excessive gradients or glassmorphism
-- Tiny text or cramped layouts
-- Animations that can't be disabled
-- Information overload on a single screen
-- Generic Material Design "out of the box" look
+
+- Childish styling: chunky hard shadows, saturated candy colors, emoji as icons.
+- SaaS templates: identical shadowed cards, gradients, glassmorphism everywhere, left-border accent cards.
+- All-caps eyebrow labels. Section headers are sentence case.
+- Decorative motion that plays on its own (except Kairo's idle life).
+- Information carried by color alone.
 
 ---
 
-## Color Tokens
+## Color
 
-### Light Mode
+Tokens live in `lib/app/theme/kairo_colors.dart` (`ThemeExtension<KairoColors>`). Read them with `context.appColors`. `test/app/theme/kairo_colors_test.dart` enforces AA for every text token on `background`, `surface` and `surfaceRaised`.
 
-| Token | Hex | Usage |
-|-------|-----|-------|
-| `surface` | `#FAF9F7` | Main background - warm cream |
-| `surfaceElevated` | `#FFFFFF` | Cards, elevated surfaces |
-| `surfaceSubtle` | `#F3F1ED` | Input backgrounds, secondary areas |
-| `textPrimary` | `#1A1A1A` | Primary text - near black |
-| `textSecondary` | `#6B6B6B` | Secondary/supporting text |
-| `textMuted` | `#9B9B9B` | Disabled, metadata, timestamps |
-| `accent` | `#4A6741` | Primary action - sage green |
-| `accentSoft` | `#E8F0E6` | Selected/hover states |
-| `urgent` | `#C45D4A` | Urgent priority - warm red |
-| `high` | `#D4894A` | High priority - amber |
-| `medium` | `#6B8FA3` | Medium priority - slate blue |
-| `low` | `#8B9D83` | Low priority - muted green |
-| `border` | `#E5E2DE` | Subtle borders |
+### Core tokens
 
-### Dark Mode
+| Token | Name | Light | Dark | Use |
+| --- | --- | --- | --- | --- |
+| `background` | Niebla | `#F1F2EF` | `#0E1012` | Screen background |
+| `surface` | | `#FFFFFF` | `#181B1E` | Cards, grouped rows |
+| `surfaceRaised` | | `#FFFFFF` | `#22262A` | Sheets, menus |
+| `fill` | | `#E6E9E5` | `#2A2E33` | Segmented control tracks, inputs |
+| `label` | Tinta | `#121417` | `#F3F5F2` | Primary text |
+| `labelSecondary` | Pizarra | `#59616B` | `#A7AFB7` | Secondary text |
+| `labelTertiary` | | label @ 30% | label @ 30% | Placeholders and decoration only |
+| `separator` | | `#E1E4E0` | `#2E3237` | Hairlines and outlines |
+| `tint` | Pino | `#1E5B45` | `#86CFA0` | Brand, progress, selection |
+| `tintSoft` | | `#E3EEE8` | tint @ 18% | Soft chips ("Kairo sugiere") |
+| `onTint` | | `#FFFFFF` | `#0E1012` | Text on `tint` |
+| `ink` | | `#121417` | `#262A30` | The accent surface: tab bar, "Ahora" card, primary buttons |
+| `onInk` | | `#F3F5F2` | `#F3F5F2` | Text on `ink` |
+| `onInkSecondary` | | `#A7AFB7` | `#A7AFB7` | Secondary text and idle icons on `ink` |
+| `lime` | Lima | `#C6E96F` | `#C6E96F` | Accent on `ink` only: active tab, Enfocar, focus ring |
+| `onLime` | | `#121417` | `#121417` | Text and icons on `lime` buttons |
+| `apricot` | Albaricoque | `#E58A52` | `#F0A070` | Streak flame, celebrations. **Never text** (2.6:1 on white) |
+| `destructive` | | `#C8323F` | `#FF7A7A` | Delete, errors |
+| `onDestructive` | | `#FFFFFF` | `#0E1012` | Text on `destructive` |
 
-| Token | Hex | Usage |
-|-------|-----|-------|
-| `surface` | `#1A1B1E` | Main background |
-| `surfaceElevated` | `#242529` | Cards, elevated surfaces |
-| `surfaceSubtle` | `#2C2D31` | Input backgrounds |
-| `textPrimary` | `#F0EDE8` | Primary text |
-| `textSecondary` | `#B0ADA8` | Secondary text |
-| `textMuted` | `#6B6964` | Disabled text |
-| `accent` | `#7CAD71` | Primary action - lighter sage |
-| `accentSoft` | `#2A3528` | Selected states |
-| `urgent` | `#E07B6A` | Urgent - lighter red |
-| `high` | `#E8A366` | High - lighter amber |
-| `medium` | `#7FAABB` | Medium - lighter blue |
-| `low` | `#A3B59B` | Low - lighter green |
-| `border` | `#3A3B3F` | Borders |
+Legacy 1.x names (`accent`, `textPrimary`, `textMuted`, ...) remain as getters that map onto these tokens until every screen is migrated (V11 deletes them).
 
-### Priority Color System
-Priority colors are used exclusively for:
-- Left-side indicator bar on task cards
-- Priority selector chips
-- Priority filter badges
-- Calendar dot indicators (when no owner color is set)
+### Priority
 
-Never use priority colors for backgrounds or large areas.
+Always a dot **and** a label; never color alone.
+
+| Priority | Light | Dark |
+| --- | --- | --- |
+| Urgente | `#C8323F` | `#FF7A7A` |
+| Alta | `#A9550E` | `#F2A65A` |
+| Media | `#3F6FA8` | `#86AEE3` |
+| Baja | `#646C75` | `#A7AFB7` |
+
+### Calendar and people *(target)*
+
+Five muted tones; text on them is always `label`, and a darker dot of the same hue marks the owner.
+
+| Name | Fill | Dot | Text |
+| --- | --- | --- | --- |
+| Salvia | `#DCEBE1` | `#3E8A62` | `#2C5B42` |
+| Azul | `#DDE7F2` | `#3F6FA8` | `#2D4F78` |
+| Arcilla | `#F4E2D7` | `#C26A3D` | `#7A3B1A` |
+| Iris | `#E6E3F5` | `#6A62B8` | `#3B3570` |
+| Arena | `#F1EAD2` | `#A1842A` | `#5E4C12` |
+
+Owner colors still come from `profiles.color` and the per-side `friendships.*_color` (see Visibility below); V7 maps stored colors onto the nearest tone.
 
 ### Visibility & Privacy
-- `profiles.calendar_visibility` controls whether accepted friends see your tasks in their calendar
-- Private (default): only you and users you explicitly share a task with can see it; friends see "Busy" blocks
-- Public: all accepted friends can see your tasks with due dates via the `get_public_friend_tasks` RPC, which returns full data including title, time, and priority
-- `get_public_friend_tasks` is a `SECURITY DEFINER` function that returns all accepted friend tasks and the owner's `calendar_visibility`
-- Task details and sharing are protected by RLS; public calendar data is exposed only through the RPC
 
-### Calendar Color Coding
-Calendar events are colored by their owner to help distinguish whose task is whose, and update in realtime via Supabase:
-- **Own tasks**: use the current user's `profiles.color` (default: app `accent` green `#4A6741`)
-- **Friend public tasks**: use `friendships.requester_color` / `friendships.addressee_color` assigned by the current user (default muted slate `#6B8FA3`)
-- **Priority dot**: a small colored dot in the top-left corner of day/week blocks indicates the task priority
-- **Shared avatars**: avatars of the people a task is shared with are shown in the bottom-right of day/week blocks
-- **Priority color**: used only as a fallback when no owner color is set
-
-### Calendar Task Indicators
-Each day/week task block communicates ownership, priority, and sharing at a glance:
-- **Owner color fill**: the block uses the owner's profile or friend color (see Calendar Color Coding)
-- **Priority dot**: a small colored dot in the top-left corner shows the task priority without filling the whole block
-- **Shared avatars**: circular avatars of the people a task is shared with are shown in the bottom-right; overflow is collapsed behind a count chip
-
-### Social Color Indicators
-- Each friend row in the Social tab displays a small circular color chip
-- Tapping the chip opens a color picker to change the friend's calendar color
-- Colors are stored per-side (`requester_color` / `addressee_color`) so each user can customize their own view
-
-### Mascot
-- A chubby, tender cat rendered entirely with `CustomPainter` (`MascotPainter`)
-- Only two colors: the app `accent` fill and `Color(0xFF141414)` for strokes and eyes
-- Four emotional states driven by the user's daily task progress:
-  - `normal`: small smile, blinking, tail wag
-  - `happy`: big `:D` smile, fast ear wiggle, jumping, meowing
-  - `sad`: droopy ears, slow tail, long closed-eye blinks, falling tear
-  - `sleeping`: closed eyes, slow breathing snot bubble, meowing pops the bubble
-- Occasional `MIAU` text with 1-5 `A`s, animated from the mouth to the upper-right
+- `profiles.calendar_visibility` controls whether accepted friends see your tasks in their calendar.
+- Private (default): only you and the people you share a task with see it; friends see "Busy" blocks.
+- Public: accepted friends see your dated tasks through the `get_public_friend_tasks` RPC (`SECURITY DEFINER`). A task with unknown visibility is treated as private.
+- Task details and sharing are protected by RLS; public calendar data is exposed only through the RPC.
+- Friend colors are stored per side (`requester_color` / `addressee_color`), so each user customizes their own view.
 
 ---
 
 ## Typography
 
-### Font Families
-- **Display/Headings**: DM Serif Display (editorial, sophisticated)
-- **Body/UI**: DM Sans (clean, highly readable, generous x-height)
+**Manrope** on every platform, bundled as a variable font (`assets/fonts/Manrope-Variable.ttf`, OFL). Styles live in `lib/app/theme/kairo_typography.dart`; read them with `context.typography`. Styles carry no color.
 
-### Type Scale
+| Role | Size / line | Weight | Tracking | Usage |
+| --- | --- | --- | --- | --- |
+| `largeTitle` | 30 / 36 | 800 | -0.8 | Tab titles ("Buenos días", "Planear") |
+| `title1` | 26 / 32 | 800 | -0.6 | Sheet titles, Kairo page |
+| `title2` | 20 / 26 | 800 | -0.4 | Section headers ("Pendientes") |
+| `title3` | 18 / 24 | 700 | -0.3 | Card titles |
+| `headline` | 16 / 22 | 700 | -0.1 | Row titles, buttons |
+| `body` | 16 / 22 | 600 | 0 | Single-line text |
+| `bodyMultiline` | 16 / 22 (1.38) | 600 | 0 | Suggestions, descriptions |
+| `callout` | 15 / 20 | 600 | 0 | Chips, secondary rows |
+| `subheadline` | 14 / 19 | 600 | 0 | Metadata |
+| `footnote` | 13 / 18 | 600 | 0 | Hints, section footers |
+| `caption1` | 12 / 16 | 600 | 0 | Calendar labels; the smallest text |
+| `timer` | 58 / 1.0 | 600, tabular | -2 | Focus countdown |
 
-| Style | Font | Size | Weight | Line Height | Letter Spacing | Usage |
-|-------|------|------|--------|-------------|----------------|-------|
-| `displayLarge` | DM Serif Display | 32px | 400 | 1.3 | 0 | App title, major headers |
-| `displayMedium` | DM Serif Display | 28px | 400 | 1.3 | 0 | Section titles |
-| `titleLarge` | DM Serif Display | 22px | 400 | 1.3 | 0 | Screen titles |
-| `titleMedium` | DM Sans | 18px | 600 | 1.4 | 0 | Subtitles, card titles |
-| `titleSmall` | DM Sans | 16px | 600 | 1.4 | 0 | Task titles |
-| `bodyLarge` | DM Sans | 16px | 400 | 1.6 | 0.2px | Primary body text |
-| `bodyMedium` | DM Sans | 14px | 400 | 1.6 | 0.2px | Secondary body text |
-| `bodySmall` | DM Sans | 12px | 400 | 1.5 | 0 | Descriptions, captions |
-| `labelLarge` | DM Sans | 14px | 600 | 1.4 | 0.3px | Buttons, chip labels |
-| `labelMedium` | DM Sans | 12px | 500 | 1.4 | 0 | Small labels |
-| `labelSmall` | DM Sans | 11px | 500 | 1.4 | 0.5px | Metadata, timestamps |
-
-### Typography Rules
-- Body line-height MUST be >= 1.5 (we use 1.6) for readability
-- Never go below 11px for any text
-- Letter spacing of 0.2-0.5px prevents character crowding (ADHD-friendly)
-- Use DM Serif Display ONLY for display/title roles, never for body
+Rules:
+- Numbers that change (counts, times, percentages) use tabular figures.
+- Sizes go through `MediaQuery.textScaler`; test at 200%. Never hardcode `fontSize` in widgets.
+- Sentence case everywhere. No manual letter spacing outside these tokens.
 
 ---
 
-## Spacing System
+## Layout
 
-Base unit: **4px**
+### Spacing
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `spacing2` | 2px | Micro spacing (icon-text gap in inline elements) |
-| `spacing4` | 4px | Tight spacing (between related elements) |
-| `spacing8` | 8px | Small spacing (padding in dense UI) |
-| `spacing12` | 12px | Comfortable gap (list item separation) |
-| `spacing16` | 16px | Standard padding (input fields, cards) |
-| `spacing20` | 20px | Section gap |
-| `spacing24` | 24px | Screen padding (horizontal) |
-| `spacing32` | 32px | Major section separation |
-| `spacing40` | 40px | Large breathing room |
-| `spacing48` | 48px | Hero spacing |
-| `spacing64` | 64px | Bottom scroll overflow |
+4 px grid (`AppSpacing`). Screen margin 18. Gaps between cards 10-14.
 
-### Border Radii
+### Radii
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `radiusSmall` | 8px | Chips, small cards |
-| `radiusMedium` | 12px | Cards, inputs, buttons |
-| `radiusLarge` | 16px | Bottom sheets, modals |
-| `radiusXLarge` | 24px | Full-screen overlays |
-| `radiusFull` | 999px | Pills, circular elements |
+| Element | Radius |
+| --- | --- |
+| Rows inside a card | 0 (the card clips them) |
+| Metric tiles, list cards | 22 |
+| Hero cards ("Kairo sugiere", "Ahora") | 28 |
+| Sheets | 30 top |
+| Segmented control | 14 track, 11 thumb |
+| Buttons, chips, tab bar | capsule |
+| Avatars | circle |
+
+### Elevation
+
+Cards: `0 1 2 rgba(18,20,23,.04)` plus `0 12 32 rgba(18,20,23,.06)` for the hero only; other cards are flat white on Niebla. The tab bar and sheets get `0 12 32 rgba(18,20,23,.24)`. No other shadows.
+
+### Touch targets
+
+Minimum 44 × 44 for everything tappable, including icon buttons and check circles (draw 28, hit 44).
 
 ---
 
-## Touch Targets
+## Navigation *(target, V4)*
 
-All interactive elements MUST meet minimum touch target requirements:
+A floating `ink` capsule (64 px high, 18 px from the sides, 26 px from the bottom). Five slots:
 
-| Token | Value | Standard |
-|-------|-------|----------|
-| `minTouchTarget` | 44px | WCAG 2.5.8 / Apple HIG minimum |
-| `buttonHeight` | 48px | Primary action buttons |
-| `iconButtonSize` | 44px | Icon-only buttons |
+1. **Hoy** · 2. **Planear** · 3. **＋** (lime circle, opens the create sheet) · 4. **Juntos** · 5. **Yo** (avatar)
+
+The active tab is a `#262A30` pill with a lime icon and label; inactive tabs are icon-only in `onInkSecondary` with an accessibility label. The pill morphs between tabs with the `smooth` spring.
 
 ---
 
-## Component Patterns
+## Components *(target, V2 unless noted)*
 
-### Task Card
-```
-┌─────────────────────────────────────────────┐
-│▎  ○  Task Title                             │
-│▎     Description text here...               │
-│▎     📅 In 3 days                           │
-└─────────────────────────────────────────────┘
- ↑  ↑   ↑
- │  │   └── Content: title, description, metadata
- │  └────── Circular checkbox (32px diameter)
- └───────── Priority color bar (4px width)
-```
+### Cards and lists
+- White card, radius 22, rows separated by 1 px `#EEF0ED` lines; no card per row.
+- Row: 28 px check circle (2 px ring in the priority color), title (`body`), meta line with priority dot + label + time (`subheadline`, secondary).
 
-- Left border: 4px colored bar indicating priority
-- Checkbox: Circle, unfilled when pending, filled accent when completed
-- Card has 0.5px border + no elevation (clean look)
-- Dismiss to left to delete (with red background hint)
+### Kairo hero (Hoy)
+- White card, radius 28: Kairo (132 px) on the left; "Kairo sugiere" chip (`tintSoft` / `tint`), one-sentence suggestion (`bodyMultiline`), and a segmented progress bar (one segment per task, `tint` when done).
 
-### Filter Chips
-- Pill-shaped (`radiusFull`)
-- Selected: filled with accent color, white text
-- Unselected: transparent with border, secondary text
-- Horizontal scroll when overflow
-- Height: 36px (with padding meeting 44px touch target via gesture area)
+### "Ahora" card
+- `ink` card, radius 28: lime chip "Ahora · en 18 min", title in `onInk`, meta in `onInkSecondary`, lime "Enfocar" capsule.
 
-### Bottom Navigation
-- 5 tabs: Dashboard, Tasks, Calendar, Social, Profile
-- Outlined icons (unselected) / Filled icons (selected)
-- Label always visible (no icon-only mode)
-- No elevation shadow - separated by subtle border at top
+### Metric tiles
+- Three white tiles: icon (streak flame in `apricot`, clock in `tint`, check in priority-medium blue), value (22/800, tabular), label (`caption1`, secondary).
 
-### Create Task Bottom Sheet
-- Rounded top corners (`radiusXLarge`)
-- Handle bar indicator (40px wide, 4px height)
-- Appears with slide-up animation (300ms)
-- Keyboard-aware padding (adjusts when keyboard shows)
-- Priority selector: 4 equal-width options in a row
+### Buttons
+- **Primary:** `ink` capsule, `onInk` text, 52-56 px.
+- **Accent:** `lime` capsule with `onLime` text, only on `ink` surfaces.
+- **Outline:** white capsule, 1 px `separator`, `label` text.
+- **Disabled:** `fill` background, secondary text, plus a reason ("Escribe qué quieres hacer").
 
-### Empty States
-- Centered vertically
-- Large muted icon (64px)
-- Title in `titleMedium`
-- Subtitle in `bodyMedium` (secondary color)
-- Optional CTA button below
+### Chips and segmented control
+- Chips: capsule with a 1 px outline; selected is `ink` with `onInk` text.
+- Segmented control: `fill` track, white thumb with a soft shadow that slides between options.
 
-### KairoHeader
+### Sheets (V5)
+- Radius 30 top, grabber, background dimmed to 50% and scaled to 0.94. Kairo peeks over the top edge and reacts to typing.
 
-A reusable branded header used in Dashboard, Tasks, Calendar, Social, and Profile to keep the app branding consistent.
-
-- Logo (SVG `app_icon.svg`, height 28)
-- `Text(context.l10n.kairoTasks, style: context.textTheme.titleLarge?...)`
-- Optional `actions` list (e.g. `FocusButton`, `NotificationBell` in `DashboardPage`)
-
-### Focus Timer
-
-ADHD-friendly Pomodoro-style timer with minimal distraction.
-
-- Large `displayLarge` countdown (`mm:ss`) centered on screen
-- `Focus` icon in the `KairoHeader` opens the mode
-- Task picker lists pending tasks sorted by priority; tap to start
-- Circular `IconButton` play/pause and reset controls (64px touch targets)
-- Post-session actions: "Complete task" and "Take 5 min break"
-- End-of-session notification uses high-importance channel
-- Reduced visual clutter to support concentration
-
-### Soft Reminder Chips
-
-ADHD-friendly nudge for users who struggle to start tasks.
-
-- Located inside `TaskDetailSheet`, below the "Edit" button
-- Four `ActionChip`s: `10 min`, `15 min`, `30 min`, `60 min`
-- Selecting one cancels the previous reminder for that task and schedules a new one
-- Shows a short `SnackBar` confirmation to reduce uncertainty
-- Notification title is friendly and non-urgent: "Gentle reminder"
-- Large enough touch targets and clear labels
-
-### Onboarding
-
-The first-launch tour is shown to new users before they reach the main app.
-
-- 4-slide `PageView` with dot indicators, plus `Skip`, `Back`, and `Next` actions
-- Final slide shows a "Get started" button
-- On completion, sets `has_seen_onboarding = true` in `SharedPreferences`
-- Navigates to `/login`
+### Focus screen (V6)
+- Dark (`#0E1012`) whatever the theme. 310 px lime ring that drains, with a dot at the head of the arc; Kairo (focus mood) inside the ring above the `timer`; session pills; reset, play/pause (lime, 84 px), +5.
 
 ---
 
-## Animations & Motion
+## Kairo, the cat
 
-### Duration Standards
-| Type | Duration | Curve |
-|------|----------|-------|
-| Micro-interactions | 200ms | easeInOut |
-| Page transitions | 300ms | easeInOut |
-| Modals/sheets | 300ms | easeOut |
-| State changes | 200ms | easeInOut |
-| Loading shimmer | continuous | linear |
+### Today (code)
+`lib/features/dashboard/presentation/widgets/mascot/`: `MascotPose` (lerpable pose), `MascotController` (one spring per field), `MascotPainter` (paints a pose), `MascotMoodResolver` (pure, in domain). Moods: idle, focused, happy, sad, sleeping. Reduced motion holds a still pose.
 
-### Motion Rules
-1. **Respect `prefers-reduced-motion`**: Check `MediaQuery.disableAnimations`
-2. **No decorative animations**: Every animation must serve UX (feedback, orientation, continuity)
-3. **No auto-playing animations**: Nothing should move without user trigger
-4. **Consistent direction**: Elements enter from bottom, exit to bottom. Navigation is horizontal.
-5. **Never block interaction**: Animations don't prevent taps
+### Target (V3)
+- **Look:** a fluffy calico. Fur `#FBF8F3` with a `#D9CFC2` outline, orange `#E0893F` and black `#24272B` patches (black left ear and eye patch, orange right ear and cheek, patches on the flanks), white scalloped chest ruff, cheek tufts, ear tufts, green-yellow eyes `#A9C95B` with slit pupils and a highlight, pink nose `#E58F86` and inner ears `#E9AFA3`, thick orange tail with a black tip.
+- **Progress:** a thin white line runs along the tail with the day's progress.
+- **Idle life:** breathing, blinking every 3-7 s, eyes following the finger. Every 5-11 s when idle or happy: stand up, stretch, groom a paw, yawn, look aside, or flick the tail.
+- **Reactions:** completing a task makes him hop (squash and stretch). A tap twitches his ears, triggers a small behavior and rotates the suggestion. Long-press opens Focus.
+- **Moods:** idle; happy (^^ eyes, blush, sparkles in lime and apricot); focus (half-lidded, looking down at the timer, still tail); sleep (lower and curled, closed eyes, "z" on tap); worried (ears down, looking down, low tail). Mood comes from `MascotMoodResolver`.
+- **Accessibility:** a semantics label such as "Kairo, el gato calicó, feliz". Reduced motion shows a still pose per mood and no behaviors.
+
+---
+
+## Motion
+
+Springs live in `lib/app/theme/app_motion.dart` (`KairoSpring.smooth`, `snappy`, `bouncy`); widgets read `context.motion`, which turns into 150 ms cross-fades under reduced motion.
+
+| Pattern | Spec |
+| --- | --- |
+| Entrance | Cards rise 12-16 px and fade in, 60 ms apart (`smooth`) |
+| Press | Scale to 0.95, release with `snappy` |
+| Selection | Pills and segmented thumbs slide (`smooth`) |
+| Complete task | Check draws (400 ms), row slides right and fades, Kairo hops (`bouncy`), `lightImpact` |
+| Sheet | Rises with `smooth`; background dims and scales to 0.94 |
+| Focus ring | Drains linearly, one step per second |
+
+Haptics: `selectionClick` for pickers and segments, `lightImpact` for completing a task, `mediumImpact` for the streak celebration.
 
 ---
 
 ## Accessibility Checklist
 
-When implementing any new component, verify:
-
-- [ ] Touch target >= 44x44px
-- [ ] Text contrast >= 4.5:1 (body) or 3:1 (large text/decorative)
-- [ ] Semantic labels on all icons/images
-- [ ] Focus order is logical
-- [ ] States are communicated (not just via color)
-- [ ] Line height >= 1.5x for body text
-- [ ] No text smaller than 11px
-- [ ] Animations can be disabled via system setting
-- [ ] Error states include text explanation (not just red color)
+- [ ] Text meets 4.5:1 (enforced by the color test); `apricot` and `lime` never carry text on light surfaces.
+- [ ] Every icon-only control has a semantics label or tooltip.
+- [ ] Targets are at least 44 × 44.
+- [ ] Layouts hold at 200% text (goldens include a large-text variant).
+- [ ] Priority, sharing and state never rely on color alone.
+- [ ] Reduced motion (system or in-app) stops ambient motion and replaces springs with cross-fades.
 
 ---
 
 ## Internationalization
 
-The app supports English and Spanish using Flutter's ARB localization workflow:
+All copy goes through `context.l10n` (`lib/l10n/app_en.arb`, `app_es.arb`). Dates, weekdays and times use `MaterialLocalizations` and respect the 24-hour setting.
 
-- Source strings live in `lib/l10n/app_en.arb` and `lib/l10n/app_es.arb`
-- `flutter gen-l10n` generates `AppLocalizations` accessible via `context.l10n`
-- Spanish is the default locale; the device locale falls back to `es` or `en` through `supportedLocales`
-- The user can switch languages in `ProfilePage`; changes apply immediately without a restart
-- New UI copy is added to both ARB files to keep translations in sync
+---
 
 ## Implementation Guide
 
-### How to Use Colors in Widgets
+### Colors
+
 ```dart
-// Access color scheme via context extension
 final colors = context.appColors;
-
-// Use colors
-Container(
-  color: colors.surface,
-  child: Text('Hello', style: TextStyle(color: colors.textPrimary)),
-);
+Container(color: colors.surface);
+Text('Ahora', style: TextStyle(color: colors.onInk));
 ```
 
-### How to Use Typography
+### Typography
+
 ```dart
-// Use theme text styles
-Text('Title', style: context.textTheme.titleLarge);
-Text('Body', style: context.textTheme.bodyLarge);
-
-// Override specific properties when needed
-Text(
-  'Custom',
-  style: context.textTheme.bodyLarge?.copyWith(
-    color: context.appColors.accent,
-  ),
-);
+Text('Pendientes', style: context.typography.title2);
+Text(meta, style: context.typography.subheadline.copyWith(
+  color: context.appColors.labelSecondary,
+));
 ```
 
-### How to Add a New Component
-1. Check if a similar component exists
-2. Follow the spacing system (4px grid)
-3. Use design tokens, never hardcode values
-4. Ensure 44px minimum touch targets
-5. Add semantic labels for accessibility
-6. Test in both light and dark mode
-7. Verify animations respect reduced-motion
+### Adding a component
+
+1. Build it in `lib/core/widgets/` from tokens only (no raw hex, no raw font sizes).
+2. Add it to the debug `/gallery` route.
+3. Add golden tests (light, dark, 200% text) under `test/goldens/`.
