@@ -28,6 +28,7 @@ class KairoMascot extends StatefulWidget {
     required this.mood,
     this.hopTrigger = 0,
     this.progress = 0,
+    this.onTap,
     this.onLongPress,
     this.cue,
     this.cueTrigger = 0,
@@ -43,6 +44,9 @@ class KairoMascot extends StatefulWidget {
 
   /// 0..1 of the day done.
   final double progress;
+
+  /// Called after the cat reacts to a tap (Hoy rotates the suggestion).
+  final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
   /// A cat thing to perform each time [cueTrigger] increases.
@@ -99,6 +103,7 @@ class _KairoMascotState extends State<KairoMascot>
     final haptics = registeredHaptics;
     if (haptics != null) unawaited(haptics.selection());
     _controller.poke();
+    widget.onTap?.call();
 
     final bubble = widget.mood == MascotMood.sleeping
         ? _Bubble.sleepy
