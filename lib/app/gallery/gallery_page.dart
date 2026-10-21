@@ -16,6 +16,7 @@ import '../../core/widgets/kairo_tab_bar.dart';
 import '../../core/widgets/swipe_actions.dart';
 import '../../features/dashboard/domain/mascot/mascot_mood.dart';
 import '../../features/dashboard/presentation/widgets/mascot/kairo_mascot.dart';
+import '../../features/dashboard/presentation/widgets/mascot/mascot_behavior.dart';
 import '../../features/tasks/domain/entities/task_entity.dart';
 import '../../features/tasks/presentation/widgets/task_row.dart';
 import '../theme/app_spacing.dart';
@@ -36,6 +37,8 @@ class _GalleryPageState extends State<GalleryPage> {
   String _range = 'day';
   MascotMood _mood = MascotMood.idle;
   int _hops = 0;
+  MascotBehavior? _cue;
+  int _cues = 0;
   final _done = <String>{};
   final _deleted = <String>{};
 
@@ -297,13 +300,22 @@ class _GalleryPageState extends State<GalleryPage> {
   Widget _cat() {
     return GroupedSection(
       header: 'Kairo the cat',
-      footer: 'Tap the cat to pet it. Hop simulates a completed task.',
+      footer:
+          'Tap the cat to pet it. Hop simulates a completed task; the chips '
+          'trigger cat things (idle and happy only).',
       children: [
         Padding(
           padding: const EdgeInsets.all(AppSpacing.spacing16),
           child: Column(
             children: [
-              KairoMascot(mood: _mood, hopTrigger: _hops, size: 140),
+              KairoMascot(
+                mood: _mood,
+                hopTrigger: _hops,
+                progress: 0.6,
+                cue: _cue,
+                cueTrigger: _cues,
+                size: 160,
+              ),
               const SizedBox(height: AppSpacing.spacing16),
               KairoSegmentedControl<MascotMood>(
                 segments: {for (final m in MascotMood.values) m: m.name},
@@ -315,6 +327,21 @@ class _GalleryPageState extends State<GalleryPage> {
                 label: 'Hop',
                 variant: KairoButtonVariant.plain,
                 onPressed: () => setState(() => _hops++),
+              ),
+              Wrap(
+                spacing: AppSpacing.spacing8,
+                runSpacing: AppSpacing.spacing8,
+                children: [
+                  for (final behavior in MascotBehavior.values)
+                    KairoChip(
+                      label: behavior.name,
+                      selected: false,
+                      onSelected: () => setState(() {
+                        _cue = behavior;
+                        _cues++;
+                      }),
+                    ),
+                ],
               ),
             ],
           ),
