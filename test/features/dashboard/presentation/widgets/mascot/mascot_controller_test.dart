@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kairotasks/features/dashboard/domain/mascot/mascot_mood.dart';
+import 'package:kairotasks/features/dashboard/presentation/widgets/mascot/mascot_behavior.dart';
 import 'package:kairotasks/features/dashboard/presentation/widgets/mascot/mascot_controller.dart';
 import 'package:kairotasks/features/dashboard/presentation/widgets/mascot/mascot_pose.dart';
 
@@ -82,6 +83,66 @@ void main() {
     expect(c.pose.pupilX, greaterThan(0.4));
   });
 
+  group('cat things', () {
+    test('perform eases into the behavior and back out', () {
+      final c = controller()..perform(MascotBehavior.stand);
+      expect(c.behavior, MascotBehavior.stand);
+
+      run(c, 1);
+      expect(c.pose.stand, greaterThan(0.8));
+
+      run(c, 4);
+      expect(c.behavior, isNot(MascotBehavior.stand));
+      expect(c.pose.stand, lessThan(0.05));
+    });
+
+    test('an idle cat does something on its own within 15 s', () {
+      final c = controller();
+      var sawBehavior = false;
+      for (var i = 0; i < 60 * 15; i++) {
+        c.advance(1 / 60);
+        if (c.behavior != null) sawBehavior = true;
+      }
+      expect(sawBehavior, isTrue);
+    });
+
+    test('a focused cat never starts one', () {
+      final c = controller(mood: MascotMood.focused);
+      for (var i = 0; i < 60 * 30; i++) {
+        c.advance(1 / 60);
+        expect(c.behavior, isNull);
+      }
+    });
+
+    test('a hop interrupts the current behavior', () {
+      final c = controller()..perform(MascotBehavior.groom);
+      run(c, 0.5);
+      c.hop();
+      expect(c.behavior, isNull);
+    });
+
+    test('poke twitches and starts a small behavior', () {
+      final c = controller()..poke();
+      expect(c.behavior, isNotNull);
+      run(c, 0.08);
+      expect(c.pose.earAngle, greaterThan(0.05));
+    });
+
+    test('the tail sways while awake', () {
+      final c = controller();
+      final angles = <double>[];
+      // One full sway takes about 5.5 s.
+      for (var i = 0; i < 60 * 6; i++) {
+        c.advance(1 / 60);
+        angles.add(c.pose.tailAngle);
+      }
+      expect(
+        angles.reduce(math.max) - angles.reduce(math.min),
+        greaterThan(0.12),
+      );
+    });
+  });
+
   group('reduced motion', () {
     test('mood changes snap without animation', () {
       final c = controller(reduced: true)..setMood(MascotMood.sleeping);
@@ -89,10 +150,12 @@ void main() {
       expect(c.isSettled, isTrue);
     });
 
-    test('no breathing, blinking, hop or twitch', () {
+    test('no breathing, blinking, hop, twitch or cat things', () {
       final c = controller(reduced: true)
         ..hop()
-        ..twitch();
+        ..twitch()
+        ..poke()
+        ..perform(MascotBehavior.stretch);
       run(c, 8);
       expect(c.pose, MascotPose.forMood(MascotMood.idle));
     });
