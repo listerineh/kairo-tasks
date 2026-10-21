@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Kairo 2.0 color tokens (see docs/redesign-plan.md §2.1).
+/// Kairo 2.0 color tokens, "Calma viva" palette (docs/design.md § Color).
 ///
 /// Every text pair passes WCAG AA (4.5:1) on `background`, `surface` and
 /// `surfaceRaised`; `test/app/theme/kairo_colors_test.dart` enforces it.
@@ -25,51 +25,67 @@ class KairoColors extends ThemeExtension<KairoColors> {
     required this.priorityHigh,
     required this.priorityMedium,
     required this.priorityLow,
+    required this.ink,
+    required this.onInk,
+    required this.onInkSecondary,
+    required this.lime,
+    required this.onLime,
+    required this.apricot,
   });
 
   static const light = KairoColors(
-    background: Color(0xFFF2F2F7),
+    background: Color(0xFFF1F2EF),
     surface: Color(0xFFFFFFFF),
     surfaceRaised: Color(0xFFFFFFFF),
-    fill: Color(0x1F787880),
-    label: Color(0xFF000000),
-    labelSecondary: Color(0xFF6C6C70),
-    labelTertiary: Color(0x4D3C3C43),
-    separator: Color(0x4A3C3C43),
-    tint: Color(0xFF3A7449),
-    tintSoft: Color(0x1F3A7449),
+    fill: Color(0xFFE6E9E5),
+    label: Color(0xFF121417),
+    labelSecondary: Color(0xFF59616B),
+    labelTertiary: Color(0x4D121417),
+    separator: Color(0xFFE1E4E0),
+    tint: Color(0xFF1E5B45),
+    tintSoft: Color(0xFFE3EEE8),
     onTint: Color(0xFFFFFFFF),
-    destructive: Color(0xFFD70015),
+    destructive: Color(0xFFC8323F),
     onDestructive: Color(0xFFFFFFFF),
-    priorityUrgent: Color(0xFFD70015),
-    priorityHigh: Color(0xFFC93400),
-    priorityMedium: Color(0xFF0062CC),
-    priorityLow: Color(0xFF6C6C70),
+    priorityUrgent: Color(0xFFC8323F),
+    priorityHigh: Color(0xFFA9550E),
+    priorityMedium: Color(0xFF3F6FA8),
+    priorityLow: Color(0xFF646C75),
+    ink: Color(0xFF121417),
+    onInk: Color(0xFFF3F5F2),
+    onInkSecondary: Color(0xFFA7AFB7),
+    lime: Color(0xFFC6E96F),
+    onLime: Color(0xFF121417),
+    apricot: Color(0xFFE58A52),
   );
 
-  // Red and blue use Apple's increased-contrast dark variants: the standard
-  // #FF453A / #0A84FF drop below 4.5:1 on surfaceRaised (#2C2C2E).
   static const dark = KairoColors(
-    background: Color(0xFF000000),
-    surface: Color(0xFF1C1C1E),
-    surfaceRaised: Color(0xFF2C2C2E),
-    fill: Color(0x3D787880),
-    label: Color(0xFFFFFFFF),
-    labelSecondary: Color(0xFF98989F),
-    labelTertiary: Color(0x4DEBEBF5),
-    separator: Color(0x99545458),
-    tint: Color(0xFF5FC27A),
-    tintSoft: Color(0x335FC27A),
-    onTint: Color(0xFF000000),
-    destructive: Color(0xFFFF6961),
-    onDestructive: Color(0xFF000000),
-    priorityUrgent: Color(0xFFFF6961),
-    priorityHigh: Color(0xFFFF9F0A),
-    priorityMedium: Color(0xFF409CFF),
-    priorityLow: Color(0xFF98989D),
+    background: Color(0xFF0E1012),
+    surface: Color(0xFF181B1E),
+    surfaceRaised: Color(0xFF22262A),
+    fill: Color(0xFF2A2E33),
+    label: Color(0xFFF3F5F2),
+    labelSecondary: Color(0xFFA7AFB7),
+    labelTertiary: Color(0x4DF3F5F2),
+    separator: Color(0xFF2E3237),
+    tint: Color(0xFF86CFA0),
+    tintSoft: Color(0x2E86CFA0),
+    onTint: Color(0xFF0E1012),
+    destructive: Color(0xFFFF7A7A),
+    onDestructive: Color(0xFF0E1012),
+    priorityUrgent: Color(0xFFFF7A7A),
+    priorityHigh: Color(0xFFF2A65A),
+    priorityMedium: Color(0xFF86AEE3),
+    priorityLow: Color(0xFFA7AFB7),
+    ink: Color(0xFF262A30),
+    onInk: Color(0xFFF3F5F2),
+    onInkSecondary: Color(0xFFA7AFB7),
+    lime: Color(0xFFC6E96F),
+    onLime: Color(0xFF121417),
+    apricot: Color(0xFFF0A070),
   );
 
-  /// systemGroupedBackground: behind grouped sections.
+  /// Niebla: the screen background.
   final Color background;
 
   /// Cards and grouped rows.
@@ -105,6 +121,25 @@ class KairoColors extends ThemeExtension<KairoColors> {
   final Color priorityHigh;
   final Color priorityMedium;
   final Color priorityLow;
+
+  /// The one dark accent surface per screen: tab bar, "Ahora" card,
+  /// primary buttons.
+  final Color ink;
+
+  /// Text and icons on [ink].
+  final Color onInk;
+
+  /// Secondary text and idle icons on [ink].
+  final Color onInkSecondary;
+
+  /// Accent on [ink] only (active tab, Enfocar, focus ring).
+  final Color lime;
+
+  /// Text and icons on [lime] buttons (dark in both themes).
+  final Color onLime;
+
+  /// Streak and celebration. Icons and decoration only, never text.
+  final Color apricot;
 
   // Legacy names from the 1.x palette, kept so unredesigned screens pick up
   // the accessible colors. Each phase migrates its screens; Phase 9 deletes
@@ -143,6 +178,12 @@ class KairoColors extends ThemeExtension<KairoColors> {
     Color? priorityHigh,
     Color? priorityMedium,
     Color? priorityLow,
+    Color? ink,
+    Color? onInk,
+    Color? onInkSecondary,
+    Color? lime,
+    Color? onLime,
+    Color? apricot,
   }) {
     return KairoColors(
       background: background ?? this.background,
@@ -162,6 +203,12 @@ class KairoColors extends ThemeExtension<KairoColors> {
       priorityHigh: priorityHigh ?? this.priorityHigh,
       priorityMedium: priorityMedium ?? this.priorityMedium,
       priorityLow: priorityLow ?? this.priorityLow,
+      ink: ink ?? this.ink,
+      onInk: onInk ?? this.onInk,
+      onInkSecondary: onInkSecondary ?? this.onInkSecondary,
+      lime: lime ?? this.lime,
+      onLime: onLime ?? this.onLime,
+      apricot: apricot ?? this.apricot,
     );
   }
 
@@ -187,6 +234,12 @@ class KairoColors extends ThemeExtension<KairoColors> {
       priorityHigh: l(priorityHigh, other.priorityHigh),
       priorityMedium: l(priorityMedium, other.priorityMedium),
       priorityLow: l(priorityLow, other.priorityLow),
+      ink: l(ink, other.ink),
+      onInk: l(onInk, other.onInk),
+      onInkSecondary: l(onInkSecondary, other.onInkSecondary),
+      lime: l(lime, other.lime),
+      onLime: l(onLime, other.onLime),
+      apricot: l(apricot, other.apricot),
     );
   }
 }
