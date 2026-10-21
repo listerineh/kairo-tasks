@@ -10,6 +10,29 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.29.00 - Kairo 2.0 v2 (V4): navigation and Hoy (2026-10-21)
+
+### Changed in V 01.29.00
+
+- New navigation: a floating bar with four tabs (Hoy, Planear, Juntos, Yo) and a lime ＋ in the middle that opens the task form. The Dashboard and Tasks tabs are gone.
+- The full task list now opens from Hoy ("View all tasks", `/dashboard/tasks`) with a back button. Old `/tasks` links redirect there, and login lands on Hoy.
+
+### Added in V 01.29.00
+
+- **Hoy** replaces the dashboard. It shows:
+  - Kairo with a suggestion that changes when you tap him (start with the next task, progress, focus, rest) and a progress bar.
+  - Three metrics: streak, overdue and % of the day.
+  - A dark "Ahora" card with the next timed task and Focus.
+  - Today's and overdue tasks with swipe and context menu, plus a collapsible "Done".
+- Long-pressing Kairo opens Focus; completing a task makes him hop and say "One less".
+- `TodaySummary`: pure domain logic for the day, with tests.
+
+### Removed in V 01.29.00
+
+- The old dashboard page, the streak chip and the focus button widgets.
+
+---
+
 ## V 01.28.00 - Kairo 2.0 v2 (V3): Kairo, the calico cat (2026-10-21)
 
 ### Changed in V 01.28.00
