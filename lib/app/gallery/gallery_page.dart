@@ -2,7 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/extensions/context_extensions.dart';
-import '../../core/widgets/check_circle.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/grouped_section.dart';
 import '../../core/widgets/kairo_avatar.dart';
@@ -11,10 +10,11 @@ import '../../core/widgets/kairo_large_title_scaffold.dart';
 import '../../core/widgets/kairo_segmented_control.dart';
 import '../../core/widgets/kairo_sheet.dart';
 import '../../core/widgets/kairo_tab_bar.dart';
-import '../../core/widgets/priority_badge.dart';
+import '../../core/widgets/swipe_actions.dart';
 import '../../features/dashboard/domain/mascot/mascot_mood.dart';
 import '../../features/dashboard/presentation/widgets/mascot/kairo_mascot.dart';
 import '../../features/tasks/domain/entities/task_entity.dart';
+import '../../features/tasks/presentation/widgets/task_row.dart';
 import '../theme/app_spacing.dart';
 import '../theme/theme_service.dart';
 
@@ -33,7 +33,8 @@ class _GalleryPageState extends State<GalleryPage> {
   String _range = 'day';
   MascotMood _mood = MascotMood.idle;
   int _hops = 0;
-  final _done = <String>{'Write report'};
+  final _done = <String>{};
+  final _deleted = <String>{};
 
   void _toggleTheme() {
     final dark = context.isDarkMode;
@@ -182,43 +183,87 @@ class _GalleryPageState extends State<GalleryPage> {
   }
 
   Widget _tasks() {
-    const tasks = [
-      ('Call the dentist', TaskPriority.urgent),
-      ('Write report', TaskPriority.high),
-      ('Water the plants', TaskPriority.medium),
-      ('Read a chapter', TaskPriority.low),
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tasks = [
+      TaskEntity(
+        id: 'dentist',
+        ownerId: 'me',
+        title: 'Call the dentist',
+        priority: TaskPriority.urgent,
+        startDate: today.add(const Duration(hours: 10)),
+        dueDate: today.add(const Duration(hours: 10, minutes: 30)),
+        sharedWith: const [
+          {'display_name': 'Ana'},
+        ],
+        createdAt: today,
+      ),
+      TaskEntity(
+        id: 'report',
+        ownerId: 'me',
+        title: 'Write report',
+        priority: TaskPriority.high,
+        dueDate: today.add(const Duration(days: 1, hours: 9)),
+        createdAt: today,
+      ),
+      TaskEntity(
+        id: 'plants',
+        ownerId: 'me',
+        title: 'Water the plants',
+        createdAt: today,
+      ),
+      TaskEntity(
+        id: 'book',
+        ownerId: 'me',
+        title: 'Read a chapter',
+        priority: TaskPriority.low,
+        createdAt: today,
+      ),
     ];
+    final colors = context.appColors;
     return GroupedSection(
-      header: 'Tasks',
+      header: 'Tasks (swipe either way)',
+      separatorInset: TaskRow.separatorInset,
       children: [
-        for (final (title, priority) in tasks)
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.spacing16),
-            child: Row(
-              children: [
-                const SizedBox(width: 4),
-                CheckCircle(
-                  value: _done.contains(title),
-                  semanticLabel: title,
-                  onChanged: (v) => setState(
-                    () => v ? _done.add(title) : _done.remove(title),
-                  ),
+        for (final t in tasks)
+          if (!_deleted.contains(t.id))
+            SwipeActions(
+              leading: SwipeAction(
+                icon: CupertinoIcons.checkmark,
+                label: 'Complete',
+                color: colors.tint,
+                onTriggered: () => _toggleDemo(t.id),
+              ),
+              trailing: [
+                SwipeAction(
+                  icon: CupertinoIcons.trash,
+                  label: 'Delete',
+                  color: colors.destructive,
+                  foreground: colors.onDestructive,
+                  onTriggered: () => setState(() => _deleted.add(t.id)),
                 ),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: context.typography.headline.copyWith(
-                      color: context.appColors.label,
-                    ),
-                  ),
+                SwipeAction(
+                  icon: CupertinoIcons.pencil,
+                  label: 'Edit',
+                  color: colors.labelSecondary,
+                  foreground: colors.surface,
+                  onTriggered: () {},
                 ),
-                PriorityBadge(priority: priority),
               ],
+              child: TaskRow(
+                task: _done.contains(t.id)
+                    ? t.copyWith(status: TaskStatus.completed)
+                    : t,
+                now: now,
+                onToggle: () => _toggleDemo(t.id),
+              ),
             ),
-          ),
       ],
     );
   }
+
+  void _toggleDemo(String id) =>
+      setState(() => _done.contains(id) ? _done.remove(id) : _done.add(id));
 
   Widget _segmented() {
     return Padding(
