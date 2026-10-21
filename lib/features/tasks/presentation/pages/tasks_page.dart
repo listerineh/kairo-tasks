@@ -14,7 +14,7 @@ import '../../../../core/widgets/kairo_large_title_scaffold.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../domain/task_sections.dart';
 import '../bloc/tasks_bloc.dart';
-import '../widgets/task_detail_sheet.dart';
+import '../widgets/task_feedback.dart';
 import '../widgets/task_form_sheet.dart';
 import '../widgets/task_list_item.dart';
 import '../widgets/task_row.dart';
@@ -31,29 +31,7 @@ class _TasksPageState extends State<TasksPage> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocListener(
-      listeners: [
-        // Technical details are logged by the bloc; people get plain
-        // language. A failed load already shows its own full-screen state.
-        BlocListener<TasksBloc, TasksState>(
-          listenWhen: (prev, curr) =>
-              curr.errorMessage != null &&
-              curr.errorMessage != prev.errorMessage &&
-              curr.status != TasksStatus.error,
-          listener: (context, state) =>
-              _snack(context, context.l10n.taskActionFailed),
-        ),
-        BlocListener<TasksBloc, TasksState>(
-          listenWhen: (prev, curr) =>
-              curr.pendingDeletion != null &&
-              curr.pendingDeletion?.id != prev.pendingDeletion?.id,
-          listener: (context, state) => _snack(
-            context,
-            context.l10n.taskDeletedMessage,
-            undo: () => context.read<TasksBloc>().add(const TaskDeleteUndone()),
-          ),
-        ),
-      ],
+    return TaskFeedbackListener(
       child: BlocBuilder<TasksBloc, TasksState>(
         builder: (context, state) => KairoLargeTitleScaffold(
           title: context.l10n.tasks,
@@ -212,22 +190,6 @@ class _TasksPageState extends State<TasksPage> {
     };
   }
 
-  void _snack(BuildContext context, String message, {VoidCallback? undo}) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-          // Matches the bloc's undo window before the delete is committed.
-          duration: const Duration(seconds: 4),
-          action: undo == null
-              ? null
-              : SnackBarAction(label: context.l10n.undo, onPressed: undo),
-        ),
-      );
-  }
-
   Future<void> _refresh(BuildContext context) async {
     final bloc = context.read<TasksBloc>()..add(const TasksLoadRequested());
     await bloc.stream.firstWhere((s) => s.status != TasksStatus.loading);
@@ -236,22 +198,8 @@ class _TasksPageState extends State<TasksPage> {
   void _showCreateSheet(BuildContext context) =>
       unawaited(showTaskForm(context));
 
-  void _showDetail(BuildContext context, TaskEntity task) {
-    unawaited(
-      showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (sheetContext) => TaskDetailSheet(
-          task: task,
-          onEdit: () {
-            Navigator.pop(sheetContext);
-            _showEditSheet(context, task);
-          },
-        ),
-      ),
-    );
-  }
+  void _showDetail(BuildContext context, TaskEntity task) =>
+      showTaskDetail(context, task);
 
   void _showEditSheet(BuildContext context, TaskEntity task) =>
       unawaited(showTaskForm(context, task: task));
