@@ -30,20 +30,35 @@ class KairoApp extends StatelessWidget {
           create: (_) => getIt<TasksBloc>()..add(const TasksLoadRequested()),
         ),
       ],
-      child: BlocListener<TasksBloc, TasksState>(
-        listenWhen: (previous, current) =>
-            current.streakToCelebrate != null &&
-            previous.streakToCelebrate != current.streakToCelebrate,
-        listener: (context, state) {
-          final navigator = router.routerDelegate.navigatorKey.currentState;
-          if (navigator != null && navigator.mounted) {
-            showStreakCelebration(
-              navigator.context,
-              state.streakToCelebrate!,
-            );
-          }
-          context.read<TasksBloc>().add(const TasksClearStreakCelebration());
-        },
+      child: MultiBlocListener(
+        listeners: [
+          // Tasks load at startup, before a session may exist; load them
+          // again whenever someone signs in.
+          BlocListener<AuthBloc, AuthState>(
+            listenWhen: (previous, current) =>
+                current.status == AuthStatus.authenticated &&
+                previous.user?.id != current.user?.id,
+            listener: (context, _) =>
+                context.read<TasksBloc>().add(const TasksLoadRequested()),
+          ),
+          BlocListener<TasksBloc, TasksState>(
+            listenWhen: (previous, current) =>
+                current.streakToCelebrate != null &&
+                previous.streakToCelebrate != current.streakToCelebrate,
+            listener: (context, state) {
+              final navigator = router.routerDelegate.navigatorKey.currentState;
+              if (navigator != null && navigator.mounted) {
+                showStreakCelebration(
+                  navigator.context,
+                  state.streakToCelebrate!,
+                );
+              }
+              context.read<TasksBloc>().add(
+                const TasksClearStreakCelebration(),
+              );
+            },
+          ),
+        ],
         child: ValueListenableBuilder<ThemeMode>(
           valueListenable: ThemeService.instance.themeMode,
           builder: (context, themeMode, _) => ValueListenableBuilder<Locale>(
@@ -56,7 +71,8 @@ class KairoApp extends StatelessWidget {
               themeMode: themeMode,
               routerConfig: router,
               locale: locale,
-              localizationsDelegates: AppLocalizations.localizationsDelegates +
+              localizationsDelegates:
+                  AppLocalizations.localizationsDelegates +
                   [
                     GlobalMaterialLocalizations.delegate,
                     GlobalWidgetsLocalizations.delegate,
