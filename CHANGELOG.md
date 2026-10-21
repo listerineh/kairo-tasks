@@ -10,6 +10,25 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.32.00 - Kairo 2.0 v2 (V7): Planear (2026-10-21)
+
+### Changed in V 01.32.00
+
+- The calendar is now "Planear": a large title with the month and chevrons, plus pills for Algún día and Hoy above the Día / Semana / Mes control.
+- The week strip uses rounded day pills with up to three colored dots per day. The selected day is inverted and today is green.
+- Calendar blocks use five muted tones (salvia, azul, arcilla, iris, arena) with an owner dot instead of a side border. Done tasks fade.
+- The month grid sits in a card, and the agenda below it is a grouped list.
+- The hour grid and month view leave room for the floating tab bar.
+
+### Fixed in V 01.32.00
+
+- Tasks load right after signing in. Before, Hoy showed "We couldn't load your tasks" until you tapped Retry.
+
+### Added in V 01.32.00
+
+- "Algún día": a sheet listing your unfinished tasks without a date.
+- Tests for `CalendarTone`.
+
 ## V 01.31.00 - Kairo 2.0 v2 (V6): Focus (2026-10-21)
 
 ### Changed in V 01.31.00
