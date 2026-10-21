@@ -286,5 +286,9 @@
   "doneTitle": "Hechas · {count}",
   "@doneTitle": {"placeholders": {"count": {"type": "int"}}},
   "nothingForToday": "Nada para hoy",
-  "nothingForTodayHint": "Planea algo con +, o disfruta la calma."
+  "nothingForTodayHint": "Planea algo con +, o disfruta la calma.",
+  "taskFormCreate": "Crear tarea",
+  "taskFormNeedsTitle": "Escribe qué quieres hacer",
+  "taskFormWhen": "Cuándo",
+  "taskFormWho": "Con alguien"
 }

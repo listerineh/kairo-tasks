@@ -273,5 +273,9 @@
   "pendingCount": "{count} left",
   "doneTitle": "Done · {count}",
   "nothingForToday": "Nothing for today",
-  "nothingForTodayHint": "Plan something with +, or enjoy the calm."
+  "nothingForTodayHint": "Plan something with +, or enjoy the calm.",
+  "taskFormCreate": "Create task",
+  "taskFormNeedsTitle": "Write what you want to do",
+  "taskFormWhen": "When",
+  "taskFormWho": "With someone"
 }
