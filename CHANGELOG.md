@@ -10,6 +10,20 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.35.00 - Kairo 2.0 v2 (V10): offline tasks (2026-10-22)
+
+### Added in V 01.35.00
+
+- Tasks work offline. The list opens instantly from a copy stored on the device. Creating, editing, completing and deleting work without a connection: changes show at once and wait in an outbox that syncs, in order, as soon as the connection comes back.
+- Conflicts resolve with last-write-wins on `updated_at`: an offline edit older than the server's version is dropped. Changes to the same task are merged (create then delete sends nothing).
+- Hoy shows a quiet hint when you're offline or while changes are syncing.
+- Tests for the outbox rules, the local store, the offline repository and the hint.
+
+### Changed in V 01.35.00
+
+- Network failures (offline, 15 s timeout) are told apart from server errors: the first keep the change waiting, the second drop it.
+- New tasks get their id on the device, so they work offline.
+
 ## V 01.34.00 - Kairo 2.0 v2 (V9): Yo, Kairo, login and onboarding (2026-10-21)
 
 ### Changed in V 01.34.00
