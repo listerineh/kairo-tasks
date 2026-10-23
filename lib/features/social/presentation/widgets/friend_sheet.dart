@@ -1,14 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/widgets/kairo_button.dart';
-import '../../../calendar/presentation/widgets/calendar_colors.dart';
+import '../../../calendar/presentation/widgets/tone_picker.dart';
 import '../../domain/entities/friend.dart';
 import '../bloc/social_bloc.dart';
 import 'person_avatar.dart';
@@ -79,21 +77,11 @@ class FriendSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.spacing8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                for (final tone in CalendarTone.all)
-                  _ToneSwatch(
-                    tone: tone,
-                    selected: tone == current,
-                    onTap: () {
-                      unawaited(HapticFeedback.selectionClick());
-                      context.read<SocialBloc>().add(
-                        FriendColorChanged(friend, _hex(tone.dot)),
-                      );
-                    },
-                  ),
-              ],
+            TonePicker(
+              selected: current,
+              onPick: (tone) => context.read<SocialBloc>().add(
+                FriendColorChanged(friend, TonePicker.hexOf(tone)),
+              ),
             ),
             const SizedBox(height: AppSpacing.spacing24),
             KairoButton(
@@ -145,61 +133,5 @@ class FriendSheet extends StatelessWidget {
       bloc.add(FriendRemoved(friend));
       navigator.pop();
     }
-  }
-
-  static String _hex(Color c) =>
-      '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
-}
-
-class _ToneSwatch extends StatelessWidget {
-  const _ToneSwatch({
-    required this.tone,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final CalendarTone tone;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: tone.name,
-      excludeSemantics: true,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: SizedBox.square(
-          dimension: 52,
-          child: Center(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: tone.dot,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: selected ? colors.label : Colors.transparent,
-                  width: 3,
-                  strokeAlign: BorderSide.strokeAlignOutside,
-                ),
-              ),
-              child: selected
-                  ? const Icon(
-                      CupertinoIcons.checkmark_alt,
-                      size: 20,
-                      color: Colors.white,
-                    )
-                  : null,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
