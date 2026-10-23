@@ -9,10 +9,12 @@
 // coverage:ignore-file
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+import 'package:connectivity_plus/connectivity_plus.dart' as _i895;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 import 'package:supabase_flutter/supabase_flutter.dart' as _i454;
 
+import '../../core/network/network_info.dart' as _i892;
 import '../../core/services/haptics_service.dart' as _i239;
 import '../../core/services/preferences_service.dart' as _i103;
 import '../../core/session/current_user.dart' as _i369;
@@ -45,6 +47,7 @@ import '../../features/social/domain/repositories/friends_repository.dart'
     as _i555;
 import '../../features/social/domain/usecases/get_friends.dart' as _i893;
 import '../../features/social/presentation/bloc/social_bloc.dart' as _i17;
+import '../../features/tasks/data/datasources/task_local_store.dart' as _i265;
 import '../../features/tasks/data/datasources/task_remote_datasource.dart'
     as _i25;
 import '../../features/tasks/data/repositories/task_repository_impl.dart'
@@ -58,6 +61,7 @@ import '../../features/tasks/domain/usecases/create_task.dart' as _i602;
 import '../../features/tasks/domain/usecases/delete_task.dart' as _i840;
 import '../../features/tasks/domain/usecases/set_task_completed.dart' as _i155;
 import '../../features/tasks/domain/usecases/update_task.dart' as _i739;
+import '../../features/tasks/domain/usecases/watch_sync_status.dart' as _i580;
 import '../../features/tasks/domain/usecases/watch_tasks.dart' as _i517;
 import '../../features/tasks/presentation/bloc/tasks_bloc.dart' as _i447;
 import 'register_module.dart' as _i291;
@@ -74,7 +78,9 @@ extension GetItInjectableX on _i174.GetIt {
     final tasksModule = _$TasksModule();
     final calendarModule = _$CalendarModule();
     gh.lazySingleton<_i454.SupabaseClient>(() => registerModule.supabaseClient);
+    gh.lazySingleton<_i895.Connectivity>(() => registerModule.connectivity);
     gh.lazySingleton<_i239.HapticsService>(() => _i239.HapticsService());
+    gh.lazySingleton<_i265.TaskLocalStore>(() => _i265.PrefsTaskLocalStore());
     gh.lazySingleton<_i9.FocusAlarm>(() => _i295.NotificationFocusAlarm());
     gh.lazySingleton<_i18.TaskReminders>(
       () => _i509.NotificationTaskReminders(),
@@ -90,6 +96,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i797.AuthBloc>(
       () => _i797.AuthBloc(gh<_i454.SupabaseClient>()),
+    );
+    gh.lazySingleton<_i892.NetworkInfo>(
+      () => _i892.NetworkInfoImpl(gh<_i895.Connectivity>()),
     );
     gh.lazySingleton<_i103.PreferencesService>(
       () => _i103.PreferencesService(gh<_i239.HapticsService>()),
@@ -118,6 +127,8 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i148.TaskRepository>(
       () => _i20.TaskRepositoryImpl(
         gh<_i25.TaskRemoteDataSource>(),
+        gh<_i265.TaskLocalStore>(),
+        gh<_i892.NetworkInfo>(),
         gh<_i369.CurrentUser>(),
       ),
     );
@@ -144,6 +155,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i840.DeleteTask>(
       () => tasksModule.deleteTask(gh<_i148.TaskRepository>()),
+    );
+    gh.factory<_i580.WatchSyncStatus>(
+      () => tasksModule.watchSyncStatus(gh<_i148.TaskRepository>()),
     );
     gh.factory<_i410.LoadFriendCalendar>(
       () => calendarModule.loadFriendCalendar(gh<_i241.CalendarRepository>()),

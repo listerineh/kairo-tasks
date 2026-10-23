@@ -5,6 +5,7 @@ import '../domain/usecases/create_task.dart';
 import '../domain/usecases/delete_task.dart';
 import '../domain/usecases/set_task_completed.dart';
 import '../domain/usecases/update_task.dart';
+import '../domain/usecases/watch_sync_status.dart';
 import '../domain/usecases/watch_tasks.dart';
 
 /// Registers the task use cases; the domain layer itself stays free of DI
@@ -16,4 +17,5 @@ abstract class TasksModule {
   UpdateTask updateTask(TaskRepository r) => UpdateTask(r);
   SetTaskCompleted setTaskCompleted(TaskRepository r) => SetTaskCompleted(r);
   DeleteTask deleteTask(TaskRepository r) => DeleteTask(r);
+  WatchSyncStatus watchSyncStatus(TaskRepository r) => WatchSyncStatus(r);
 }
