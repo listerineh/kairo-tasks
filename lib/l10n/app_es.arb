@@ -396,5 +396,8 @@
   "loginChipFocus": "Foco · 25:00",
   "loginChipStreak": "12 días de racha",
   "kairoNotLooking": "No miro, lo prometo.",
-  "orDivider": "o"
+  "orDivider": "o",
+  "syncOffline": "Sin conexión · tus cambios se guardan aquí",
+  "syncPending": "{count, plural, =1{Sincronizando 1 cambio} other{Sincronizando {count} cambios}}",
+  "@syncPending": {"placeholders": {"count": {"type": "int"}}}
 }

@@ -375,5 +375,7 @@
   "loginChipFocus": "Focus · 25:00",
   "loginChipStreak": "12-day streak",
   "kairoNotLooking": "I'm not looking, promise.",
-  "orDivider": "or"
+  "orDivider": "or",
+  "syncOffline": "Offline · your changes are saved here",
+  "syncPending": "{count, plural, =1{Syncing 1 change} other{Syncing {count} changes}}"
 }

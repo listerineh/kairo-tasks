@@ -20,6 +20,7 @@ import '../../../../core/widgets/kairo_entrance.dart';
 import '../../../../core/widgets/kairo_tab_bar.dart';
 import '../../../tasks/domain/entities/task_entity.dart';
 import '../../../tasks/presentation/bloc/tasks_bloc.dart';
+import '../../../tasks/presentation/widgets/sync_status_pill.dart';
 import '../../../tasks/presentation/widgets/task_feedback.dart';
 import '../../../tasks/presentation/widgets/task_form_sheet.dart';
 import '../../../tasks/presentation/widgets/task_list_item.dart';
@@ -121,7 +122,10 @@ class _TodayPageState extends State<TodayPage> {
       KairoTabBar.contentPadding(context),
     );
     final sections = <Widget>[
-      _Header(now: now),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [_Header(now: now), const SyncStatusPill()],
+      ),
       _Hero(
         summary: summary,
         tip: _tipText(context, summary),
