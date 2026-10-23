@@ -28,3 +28,13 @@ class AuthFailure extends Failure {
 class ValidationFailure extends Failure {
   const ValidationFailure({required super.message});
 }
+
+/// Another profile already uses the username.
+class UsernameTakenFailure extends Failure {
+  const UsernameTakenFailure({super.message = 'Username taken'});
+}
+
+/// A nudge for the same person and task went out less than 30 minutes ago.
+class NudgeTooSoonFailure extends Failure {
+  const NudgeTooSoonFailure({super.message = 'Nudged recently'});
+}

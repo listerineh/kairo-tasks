@@ -6,6 +6,9 @@ import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/grouped_section.dart';
 import '../../core/widgets/kairo_avatar.dart';
 import '../../core/widgets/kairo_button.dart';
+import '../../core/widgets/kairo_card.dart';
+import '../../core/widgets/kairo_chip.dart';
+import '../../core/widgets/kairo_entrance.dart';
 import '../../core/widgets/kairo_large_title_scaffold.dart';
 import '../../core/widgets/kairo_segmented_control.dart';
 import '../../core/widgets/kairo_sheet.dart';
@@ -13,6 +16,7 @@ import '../../core/widgets/kairo_tab_bar.dart';
 import '../../core/widgets/swipe_actions.dart';
 import '../../features/dashboard/domain/mascot/mascot_mood.dart';
 import '../../features/dashboard/presentation/widgets/mascot/kairo_mascot.dart';
+import '../../features/dashboard/presentation/widgets/mascot/mascot_behavior.dart';
 import '../../features/tasks/domain/entities/task_entity.dart';
 import '../../features/tasks/presentation/widgets/task_row.dart';
 import '../theme/app_spacing.dart';
@@ -33,6 +37,8 @@ class _GalleryPageState extends State<GalleryPage> {
   String _range = 'day';
   MascotMood _mood = MascotMood.idle;
   int _hops = 0;
+  MascotBehavior? _cue;
+  int _cues = 0;
   final _done = <String>{};
   final _deleted = <String>{};
 
@@ -60,21 +66,28 @@ class _GalleryPageState extends State<GalleryPage> {
       bottomNavigationBar: KairoTabBar(
         currentIndex: _tab,
         onTap: (i) => setState(() => _tab = i),
+        onCreate: _openSheet,
+        createLabel: 'New task',
         items: const [
           KairoTabItem(
-            icon: CupertinoIcons.square_grid_2x2,
-            activeIcon: CupertinoIcons.square_grid_2x2_fill,
-            label: 'Today',
+            icon: CupertinoIcons.sun_max,
+            activeIcon: CupertinoIcons.sun_max_fill,
+            label: 'Hoy',
           ),
           KairoTabItem(
-            icon: CupertinoIcons.checkmark_circle,
-            activeIcon: CupertinoIcons.checkmark_circle_fill,
-            label: 'Tasks',
+            icon: CupertinoIcons.calendar,
+            activeIcon: CupertinoIcons.calendar,
+            label: 'Planear',
           ),
           KairoTabItem(
             icon: CupertinoIcons.person_2,
             activeIcon: CupertinoIcons.person_2_fill,
-            label: 'Friends',
+            label: 'Juntos',
+          ),
+          KairoTabItem(
+            icon: CupertinoIcons.person_crop_circle,
+            activeIcon: CupertinoIcons.person_crop_circle_fill,
+            label: 'Yo',
           ),
         ],
       ),
@@ -83,6 +96,8 @@ class _GalleryPageState extends State<GalleryPage> {
           children: [
             const SizedBox(height: AppSpacing.spacing16),
             _buttons(),
+            gap,
+            const _CardsAndChips(),
             gap,
             _settingsRows(),
             gap,
@@ -135,6 +150,12 @@ class _GalleryPageState extends State<GalleryPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           KairoButton(label: 'Filled', onPressed: () {}),
+          const SizedBox(height: AppSpacing.spacing12),
+          KairoButton(
+            label: 'Outline',
+            variant: KairoButtonVariant.outline,
+            onPressed: () {},
+          ),
           const SizedBox(height: AppSpacing.spacing12),
           KairoButton(
             label: 'Tinted',
@@ -279,13 +300,22 @@ class _GalleryPageState extends State<GalleryPage> {
   Widget _cat() {
     return GroupedSection(
       header: 'Kairo the cat',
-      footer: 'Tap the cat to pet it. Hop simulates a completed task.',
+      footer:
+          'Tap the cat to pet it. Hop simulates a completed task; the chips '
+          'trigger cat things (idle and happy only).',
       children: [
         Padding(
           padding: const EdgeInsets.all(AppSpacing.spacing16),
           child: Column(
             children: [
-              KairoMascot(mood: _mood, hopTrigger: _hops, size: 140),
+              KairoMascot(
+                mood: _mood,
+                hopTrigger: _hops,
+                progress: 0.6,
+                cue: _cue,
+                cueTrigger: _cues,
+                size: 160,
+              ),
               const SizedBox(height: AppSpacing.spacing16),
               KairoSegmentedControl<MascotMood>(
                 segments: {for (final m in MascotMood.values) m: m.name},
@@ -297,6 +327,21 @@ class _GalleryPageState extends State<GalleryPage> {
                 label: 'Hop',
                 variant: KairoButtonVariant.plain,
                 onPressed: () => setState(() => _hops++),
+              ),
+              Wrap(
+                spacing: AppSpacing.spacing8,
+                runSpacing: AppSpacing.spacing8,
+                children: [
+                  for (final behavior in MascotBehavior.values)
+                    KairoChip(
+                      label: behavior.name,
+                      selected: false,
+                      onSelected: () => setState(() {
+                        _cue = behavior;
+                        _cues++;
+                      }),
+                    ),
+                ],
               ),
             ],
           ),
@@ -330,6 +375,74 @@ class _GalleryPageState extends State<GalleryPage> {
             children: [
               for (var i = 1; i <= 12; i++) GroupedRow(title: 'Row $i'),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CardsAndChips extends StatefulWidget {
+  const _CardsAndChips();
+
+  @override
+  State<_CardsAndChips> createState() => _CardsAndChipsState();
+}
+
+class _CardsAndChipsState extends State<_CardsAndChips> {
+  String _day = 'Hoy';
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenMargin),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            spacing: AppSpacing.spacing8,
+            runSpacing: AppSpacing.spacing8,
+            children: [
+              for (final day in const ['Hoy', 'Mañana', 'Este finde'])
+                KairoChip(
+                  label: day,
+                  selected: _day == day,
+                  onSelected: () => setState(() => _day = day),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.spacing12),
+          KairoEntrance(
+            child: KairoCard(
+              style: KairoCardStyle.hero,
+              child: Text('Hero card', style: context.typography.title3),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.spacing12),
+          KairoEntrance(
+            index: 1,
+            child: KairoCard(
+              style: KairoCardStyle.ink,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Escribir informe Q3',
+                      style: context.typography.title3.copyWith(
+                        color: colors.onInk,
+                      ),
+                    ),
+                  ),
+                  KairoButton(
+                    label: 'Enfocar',
+                    icon: CupertinoIcons.play_fill,
+                    variant: KairoButtonVariant.accent,
+                    onPressed: () {},
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

@@ -10,6 +10,162 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.34.00 - Kairo 2.0 v2 (V9): Yo, Kairo, login and onboarding (2026-10-21)
+
+### Changed in V 01.34.00
+
+- Profile is now "Yo", a grouped list in the style of iOS Settings. A profile card at the top opens the edit sheet; a Kairo row shows his mood and opens his page. The sections are Cuenta, Preferencias, Accesibilidad and Acerca de, then Cerrar sesión.
+- Appearance and language are segmented controls inside the list. My color picks one of the five calendar tones. Calendar visibility is a switch.
+- The edit sheet checks the name and the username before saving, says inline when a username is taken, and changes the photo through an action sheet.
+- Login: a dark hero with Kairo, a time-of-day greeting and task chips that drift and check themselves off. Kairo glances at the form, closes his eyes while you type your password ("No miro, lo prometo."), concentrates while signing in, gets sad (and the card shakes) on an error, and hops when you get in. The hero shrinks while you type.
+- Onboarding: four slides with Kairo in a different mood on each, pill dots, and one button that becomes "Empezar" at the end.
+- Profile data (13 Supabase calls in widgets) now goes through `ProfileRepository` and `ProfileCubit`. Color and visibility apply at once and roll back if the server fails.
+
+### Added in V 01.34.00
+
+- Accessibility settings: reduce motion (on top of the system setting), haptics on or off, and text size from 85% to 200% with a preview. They're saved on the device and apply across the app.
+- Kairo's page (`/profile/kairo`): him in today's mood, buttons for his six cat things, and what he does when.
+- Tests for `ProfileCubit`, `PreferencesService`, the Yo page and the login; goldens for Yo, Kairo, login and onboarding.
+
+### Removed in V 01.34.00
+
+- The old appearance and color sheets (now inline in Yo).
+
+## V 01.33.00 - Kairo 2.0 v2 (V8): Juntos (2026-10-21)
+
+### Changed in V 01.33.00
+
+- Social is now "Juntos". The header shows how many friends you have, next to a button to add one. Friend requests appear as dark cards with decline and accept. Your friends sit in a row of avatars in their calendar colors.
+- "Haciendo juntos" lists the unfinished tasks you share. Each one shows a progress ring, when it is and with whom, and two buttons: Empujoncito and Enfocarnos (opens Focus on that task).
+- Adding a friend happens in a sheet with a debounced username search. Each result shows whether you're friends, waiting for an answer, or can accept their request.
+- A friend's sheet lets you pick one of the five calendar tones, create a task together, or remove them after a confirmation.
+- `social_page.dart` went from 1234 lines with 13 Supabase calls to a page, five widgets, `SocialBloc` and `FriendsRepository`. Answering, removing and recoloring update at once and roll back if the server fails.
+
+### Added in V 01.33.00
+
+- Nudges: the migration `20261021000003_nudges.sql` adds a `nudges` table with RLS (only accepted friends, only about a task both can see), a 30-minute limit per person and task, and a push in the recipient's language. Tapping the push opens Juntos. `20261021000004_private_can_see_task.sql` moves the policy's helper `can_see_task` to a `private` schema so it can't be called through the API. Both are applied to kairo-db.
+- Tests for `SocialBloc`, `sharedTasks`, and the Juntos page, plus goldens for the page full and empty.
+
+## V 01.32.00 - Kairo 2.0 v2 (V7): Planear (2026-10-21)
+
+### Changed in V 01.32.00
+
+- The calendar is now "Planear": a large title with the month and chevrons, plus pills for Algún día and Hoy above the Día / Semana / Mes control.
+- The week strip uses rounded day pills with up to three colored dots per day. The selected day is inverted and today is green.
+- Calendar blocks use five muted tones (salvia, azul, arcilla, iris, arena) with an owner dot instead of a side border. Done tasks fade.
+- The month grid sits in a card, and the agenda below it is a grouped list.
+- The hour grid and month view leave room for the floating tab bar.
+
+### Fixed in V 01.32.00
+
+- Tasks load right after signing in. Before, Hoy showed "We couldn't load your tasks" until you tapped Retry.
+
+### Added in V 01.32.00
+
+- "Algún día": a sheet listing your unfinished tasks without a date.
+- Tests for `CalendarTone`.
+
+## V 01.31.00 - Kairo 2.0 v2 (V6): Focus (2026-10-21)
+
+### Changed in V 01.31.00
+
+- Focus is a dark screen in every theme. A lime ring drains with a dot at its head and breathes softly while the timer runs. Kairo sits inside it, concentrating with you, and cheers when the round ends.
+- Sessions come in four rounds of 25 minutes, with 5-minute rests and a 15-minute rest after the fourth. When a round ends you can take a rest or complete the task; after a rest, start the next round.
+- Reset, play/pause and +5 minutes; round pills at the top.
+- With no task chosen, Focus asks what to focus on (today's tasks first) or lets you just focus. Hoy's "Focus" button opens it on that task.
+
+### Fixed in V 01.31.00
+
+- The countdown no longer drifts when the app goes to the background: the session stores its end time. Leaving the screen keeps the session running.
+- A focus session without a task no longer sends a notification with an empty title.
+
+### Added in V 01.31.00
+
+- `FocusSession` (pure) and its tests, plus tests for `FocusCubit` with a fake clock and alarm, the page, and goldens.
+
+---
+
+## V 01.30.00 - Kairo 2.0 v2 (V5): task form (2026-10-21)
+
+### Changed in V 01.30.00
+
+- The task form uses the new style. The title field is large and Kairo peeks over its line: he watches while you type and cheers once there is a title.
+- When, priority and sharing are chips; priority chips carry their color dot. The time rows sit in a card under the date chips.
+- Saving moved to a full-width button at the bottom that says what it creates ("Create task · Tomorrow 9:00"), or what is missing ("Write what you want to do"). Cancel stays on top.
+- Selected chips are inverted (`label` fill), so they stand out in dark mode too.
+- `GroupedSection` takes a `margin` for screens that already pad their content.
+
+---
+
+## V 01.29.00 - Kairo 2.0 v2 (V4): navigation and Hoy (2026-10-21)
+
+### Changed in V 01.29.00
+
+- New navigation: a floating bar with four tabs (Hoy, Planear, Juntos, Yo) and a lime ＋ in the middle that opens the task form. The Dashboard and Tasks tabs are gone.
+- The full task list now opens from Hoy ("View all tasks", `/dashboard/tasks`) with a back button. Old `/tasks` links redirect there, and login lands on Hoy.
+
+### Added in V 01.29.00
+
+- **Hoy** replaces the dashboard. It shows:
+  - Kairo with a suggestion that changes when you tap him (start with the next task, progress, focus, rest) and a progress bar.
+  - Three metrics: streak, overdue and % of the day.
+  - A dark "Ahora" card with the next timed task and Focus.
+  - Today's and overdue tasks with swipe and context menu, plus a collapsible "Done".
+- Long-pressing Kairo opens Focus; completing a task makes him hop and say "One less".
+- `TodaySummary`: pure domain logic for the day, with tests.
+
+### Removed in V 01.29.00
+
+- The old dashboard page, the streak chip and the focus button widgets.
+
+---
+
+## V 01.28.00 - Kairo 2.0 v2 (V3): Kairo, the calico cat (2026-10-21)
+
+### Changed in V 01.28.00
+
+- Kairo is a fluffy calico: white fur with orange and black patches, a scalloped chest ruff, cheek and ear tufts, green-yellow eyes with slit pupils, and an orange tail with a black tip. The old green loaf is gone.
+- A thin white line along the tail shows the day's progress (`KairoMascot.progress`).
+- The tail sways gently while he is awake.
+
+### Added in V 01.28.00
+
+- Cat things: every 5-11 s while idle or happy, Kairo stands up, stretches, grooms a paw, yawns, looks aside or flicks his tail. They come from a pure `MascotBehaviorScheduler` that runs on an injected clock and random.
+- Tapping him also starts a small cat thing; `KairoMascot.onLongPress` is ready for opening Focus.
+- Under reduced motion he keeps a still pose for each mood: no sway and no behaviors.
+- Tests for the scheduler and the controller, plus goldens for every mood and the stand, stretch, groom and yawn poses.
+
+---
+
+## V 01.27.00 - Kairo 2.0 v2 (V2): components (2026-10-21)
+
+### Added in V 01.27.00
+
+- `KairoChip`: outline capsule that turns `ink` when selected.
+- `KairoCard`: tile, hero and ink styles with the new radius hierarchy and the soft hero elevation.
+- `KairoEntrance`: cards rise 14 px and fade in a 60 ms cascade (static under reduced motion).
+- `KairoButton` gains the `accent` (lime) and `outline` variants.
+
+### Changed in V 01.27.00
+
+- `KairoTabBar` is now a floating `ink` capsule: the selected tab grows into a pill with a lime label, and an optional lime ＋ sits in the middle.
+- Primary buttons are `ink`; disabled ones become a readable `fill` capsule instead of fading.
+- Segmented control, grouped sections and sheets use the new radii (14/11, 22, 30); sheets dim the background to 50%. Presses scale to 0.95.
+- Golden tests render real blurred shadows.
+
+---
+
+## V 01.26.00 - Kairo 2.0 v2 (V1): visual foundation (2026-10-21)
+
+### Changed in V 01.26.00
+
+- New direction "Calma viva, con carácter", approved from the interactive prototype. `docs/redesign-plan.md` and `docs/design.md` are rewritten for it.
+- New palette: Niebla ground, Tinta text, Pino brand, plus `ink`, `onInk`, `onInkSecondary`, `lime`, `onLime` and `apricot` tokens for the dark accent surface and celebrations. Every text pair still passes WCAG AA (tests cover the new pairs).
+- Manrope (bundled static weights 400-800) replaces SF/Inter and the DM fonts on every platform, with a new type scale: heavy, tight titles and 600-weight text.
+- Removed the `google_fonts` dependency and the Inter files.
+
+---
+
 ## V 01.25.00 - Kairo 2.0 calendar (4b): new views and drag to reschedule (2026-10-21)
 
 ### Added in V 01.25.00

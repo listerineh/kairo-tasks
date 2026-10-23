@@ -46,12 +46,13 @@ See [docs/design.md](docs/design.md) for the complete design system including to
 
 ### Quick Reference
 
-- Style: **Zen/Calm Editorial**
-- Fonts: DM Serif Display (headings) + DM Sans (body)
-- Primary accent: Sage green (#4A6741)
+- Style: **"Calma viva, con carácter"**: mature, elegant, alive (Kairo 2.0)
+- Font: Manrope (bundled, weights 400-800) on every platform
+- Palette: Niebla `#F1F2EF` ground, white cards, Tinta `#121417` text and the one dark `ink` surface, Pino `#1E5B45` brand, Lima `#C6E96F` accent on ink only, Albaricoque `#E58A52` for streaks (never text)
 - Min touch target: 44x44px
-- Line height: 1.6x for body text
-- Animations: 200-300ms, ease-in-out
+- Line height: at least 1.35x for multi-line text
+- Motion: springs from `app_motion.dart` through `context.motion`; respect reduced motion
+- Kairo the calico cat is the app's character; see `docs/design.md`
 - Reuse the shared `KairoHeader` widget for app branding on new screens
 
 ## Code Conventions

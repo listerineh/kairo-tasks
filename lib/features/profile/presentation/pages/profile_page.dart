@@ -1,403 +1,391 @@
+import 'dart:async';
+import 'dart:math' as math;
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../app/di/injection.dart';
 import '../../../../app/locale/locale_service.dart';
 import '../../../../app/theme/app_spacing.dart';
-import '../../../../app/widgets/kairo_header.dart';
+import '../../../../app/theme/theme_service.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/services/preferences_service.dart';
+import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/widgets/grouped_section.dart';
+import '../../../../core/widgets/kairo_avatar.dart';
+import '../../../../core/widgets/kairo_button.dart';
+import '../../../../core/widgets/kairo_card.dart';
+import '../../../../core/widgets/kairo_entrance.dart';
+import '../../../../core/widgets/kairo_segmented_control.dart';
+import '../../../../core/widgets/kairo_sheet.dart';
+import '../../../../core/widgets/kairo_tab_bar.dart';
+import '../../../../core/widgets/pressable.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
-import '../widgets/appearance_sheet.dart';
+import '../../../calendar/presentation/widgets/calendar_colors.dart';
+import '../../../calendar/presentation/widgets/tone_picker.dart';
+import '../../../dashboard/domain/today_summary.dart';
+import '../../../dashboard/presentation/widgets/mascot/kairo_mascot.dart';
+import '../../../tasks/presentation/bloc/tasks_bloc.dart';
+import '../../domain/entities/profile.dart';
+import '../cubit/profile_cubit.dart';
 import '../widgets/edit_profile_sheet.dart';
+import '../widgets/kairo_lines.dart';
 import '../widgets/notifications_sheet.dart';
-import '../widgets/profile_color_sheet.dart';
+import '../widgets/text_size_sheet.dart';
 
-class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+/// Yo (docs/design.md § Yo): who I am, Kairo, and every setting as an
+/// iOS Settings-style grouped list.
+class ProfilePage extends StatelessWidget {
+  const ProfilePage({super.key, this.cubit, this.preferences, this.userId});
+
+  /// Tests pass their own; the app builds them from DI.
+  final ProfileCubit? cubit;
+  final PreferencesService? preferences;
+  final String? userId;
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  Widget build(BuildContext context) {
+    final injected = cubit;
+    final view = ProfileView(
+      preferences: preferences ?? registeredPreferences,
+      userId: userId,
+    );
+    return injected != null
+        ? BlocProvider.value(value: injected, child: view)
+        : BlocProvider(
+            create: (_) => getIt<ProfileCubit>()..load(),
+            child: view,
+          );
+  }
 }
 
-class _ProfilePageState extends State<ProfilePage> {
-  Map<String, dynamic>? _profile;
-  bool _isLoading = true;
+class ProfileView extends StatelessWidget {
+  const ProfileView({super.key, this.preferences, this.userId, this.now});
 
-  @override
-  void initState() {
-    super.initState();
-    _loadProfile();
-  }
+  final PreferencesService? preferences;
+  final String? userId;
 
-  Future<void> _loadProfile() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-
-    try {
-      final response = await Supabase.instance.client
-          .from('profiles')
-          .select()
-          .eq('id', user.id)
-          .single();
-      setState(() {
-        _profile = response;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-    }
-  }
+  /// Fixed in goldens; otherwise the current time.
+  final DateTime? now;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final user = Supabase.instance.client.auth.currentUser;
-    final metadata = user?.userMetadata;
-
-    final fallbackEmail =
-        user?.email != null ? user!.email!.split('@').first : context.l10n.user;
-    final displayName = _profile?['display_name'] as String? ??
-        metadata?['display_name'] as String? ??
-        metadata?['full_name'] as String? ??
-        metadata?['name'] as String? ??
-        fallbackEmail;
-    final username =
-        _profile?['username'] as String? ?? displayName;
-    final email = user?.email ?? '';
-    final avatarUrl = _profile?['avatar_url'] as String? ??
-        metadata?['avatar_url'] as String? ??
-        metadata?['picture'] as String?;
-    final color = _profile?['color'] as String? ?? '#4A6741';
-    final createdAt = user?.createdAt;
-
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, authState) {
-        if (authState.status == AuthStatus.unauthenticated) {
-          context.go('/login');
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<AuthBloc, AuthState>(
+          listenWhen: (a, b) => b.status == AuthStatus.unauthenticated,
+          listener: (context, _) => context.go('/login'),
+        ),
+        BlocListener<ProfileCubit, ProfileState>(
+          listenWhen: (a, b) => a.updateFailed != b.updateFailed,
+          listener: (context, _) => ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: Text(context.l10n.settingSaveFailed),
+                behavior: SnackBarBehavior.floating,
+              ),
+            ),
+        ),
+      ],
       child: Scaffold(
-        appBar: AppBar(
-          title: const KairoHeader(),
-          centerTitle: true,
-        ),
+        backgroundColor: colors.background,
         body: SafeArea(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(AppSpacing.spacing24),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: AppSpacing.spacing24),
-
-                      // Avatar
-                      CircleAvatar(
-                        radius: 48,
-                        backgroundColor: colors.accentSoft,
-                        backgroundImage:
-                            avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                        child: avatarUrl == null
-                            ? Text(
-                                displayName[0].toUpperCase(),
-                                style: context.textTheme.displaySmall
-                                    ?.copyWith(
-                                  color: colors.accent,
-                                ),
-                              )
-                            : null,
-                      ),
-                      const SizedBox(height: AppSpacing.spacing16),
-
-                      // Name
-                      Text(
-                        displayName,
-                        style: context.textTheme.headlineMedium,
-                      ),
-                      const SizedBox(height: AppSpacing.spacing4),
-
-                      // Username
-                      Text(
-                        '@$username',
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.spacing8),
-
-                      // Email
-                      Text(
-                        email,
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: colors.textMuted,
-                        ),
-                      ),
-
-                      // Member since
-                      if (createdAt != null)
-                        Text(
-                          context.l10n.memberSince(_formatDate(createdAt)),
-                          style: context.textTheme.bodySmall?.copyWith(
-                            color: colors.textMuted,
-                          ),
-                        ),
-                      const SizedBox(height: AppSpacing.spacing32),
-
-                      // Settings section
-                      _SectionHeader(title: context.l10n.account),
-                      const SizedBox(height: AppSpacing.spacing12),
-
-                      _SettingsTile(
-                        icon: Icons.person_outline,
-                        title: context.l10n.editProfile,
-                        onTap: () => _showEditProfileSheet(context),
-                      ),
-                      _SettingsTile(
-                        icon: Icons.color_lens_outlined,
-                        title: context.l10n.myTaskColor,
-                        subtitle: context.l10n.colorUsedForCalendar,
-                        trailing: Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: _parseColor(color),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: colors.border),
-                          ),
-                        ),
-                        onTap: () => _showColorSheet(context, color),
-                      ),
-                      _SettingsTile(
-                        icon: Icons.palette_outlined,
-                        title: context.l10n.appearance,
-                        subtitle: context.l10n.appearanceSubtitle,
-                        onTap: () => _showAppearanceSheet(context),
-                      ),
-                      _SettingsTile(
-                        icon: Icons.notifications_outlined,
-                        title: context.l10n.notifications,
-                        onTap: () => _showNotificationsSheet(context),
-                      ),
-                      _SettingsTile(
-                        icon: Icons.language_outlined,
-                        title: context.l10n.language,
-                        onTap: () => _showLanguageSheet(context),
-                      ),
-
-                      const SizedBox(height: AppSpacing.spacing24),
-                      _SectionHeader(title: context.l10n.about),
-                      const SizedBox(height: AppSpacing.spacing12),
-
-                      FutureBuilder<PackageInfo>(
-                        future: PackageInfo.fromPlatform(),
-                        builder: (context, snapshot) {
-                          final version =
-                              snapshot.hasData ? snapshot.data!.version : '...';
-                          return _SettingsTile(
-                            icon: Icons.info_outline,
-                            title: context.l10n.version,
-                            subtitle: version,
-                            onTap: null,
-                          );
-                        },
-                      ),
-                      _SettingsTile(
-                        icon: Icons.code,
-                        title: context.l10n.openSource,
-                        subtitle: context.l10n.openSourceSubtitle,
-                        onTap: () => _openUrl(
-                          'https://github.com/listerineh/kairo-tasks',
-                        ),
-                      ),
-                      _SettingsTile(
-                        icon: Icons.language,
-                        title: context.l10n.developedBy,
-                        subtitle: context.l10n.developedBySubtitle,
-                        onTap: () => _openUrl('https://listerineh.dev'),
-                      ),
-                      if (kDebugMode)
-                        _SettingsTile(
-                          icon: Icons.widgets_outlined,
-                          title: 'Component gallery',
-                          onTap: () => context.push('/gallery'),
-                        ),
-
-                      const SizedBox(height: AppSpacing.spacing32),
-
-                      // Sign out button
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            context
-                                .read<AuthBloc>()
-                                .add(const AuthSignOutRequested());
-                          },
-                          icon: const Icon(Icons.logout),
-                          label: Text(context.l10n.signOut),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: colors.urgent,
-                            side: BorderSide(color: colors.urgent),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.spacing48),
-                    ],
-                  ),
+          bottom: false,
+          child: DefaultTextStyle.merge(
+            style: TextStyle(color: colors.label),
+            child: BlocBuilder<ProfileCubit, ProfileState>(
+              builder: (context, state) => switch (state.status) {
+                ProfileStatus.loading => const Center(
+                  child: CupertinoActivityIndicator(),
                 ),
-        ),
-      ),
-    );
-  }
-
-  String _formatDate(String isoDate) {
-    final date = DateTime.tryParse(isoDate);
-    if (date == null) return '';
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.year}';
-  }
-
-  Future<void> _showColorSheet(BuildContext context, String currentColor) async {
-    final newColor = await showModalBottomSheet<String?>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => ProfileColorSheet(initialColor: currentColor),
-    );
-
-    if (newColor == null || newColor == currentColor) return;
-    await _updateColor(newColor);
-  }
-
-  Future<void> _updateColor(String newColor) async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-
-    try {
-      await Supabase.instance.client
-          .from('profiles')
-          .update({
-            'color': newColor,
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', user.id);
-      await _loadProfile();
-    } catch (e) {
-      // ignore
-    }
-  }
-
-  Color _parseColor(String hex) {
-    try {
-      return Color(int.parse(hex.replaceFirst('#', '0xFF')));
-    } catch (_) {
-      return Colors.grey;
-    }
-  }
-
-  void _showEditProfileSheet(BuildContext context) {
-    showModalBottomSheet<Map<String, dynamic>?>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const EditProfileSheet(),
-    ).then((result) {
-      if (result != null) {
-        setState(() => _profile = result);
-      }
-      _loadProfile();
-    });
-  }
-
-  void _showAppearanceSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const AppearanceSheet(),
-    );
-  }
-
-  void _showNotificationsSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const NotificationsSheet(),
-    );
-  }
-
-  void _showLanguageSheet(BuildContext context) {
-    final currentLocale = LocaleService.instance.locale.value;
-    final colors = context.appColors;
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => SafeArea(
-        child: Container(
-          decoration: BoxDecoration(
-            color: colors.surfaceElevated,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppSpacing.radiusXLarge),
+                ProfileStatus.failure => _loadError(context),
+                ProfileStatus.ready => _content(context, state.profile!),
+              },
             ),
           ),
-          padding: const EdgeInsets.all(AppSpacing.spacing24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.border,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.spacing24),
-              Text(
-                context.l10n.language,
-                style: context.textTheme.headlineSmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.spacing20),
-              ListTile(
-                title: Text(context.l10n.spanish),
-                trailing: currentLocale.languageCode == 'es'
-                  ? Icon(Icons.check, color: colors.accent)
-                  : null,
-                onTap: () {
-                  LocaleService.instance.setLocale(const Locale('es'));
-                  Navigator.of(sheetContext).pop();
-                },
-              ),
-              ListTile(
-                title: Text(context.l10n.english),
-                trailing: currentLocale.languageCode == 'en'
-                  ? Icon(Icons.check, color: colors.accent)
-                  : null,
-                onTap: () {
-                  LocaleService.instance.setLocale(const Locale('en'));
-                  Navigator.of(sheetContext).pop();
-                },
-              ),
-            ],
+        ),
+      ),
+    );
+  }
+
+  Widget _loadError(BuildContext context) {
+    final l10n = context.l10n;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.screenMargin),
+        child: EmptyState(
+          icon: CupertinoIcons.exclamationmark_triangle,
+          title: l10n.profileLoadError,
+          action: KairoButton(
+            label: l10n.tryAgain,
+            variant: KairoButtonVariant.tinted,
+            onPressed: () => context.read<ProfileCubit>().load(),
           ),
         ),
       ),
     );
   }
 
-  Future<void> _openUrl(String url) async {
+  Widget _content(BuildContext context, Profile profile) {
+    final l10n = context.l10n;
+    final cubit = context.read<ProfileCubit>();
+    final prefs = preferences;
+    final bottom = math.max(
+      MediaQuery.paddingOf(context).bottom,
+      KairoTabBar.contentPadding(context),
+    );
+
+    final sections = <Widget>[
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing4),
+        child: Semantics(
+          header: true,
+          child: Text(l10n.navMe, style: context.typography.largeTitle),
+        ),
+      ),
+      _ProfileCard(profile: profile, onEdit: () => _openEdit(context)),
+      _KairoRow(now: now, userId: userId ?? profile.id),
+      _section(
+        header: l10n.account,
+        children: [
+          GroupedRow(
+            leading: const Icon(CupertinoIcons.person_crop_circle),
+            title: l10n.editProfile,
+            showChevron: true,
+            onTap: () => _openEdit(context),
+          ),
+          GroupedRow(
+            leading: const Icon(CupertinoIcons.circle_lefthalf_fill),
+            title: l10n.myTaskColor,
+            subtitle: l10n.myColorSubtitle,
+            trailing: _Dot(color: CalendarTone.of(profile.color).dot),
+            showChevron: true,
+            onTap: () => _openColor(context, profile),
+          ),
+          GroupedRow(
+            leading: const Icon(CupertinoIcons.eye),
+            title: l10n.calendarPublicSetting,
+            subtitle: profile.calendarPublic
+                ? l10n.privacyPublic
+                : l10n.privacyPrivate,
+            trailing: _Switch(
+              value: profile.calendarPublic,
+              onChanged: (v) => cubit.setCalendarPublic(value: v),
+            ),
+          ),
+        ],
+      ),
+      _section(
+        header: l10n.preferences,
+        children: [
+          _ThemeRow(),
+          _LanguageRow(),
+          GroupedRow(
+            leading: const Icon(CupertinoIcons.bell),
+            title: l10n.notifications,
+            showChevron: true,
+            onTap: () => _openSheet(
+              context,
+              (controller) => NotificationsSheet(controller: controller),
+            ),
+          ),
+        ],
+      ),
+      if (prefs != null)
+        _section(
+          header: l10n.accessibility,
+          footer: l10n.reduceMotionHint,
+          children: [
+            ValueListenableBuilder<bool>(
+              valueListenable: prefs.reduceMotion,
+              builder: (context, value, _) => GroupedRow(
+                leading: const Icon(CupertinoIcons.wand_rays),
+                title: l10n.reduceMotion,
+                trailing: _Switch(
+                  value: value,
+                  onChanged: (v) => prefs.setReduceMotion(value: v),
+                ),
+              ),
+            ),
+            ValueListenableBuilder<bool>(
+              valueListenable: prefs.haptics,
+              builder: (context, value, _) => GroupedRow(
+                leading: const Icon(CupertinoIcons.waveform),
+                title: l10n.hapticsSetting,
+                trailing: _Switch(
+                  value: value,
+                  onChanged: (v) => prefs.setHaptics(value: v),
+                ),
+              ),
+            ),
+            ValueListenableBuilder<double?>(
+              valueListenable: prefs.textScale,
+              builder: (context, scale, _) => GroupedRow(
+                leading: const Icon(CupertinoIcons.textformat_size),
+                title: l10n.textSize,
+                trailing: Text(
+                  scale == null ? l10n.system : '${(scale * 100).round()}%',
+                ),
+                showChevron: true,
+                onTap: () => _openSheet(
+                  context,
+                  (controller) =>
+                      TextSizeSheet(preferences: prefs, controller: controller),
+                ),
+              ),
+            ),
+          ],
+        ),
+      _section(
+        header: l10n.about,
+        children: [
+          FutureBuilder<PackageInfo>(
+            future: PackageInfo.fromPlatform(),
+            builder: (context, snapshot) => GroupedRow(
+              leading: const Icon(CupertinoIcons.info),
+              title: l10n.version,
+              trailing: Text(snapshot.data?.version ?? ''),
+            ),
+          ),
+          GroupedRow(
+            leading: const Icon(
+              CupertinoIcons.chevron_left_slash_chevron_right,
+            ),
+            title: l10n.openSource,
+            subtitle: l10n.openSourceSubtitle,
+            showChevron: true,
+            onTap: () => _openUrl('https://github.com/listerineh/kairo-tasks'),
+          ),
+          GroupedRow(
+            leading: const Icon(CupertinoIcons.globe),
+            title: l10n.developedBy,
+            subtitle: l10n.developedBySubtitle,
+            showChevron: true,
+            onTap: () => _openUrl('https://listerineh.dev'),
+          ),
+          if (kDebugMode)
+            GroupedRow(
+              leading: const Icon(CupertinoIcons.square_grid_2x2),
+              title: 'Component gallery',
+              showChevron: true,
+              onTap: () => context.push('/gallery'),
+            ),
+        ],
+      ),
+      _section(
+        children: [
+          GroupedRow(
+            title: l10n.signOut,
+            destructive: true,
+            onTap: () =>
+                context.read<AuthBloc>().add(const AuthSignOutRequested()),
+          ),
+        ],
+      ),
+    ];
+
+    return ListView.separated(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.screenMargin,
+        AppSpacing.spacing12,
+        AppSpacing.screenMargin,
+        bottom,
+      ),
+      itemCount: sections.length,
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.spacing16),
+      itemBuilder: (context, i) =>
+          KairoEntrance(index: i.clamp(0, 5), child: sections[i]),
+    );
+  }
+
+  static Widget _section({
+    required List<Widget> children,
+    String? header,
+    String? footer,
+  }) => GroupedSection(
+    header: header,
+    footer: footer,
+    margin: 0,
+    children: children,
+  );
+
+  static void _openSheet(
+    BuildContext context,
+    Widget Function(ScrollController) builder,
+  ) {
+    unawaited(
+      showKairoSheet<void>(
+        context: context,
+        builder: (context, controller) => builder(controller),
+      ),
+    );
+  }
+
+  /// Sheets live on the root navigator, above this page's provider.
+  static void _openEdit(BuildContext context) {
+    final cubit = context.read<ProfileCubit>()..clearError();
+    unawaited(
+      showKairoSheet<void>(
+        context: context,
+        detents: const [KairoSheetDetent.large],
+        builder: (context, controller) => BlocProvider.value(
+          value: cubit,
+          child: EditProfileSheet(controller: controller),
+        ),
+      ),
+    );
+  }
+
+  static void _openColor(BuildContext context, Profile profile) {
+    final cubit = context.read<ProfileCubit>();
+    unawaited(
+      showKairoSheet<void>(
+        context: context,
+        detents: const [KairoSheetDetent.medium],
+        builder: (context, controller) => BlocProvider.value(
+          value: cubit,
+          child: BlocBuilder<ProfileCubit, ProfileState>(
+            builder: (context, state) => ListView(
+              controller: controller,
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenMargin,
+                AppSpacing.spacing8,
+                AppSpacing.screenMargin,
+                AppSpacing.spacing32,
+              ),
+              children: [
+                Text(
+                  context.l10n.myTaskColor,
+                  style: context.typography.title1,
+                ),
+                const SizedBox(height: AppSpacing.spacing4),
+                Text(
+                  context.l10n.myColorSubtitle,
+                  style: context.typography.subheadline.copyWith(
+                    color: context.appColors.labelSecondary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.spacing16),
+                TonePicker(
+                  selected: CalendarTone.of(state.profile?.color),
+                  onPick: (tone) => cubit.setColor(TonePicker.hexOf(tone)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Future<void> _openUrl(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -405,59 +393,239 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-  final String title;
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard({required this.profile, required this.onEdit});
+
+  final Profile profile;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        title,
-        style: context.textTheme.titleSmall?.copyWith(
-          color: context.appColors.textMuted,
-          letterSpacing: 0.5,
+    final colors = context.appColors;
+    final email = profile.email;
+    return Semantics(
+      button: true,
+      hint: context.l10n.editProfile,
+      child: Pressable(
+        onPressed: onEdit,
+        child: KairoCard(
+          style: KairoCardStyle.hero,
+          padding: const EdgeInsets.all(AppSpacing.spacing16),
+          child: Row(
+            children: [
+              KairoAvatar(
+                name: profile.displayName,
+                imageUrl: profile.avatarUrl,
+                size: 64,
+              ),
+              const SizedBox(width: AppSpacing.spacing16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(profile.displayName, style: context.typography.title3),
+                    Text(
+                      '@${profile.username}',
+                      style: context.typography.subheadline.copyWith(
+                        color: colors.labelSecondary,
+                      ),
+                    ),
+                    if (email != null && email.isNotEmpty)
+                      Text(
+                        email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.typography.footnote.copyWith(
+                          color: colors.labelSecondary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Icon(
+                CupertinoIcons.chevron_forward,
+                size: 16,
+                color: colors.labelTertiary,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    this.onTap,
-    this.trailing,
-  });
+/// Kairo's row: a small Kairo in today's mood and what he'd say, opening
+/// his page.
+class _KairoRow extends StatelessWidget {
+  const _KairoRow({required this.userId, this.now});
 
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final VoidCallback? onTap;
-  final Widget? trailing;
+  final String userId;
+  final DateTime? now;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    return BlocBuilder<TasksBloc, TasksState>(
+      builder: (context, state) {
+        final summary = TodaySummary.from(
+          state.tasks,
+          now: now ?? DateTime.now(),
+          userId: userId,
+        );
+        final mood = summary.mood();
+        return Semantics(
+          button: true,
+          label: 'Kairo',
+          hint: kairoLine(context, mood),
+          excludeSemantics: true,
+          child: Pressable(
+            onPressed: () => context.push('/profile/kairo'),
+            child: KairoCard(
+              padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+              child: Row(
+                children: [
+                  IgnorePointer(
+                    child: KairoMascot(
+                      mood: mood,
+                      progress: summary.progress,
+                      size: 72,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.spacing8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Kairo', style: context.typography.headline),
+                        Text(
+                          kairoLine(context, mood),
+                          style: context.typography.footnote.copyWith(
+                            color: colors.labelSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    CupertinoIcons.chevron_forward,
+                    size: 16,
+                    color: colors.labelTertiary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
 
-    return ListTile(
-      leading: Icon(icon, color: colors.textSecondary),
-      title: Text(title),
-      subtitle: subtitle != null ? Text(subtitle!) : null,
-      trailing: trailing ??
-          (onTap != null
-              ? Icon(Icons.chevron_right, color: colors.textMuted)
-              : null),
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.spacing8,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+class _ThemeRow extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeService.instance.themeMode,
+      builder: (context, mode, _) => _ControlRow(
+        icon: CupertinoIcons.circle_righthalf_fill,
+        title: l10n.appearance,
+        control: KairoSegmentedControl<ThemeMode>(
+          segments: {
+            ThemeMode.system: l10n.system,
+            ThemeMode.light: l10n.light,
+            ThemeMode.dark: l10n.dark,
+          },
+          selected: mode,
+          onChanged: ThemeService.instance.setThemeMode,
+        ),
       ),
     );
   }
+}
+
+class _LanguageRow extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return ValueListenableBuilder<Locale>(
+      valueListenable: LocaleService.instance.locale,
+      builder: (context, locale, _) => _ControlRow(
+        icon: CupertinoIcons.globe,
+        title: l10n.language,
+        control: KairoSegmentedControl<String>(
+          segments: {'es': l10n.spanish, 'en': l10n.english},
+          selected: locale.languageCode,
+          onChanged: (code) => LocaleService.instance.setLocale(Locale(code)),
+        ),
+      ),
+    );
+  }
+}
+
+/// A row with its title on top and a full-width control below, for
+/// segmented choices that don't fit beside the title.
+class _ControlRow extends StatelessWidget {
+  const _ControlRow({
+    required this.icon,
+    required this.title,
+    required this.control,
+  });
+
+  final IconData icon;
+  final String title;
+  final Widget control;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              SizedBox(
+                width: 28,
+                child: Icon(icon, size: 22, color: colors.tint),
+              ),
+              const SizedBox(width: 12),
+              Text(title, style: context.typography.body),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.spacing8),
+          control,
+        ],
+      ),
+    );
+  }
+}
+
+class _Switch extends StatelessWidget {
+  const _Switch({required this.value, required this.onChanged});
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) => CupertinoSwitch(
+    value: value,
+    activeTrackColor: context.appColors.tint,
+    onChanged: onChanged,
+  );
+}
+
+class _Dot extends StatelessWidget {
+  const _Dot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 18,
+    height: 18,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  );
 }

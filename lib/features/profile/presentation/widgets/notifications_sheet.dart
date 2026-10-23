@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,12 +6,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../../../core/widgets/grouped_section.dart';
 import '../../../tasks/presentation/bloc/tasks_bloc.dart';
 
-// ignore_for_file: avoid_positional_boolean_parameters
-
+/// Which pushes and reminders to get, stored on the device.
 class NotificationsSheet extends StatefulWidget {
-  const NotificationsSheet({super.key});
+  const NotificationsSheet({required this.controller, super.key});
+
+  final ScrollController controller;
 
   @override
   State<NotificationsSheet> createState() => _NotificationsSheetState();
@@ -19,213 +21,152 @@ class NotificationsSheet extends StatefulWidget {
 
 class _NotificationsSheetState extends State<NotificationsSheet> {
   bool _taskReminders = false;
-  bool _friendActivity = false;
-  bool _sharedTasks = false;
-  bool _isLoading = true;
+  bool _friendActivity = true;
+  bool _sharedTasks = true;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadPreferences();
+    _load();
   }
 
-  Future<void> _loadPreferences() async {
+  Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _taskReminders = prefs.getBool(NotificationService.kTaskReminders) ?? false;
+      _taskReminders =
+          prefs.getBool(NotificationService.kTaskReminders) ?? false;
       _friendActivity =
           prefs.getBool(NotificationService.kFriendActivity) ?? true;
       _sharedTasks =
           prefs.getBool(NotificationService.kSharedTaskUpdates) ?? true;
-      _isLoading = false;
+      _loading = false;
     });
+  }
+
+  Future<void> _setReminders({required bool value}) async {
+    if (value) await _askPermission();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(NotificationService.kTaskReminders, value);
+    if (!mounted) return;
+    setState(() => _taskReminders = value);
+    final tasks = context.read<TasksBloc>().state.tasks;
+    await NotificationService.instance.onToggleTaskReminders(
+      value,
+      tasks: tasks,
+    );
+  }
+
+  Future<void> _setRemote(String key, {required bool value}) async {
+    if (value) await _askPermission();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+    if (!mounted) return;
+    setState(() {
+      if (key == NotificationService.kFriendActivity) _friendActivity = value;
+      if (key == NotificationService.kSharedTaskUpdates) _sharedTasks = value;
+    });
+    if (value) {
+      try {
+        await NotificationService.instance.registerFcmToken();
+      } on Exception {
+        // FCM can fail on iOS without APNs; the choice is kept anyway.
+      }
+    }
+  }
+
+  Future<void> _askPermission() async {
+    try {
+      await NotificationService.instance.requestPermission();
+    } on Exception {
+      // The switch stays on; the OS will ask again later.
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final colors = context.appColors;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return Container(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      decoration: BoxDecoration(
-        color: colors.surfaceElevated,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppSpacing.radiusXLarge),
-        ),
+    Widget toggle({
+      required bool value,
+      required ValueChanged<bool> onChanged,
+    }) => CupertinoSwitch(
+      value: value,
+      activeTrackColor: colors.tint,
+      onChanged: onChanged,
+    );
+
+    return ListView(
+      controller: widget.controller,
+      padding: const EdgeInsets.fromLTRB(
+        0,
+        AppSpacing.spacing8,
+        0,
+        AppSpacing.spacing32,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.spacing24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.border,
-                  borderRadius: BorderRadius.circular(2),
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenMargin,
+          ),
+          child: Semantics(
+            header: true,
+            child: Text(l10n.notifications, style: context.typography.title1),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.spacing16),
+        if (_loading)
+          const Center(child: CupertinoActivityIndicator())
+        else
+          GroupedSection(
+            footer: l10n.notificationsSubtitle,
+            children: [
+              GroupedRow(
+                title: l10n.taskReminders,
+                subtitle: l10n.subtitleNotificationsRemind,
+                trailing: toggle(
+                  value: _taskReminders,
+                  onChanged: (v) => _setReminders(value: v),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.spacing24),
-            Text(context.l10n.notifications,
-                style: context.textTheme.titleLarge),
-            const SizedBox(height: AppSpacing.spacing8),
-            Text(
-              context.l10n.notificationsSubtitle,
-              style: context.textTheme.bodySmall
-                  ?.copyWith(color: colors.textMuted),
-            ),
-            const SizedBox(height: AppSpacing.spacing20),
-            if (_isLoading)
-              const Center(child: CircularProgressIndicator())
-            else ...[
-              _SwitchTile(
-                title: context.l10n.taskReminders,
-                subtitle: context.l10n.subtitleNotificationsRemind,
-                value: _taskReminders,
-                onChanged: _onTaskRemindersChanged,
-              ),
-              _SwitchTile(
-                title: context.l10n.friendActivity,
-                subtitle: context.l10n.friendActivitySubtitle,
-                value: _friendActivity,
-                onChanged: (v) => _onRemoteToggleChanged(
-                  v,
-                  key: NotificationService.kFriendActivity,
-                  setter: (value) => _friendActivity = value,
+              GroupedRow(
+                title: l10n.friendActivity,
+                subtitle: l10n.friendActivitySubtitle,
+                trailing: toggle(
+                  value: _friendActivity,
+                  onChanged: (v) =>
+                      _setRemote(NotificationService.kFriendActivity, value: v),
                 ),
               ),
-              _SwitchTile(
-                title: context.l10n.sharedTaskUpdates,
-                subtitle: context.l10n.sharedTaskUpdatesSubtitle,
-                value: _sharedTasks,
-                onChanged: (v) => _onRemoteToggleChanged(
-                  v,
-                  key: NotificationService.kSharedTaskUpdates,
-                  setter: (value) => _sharedTasks = value,
+              GroupedRow(
+                title: l10n.sharedTaskUpdates,
+                subtitle: l10n.sharedTaskUpdatesSubtitle,
+                trailing: toggle(
+                  value: _sharedTasks,
+                  onChanged: (v) => _setRemote(
+                    NotificationService.kSharedTaskUpdates,
+                    value: v,
+                  ),
                 ),
               ),
             ],
-            const SizedBox(height: AppSpacing.spacing16),
-            ListTile(
-              title: Text(context.l10n.viewNotificationHistory),
-              trailing: const Icon(Icons.arrow_forward_ios),
+          ),
+        const SizedBox(height: AppSpacing.spacing16),
+        GroupedSection(
+          children: [
+            GroupedRow(
+              title: l10n.viewNotificationHistory,
+              showChevron: true,
               onTap: () {
                 Navigator.of(context).pop();
                 context.push('/notifications');
               },
             ),
-            const SizedBox(height: AppSpacing.spacing8),
           ],
         ),
-      ),
-    );
-  }
-
-  Future<void> _onTaskRemindersChanged(bool value) async {
-    if (value) {
-      try {
-        await NotificationService.instance.requestPermission();
-      } catch (_) {
-        // Continue and let the user keep the toggle on.
-      }
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(NotificationService.kTaskReminders, value);
-
-    if (!mounted) return;
-    setState(() => _taskReminders = value);
-
-    final tasks = context.read<TasksBloc>().state.tasks;
-    await NotificationService.instance.onToggleTaskReminders(value, tasks: tasks);
-  }
-
-  Future<void> _onRemoteToggleChanged(
-    bool value, {
-    required String key,
-    required void Function(bool) setter,
-  }) async {
-    if (value) {
-      try {
-        await NotificationService.instance.requestPermission();
-      } catch (_) {
-        // Continue so the user can still enable the toggle.
-      }
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(key, value);
-
-    if (!mounted) return;
-    setState(() => setter(value));
-
-    if (value) {
-      try {
-        await NotificationService.instance.registerFcmToken();
-      } catch (_) {
-        // FCM registration may fail on iOS without APNs; keep the user choice.
-      }
-    }
-  }
-}
-
-class _SwitchTile extends StatelessWidget {
-  const _SwitchTile({
-    required this.title,
-    required this.subtitle,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final String title;
-  final String subtitle;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.spacing12),
-      padding: const EdgeInsets.all(AppSpacing.spacing16),
-      decoration: BoxDecoration(
-        color: colors.surfaceSubtle,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
-        border: Border.all(color: colors.border),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: context.textTheme.bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  subtitle,
-                  style: context.textTheme.bodySmall
-                      ?.copyWith(color: colors.textMuted),
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: colors.accent,
-          ),
-        ],
-      ),
+      ],
     );
   }
 }

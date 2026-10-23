@@ -30,32 +30,49 @@ void goldenTest(
         ..devicePixelRatio = 1
         ..physicalSize = large ? Size(size.width, size.height * 2) : size;
       addTearDown(tester.view.reset);
-
-      await tester.pumpWidget(
-        MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.golden(
-            variant == GoldenVariant.dark ? Brightness.dark : Brightness.light,
-          ),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context)
-                .copyWith(textScaler: TextScaler.linear(large ? 2 : 1)),
-            child: child!,
-          ),
-          home: Builder(builder: builder),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('$name.${variant.name}.png'),
-      );
+      // flutter_test paints shadows as solid shapes by default; goldens should
+      // show the real blurred elevation. Restored before the test ends, where
+      // flutter_test checks it.
+      debugDisableShadows = false;
+      try {
+        await _pumpAndMatch(tester, name, variant, builder);
+      } finally {
+        debugDisableShadows = true;
+      }
     });
   }
+}
+
+Future<void> _pumpAndMatch(
+  WidgetTester tester,
+  String name,
+  GoldenVariant variant,
+  WidgetBuilder builder,
+) async {
+  final large = variant == GoldenVariant.largeText;
+  await tester.pumpWidget(
+    MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.golden(
+        variant == GoldenVariant.dark ? Brightness.dark : Brightness.light,
+      ),
+      locale: const Locale('en'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context)
+            .copyWith(textScaler: TextScaler.linear(large ? 2 : 1)),
+        child: child!,
+      ),
+      home: Builder(builder: builder),
+    ),
+  );
+  await tester.pumpAndSettle();
+
+  await expectLater(
+    find.byType(MaterialApp),
+    matchesGoldenFile('$name.${variant.name}.png'),
+  );
 }
 
 /// A plain grouped-background page with [child] at the top, for components

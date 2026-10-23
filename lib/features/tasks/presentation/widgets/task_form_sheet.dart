@@ -6,14 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/di/injection.dart';
+import '../../../../app/theme/app_motion.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/session/current_user.dart';
 import '../../../../core/widgets/grouped_section.dart';
 import '../../../../core/widgets/kairo_avatar.dart';
-import '../../../../core/widgets/kairo_segmented_control.dart';
+import '../../../../core/widgets/kairo_button.dart';
+import '../../../../core/widgets/kairo_chip.dart';
 import '../../../../core/widgets/kairo_sheet.dart';
+import '../../../dashboard/domain/mascot/mascot_mood.dart';
+import '../../../dashboard/presentation/widgets/mascot/kairo_mascot.dart';
 import '../../../social/domain/entities/friend.dart';
 import '../../../social/domain/usecases/get_friends.dart';
 import '../../domain/entities/task_draft.dart';
@@ -82,12 +86,17 @@ class TaskFormSheet extends StatefulWidget {
   /// Reference time for the date chips (tests).
   final DateTime? now;
 
+  /// The key of the bottom save button (tests).
+  static const saveKey = ValueKey('task-form-save');
+
   @override
   State<TaskFormSheet> createState() => _TaskFormSheetState();
 }
 
 class _TaskFormSheetState extends State<TaskFormSheet> {
   late final TextEditingController _title;
+  late final FocusNode _titleFocus = FocusNode()
+    ..addListener(() => setState(() {}));
   late final TextEditingController _notes;
   late TaskPriority _priority;
   DateTime? _day;
@@ -180,6 +189,7 @@ class _TaskFormSheetState extends State<TaskFormSheet> {
 
   @override
   void dispose() {
+    _titleFocus.dispose();
     _title.dispose();
     _notes.dispose();
     super.dispose();
@@ -244,23 +254,23 @@ class _TaskFormSheetState extends State<TaskFormSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    final media = MediaQuery.of(context);
+    final keyboard = media.viewInsets.bottom;
 
     return Column(
       children: [
         _Header(
           title: _editing ? l10n.editTask : l10n.newTask,
-          saveLabel: _editing ? l10n.taskFormSave : l10n.taskFormAdd,
-          canSave: _valid,
           onCancel: () => Navigator.of(context).pop(),
-          onSave: _save,
         ),
         Expanded(
           child: ListView(
             controller: widget.scrollController,
-            padding: EdgeInsets.only(
-              top: AppSpacing.spacing8,
-              bottom: bottom + 32,
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenMargin,
+              AppSpacing.spacing8,
+              AppSpacing.screenMargin,
+              AppSpacing.spacing24,
             ),
             children: [
               _textSection(context),
@@ -272,42 +282,103 @@ class _TaskFormSheetState extends State<TaskFormSheet> {
             ],
           ),
         ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.screenMargin,
+            AppSpacing.spacing8,
+            AppSpacing.screenMargin,
+            (keyboard > 0 ? keyboard : media.viewPadding.bottom) +
+                AppSpacing.spacing12,
+          ),
+          child: KairoButton(
+            key: TaskFormSheet.saveKey,
+            label: _valid ? _saveLabel(context) : l10n.taskFormNeedsTitle,
+            expand: true,
+            onPressed: _valid ? _save : null,
+          ),
+        ),
       ],
     );
   }
 
+  /// "Create task · Tomorrow" (or "Save" when editing).
+  String _saveLabel(BuildContext context) {
+    final l10n = context.l10n;
+    if (_editing) return l10n.taskFormSave;
+    final day = _day;
+    if (day == null) return l10n.taskFormCreate;
+    final when = switch (matchingQuickDate(day, _now)) {
+      QuickDate.today => l10n.today,
+      QuickDate.tomorrow => l10n.tomorrow,
+      QuickDate.weekend => l10n.taskFormThisWeekend,
+      null => MaterialLocalizations.of(context).formatShortMonthDay(day),
+    };
+    final time = _time == null ? '' : ' ${_format(_start ?? _time!)}';
+    return '${l10n.taskFormCreate} · $when$time';
+  }
+
   static Widget _gap(Widget child) => Padding(
-    padding: const EdgeInsets.only(top: AppSpacing.spacing24),
+    padding: const EdgeInsets.only(top: AppSpacing.spacing20),
     child: child,
   );
+
+  /// Kairo watches while you type and cheers once there is a title.
+  MascotMood get _catMood {
+    if (_valid) return MascotMood.happy;
+    if (_titleFocus.hasFocus) return MascotMood.focused;
+    return MascotMood.idle;
+  }
 
   Widget _textSection(BuildContext context) {
     final colors = context.appColors;
     final type = context.typography;
-    InputDecoration plain(String hint) => InputDecoration(
+    final motion = context.motion;
+    InputDecoration plain(String hint, TextStyle style) => InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(color: colors.labelTertiary),
+      hintStyle: style.copyWith(color: colors.labelTertiary),
       border: InputBorder.none,
       enabledBorder: InputBorder.none,
       focusedBorder: InputBorder.none,
       filled: false,
       isDense: true,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.spacing16,
-        vertical: 12,
-      ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 10),
     );
+    final titleStyle = type.title3.copyWith(color: colors.label);
 
-    return GroupedSection(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextField(
-          controller: _title,
-          autofocus: !_editing,
-          textCapitalization: TextCapitalization.sentences,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _save(),
-          style: type.body.copyWith(color: colors.label),
-          decoration: plain(context.l10n.titleHint),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _title,
+                focusNode: _titleFocus,
+                autofocus: !_editing,
+                textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _save(),
+                style: titleStyle,
+                decoration: plain(context.l10n.titleHint, titleStyle),
+              ),
+            ),
+            // Kairo peeks over the line: only his head shows.
+            ExcludeSemantics(
+              child: ClipRect(
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  heightFactor: 0.58,
+                  child: KairoMascot(mood: _catMood, size: 76),
+                ),
+              ),
+            ),
+          ],
+        ),
+        AnimatedContainer(
+          duration: motion.duration(KairoSpring.smooth),
+          height: 2,
+          color: _valid ? colors.tint : colors.separator,
         ),
         TextField(
           controller: _notes,
@@ -315,67 +386,91 @@ class _TaskFormSheetState extends State<TaskFormSheet> {
           maxLines: 5,
           textCapitalization: TextCapitalization.sentences,
           style: type.subheadline.copyWith(color: colors.label),
-          decoration: plain(context.l10n.descriptionHint),
+          decoration: plain(context.l10n.descriptionHint, type.subheadline),
         ),
       ],
     );
   }
+
+  Widget _label(BuildContext context, String text) => Padding(
+    padding: const EdgeInsets.only(bottom: AppSpacing.spacing8),
+    child: Semantics(
+      header: true,
+      child: Text(
+        text,
+        style: context.typography.footnote.copyWith(
+          color: context.appColors.labelSecondary,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+  );
 
   Widget _dateSection(BuildContext context) {
     final l10n = context.l10n;
     final selected = matchingQuickDate(_day, _now);
     final custom = _day != null && selected == null;
 
-    return GroupedSection(
-      header: l10n.taskFormDate,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.all(AppSpacing.spacing12),
-          child: Wrap(
-            spacing: AppSpacing.spacing8,
-            runSpacing: AppSpacing.spacing8,
-            children: [
-              for (final (q, label) in [
-                (QuickDate.today, l10n.today),
-                (QuickDate.tomorrow, l10n.tomorrow),
-                (QuickDate.weekend, l10n.taskFormThisWeekend),
-              ])
-                _Chip(
-                  label: label,
-                  selected: selected == q,
-                  onTap: () => _setDay(quickDate(q, _now)),
-                ),
-              _Chip(
-                label: custom
-                    ? MaterialLocalizations.of(context).formatMediumDate(_day!)
-                    : l10n.taskFormPickDate,
-                icon: CupertinoIcons.calendar,
-                selected: custom,
-                onTap: _pickDay,
+        _label(context, l10n.taskFormWhen),
+        Wrap(
+          spacing: AppSpacing.spacing8,
+          runSpacing: AppSpacing.spacing8,
+          children: [
+            for (final (q, label) in [
+              (QuickDate.today, l10n.today),
+              (QuickDate.tomorrow, l10n.tomorrow),
+              (QuickDate.weekend, l10n.taskFormThisWeekend),
+            ])
+              KairoChip(
+                label: label,
+                selected: selected == q,
+                onSelected: () => _setDay(quickDate(q, _now)),
               ),
-            ],
-          ),
+            KairoChip(
+              label: custom
+                  ? MaterialLocalizations.of(context).formatMediumDate(_day!)
+                  : l10n.taskFormPickDate,
+              leading: Icon(
+                CupertinoIcons.calendar,
+                size: 16,
+                color: KairoChip.foreground(context, selected: custom),
+              ),
+              selected: custom,
+              onSelected: _pickDay,
+            ),
+          ],
         ),
         if (_day != null) ...[
-          GroupedRow(
-            leading: const Icon(CupertinoIcons.clock),
-            title: l10n.taskFormTime,
-            trailing: Text(_time == null ? l10n.taskFormAdd : _format(_time!)),
-            onTap: () => _pickTime(start: false),
-          ),
-          if (_time != null)
-            GroupedRow(
-              leading: const Icon(CupertinoIcons.play),
-              title: l10n.taskFormStarts,
-              trailing: Text(
-                _start == null ? l10n.taskFormAdd : _format(_start!),
+          const SizedBox(height: AppSpacing.spacing12),
+          GroupedSection(
+            margin: 0,
+            children: [
+              GroupedRow(
+                leading: const Icon(CupertinoIcons.clock),
+                title: l10n.taskFormTime,
+                trailing: Text(
+                  _time == null ? l10n.taskFormAdd : _format(_time!),
+                ),
+                onTap: () => _pickTime(start: false),
               ),
-              onTap: () => _pickTime(start: true),
-            ),
-          GroupedRow(
-            title: l10n.taskFormRemoveDate,
-            destructive: true,
-            onTap: () => _setDay(null),
+              if (_time != null)
+                GroupedRow(
+                  leading: const Icon(CupertinoIcons.play),
+                  title: l10n.taskFormStarts,
+                  trailing: Text(
+                    _start == null ? l10n.taskFormAdd : _format(_start!),
+                  ),
+                  onTap: () => _pickTime(start: true),
+                ),
+              GroupedRow(
+                title: l10n.taskFormRemoveDate,
+                destructive: true,
+                onTap: () => _setDay(null),
+              ),
+            ],
           ),
         ],
       ],
@@ -384,89 +479,111 @@ class _TaskFormSheetState extends State<TaskFormSheet> {
 
   Widget _prioritySection(BuildContext context) {
     final l10n = context.l10n;
-    return GroupedSection(
-      header: l10n.priority,
+    final colors = context.appColors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing8),
-          child: KairoSegmentedControl<TaskPriority>(
-            segments: {
-              TaskPriority.low: l10n.low,
-              TaskPriority.medium: l10n.medium,
-              TaskPriority.high: l10n.high,
-              TaskPriority.urgent: l10n.urgent,
-            },
-            selected: _priority,
-            onChanged: (p) => setState(() => _priority = p),
-          ),
+        _label(context, l10n.priority),
+        Wrap(
+          spacing: AppSpacing.spacing8,
+          runSpacing: AppSpacing.spacing8,
+          children: [
+            for (final (p, label, color) in [
+              (TaskPriority.low, l10n.low, colors.priorityLow),
+              (TaskPriority.medium, l10n.medium, colors.priorityMedium),
+              (TaskPriority.high, l10n.high, colors.priorityHigh),
+              (TaskPriority.urgent, l10n.urgent, colors.priorityUrgent),
+            ])
+              KairoChip(
+                label: label,
+                selected: _priority == p,
+                leading: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: _priority == p
+                        ? KairoChip.foreground(context, selected: true)
+                        : color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                onSelected: () => setState(() => _priority = p),
+              ),
+          ],
         ),
       ],
     );
   }
 
   Widget _shareSection(BuildContext context) {
-    final colors = context.appColors;
-    return GroupedSection(
-      header: context.l10n.shareWith,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final friend in _friends)
-          Semantics(
-            selected: _shared.contains(friend.id),
-            child: GroupedRow(
-              leading: KairoAvatar(
-                name: friend.displayName ?? friend.username ?? '',
-                imageUrl: friend.avatarUrl,
-                size: 28,
+        _label(context, context.l10n.taskFormWho),
+        Wrap(
+          spacing: AppSpacing.spacing8,
+          runSpacing: AppSpacing.spacing8,
+          children: [
+            for (final friend in _friends)
+              KairoChip(
+                label: friend.name.isEmpty ? context.l10n.friend : friend.name,
+                selected: _shared.contains(friend.id),
+                leading: KairoAvatar(
+                  name: friend.displayName ?? friend.username ?? '',
+                  imageUrl: friend.avatarUrl,
+                  size: 24,
+                ),
+                onSelected: () => setState(
+                  () => _shared.contains(friend.id)
+                      ? _shared.remove(friend.id)
+                      : _shared.add(friend.id),
+                ),
               ),
-              title: friend.name.isEmpty ? context.l10n.friend : friend.name,
-              trailing: _shared.contains(friend.id)
-                  ? Icon(CupertinoIcons.checkmark, color: colors.tint, size: 20)
-                  : null,
-              onTap: () => setState(
-                () => _shared.contains(friend.id)
-                    ? _shared.remove(friend.id)
-                    : _shared.add(friend.id),
-              ),
-            ),
-          ),
+          ],
+        ),
       ],
     );
   }
 
-  /// Buttons that unfold the optional sections still hidden.
+  /// Chips that unfold the optional sections still hidden.
   Widget _revealButtons(BuildContext context) {
     final l10n = context.l10n;
+    final icon = KairoChip.foreground(context, selected: false);
+    Widget reveal(String label, IconData glyph, VoidCallback onTap) =>
+        KairoChip(
+          label: label,
+          selected: false,
+          leading: Icon(glyph, size: 16, color: icon),
+          onSelected: onTap,
+        );
     final buttons = [
       if (!_showDate)
-        _Chip(
-          label: l10n.taskFormDate,
-          icon: CupertinoIcons.calendar,
-          onTap: () => setState(() {
+        reveal(
+          l10n.taskFormDate,
+          CupertinoIcons.calendar,
+          () => setState(() {
             _showDate = true;
             _day ??= quickDate(QuickDate.today, _now);
           }),
         ),
       if (!_showPriority)
-        _Chip(
-          label: l10n.priority,
-          icon: CupertinoIcons.flag,
-          onTap: () => setState(() => _showPriority = true),
+        reveal(
+          l10n.priority,
+          CupertinoIcons.flag,
+          () => setState(() => _showPriority = true),
         ),
       if (!_showShare && _canShare && _friends.isNotEmpty)
-        _Chip(
-          label: l10n.shareWith,
-          icon: CupertinoIcons.person_2,
-          onTap: () => setState(() => _showShare = true),
+        reveal(
+          l10n.shareWith,
+          CupertinoIcons.person_2,
+          () => setState(() => _showShare = true),
         ),
     ];
     if (buttons.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenMargin),
-      child: Wrap(
-        spacing: AppSpacing.spacing8,
-        runSpacing: AppSpacing.spacing8,
-        children: buttons,
-      ),
+    return Wrap(
+      spacing: AppSpacing.spacing8,
+      runSpacing: AppSpacing.spacing8,
+      children: buttons,
     );
   }
 
@@ -563,21 +680,12 @@ class _TaskFormSheetState extends State<TaskFormSheet> {
   }
 }
 
-/// Sheet bar: Cancel · title · Add/Save (disabled until there is a title).
+/// Sheet bar: Cancel and the title. Saving lives in the bottom button.
 class _Header extends StatelessWidget {
-  const _Header({
-    required this.title,
-    required this.saveLabel,
-    required this.canSave,
-    required this.onCancel,
-    required this.onSave,
-  });
+  const _Header({required this.title, required this.onCancel});
 
   final String title;
-  final String saveLabel;
-  final bool canSave;
   final VoidCallback onCancel;
-  final VoidCallback onSave;
 
   @override
   Widget build(BuildContext context) {
@@ -591,7 +699,7 @@ class _Header extends StatelessWidget {
             onPressed: onCancel,
             child: Text(
               context.l10n.cancel,
-              style: type.body.copyWith(color: colors.tint),
+              style: type.body.copyWith(color: colors.labelSecondary),
             ),
           ),
           Expanded(
@@ -606,83 +714,9 @@ class _Header extends StatelessWidget {
               ),
             ),
           ),
-          CupertinoButton(
-            onPressed: canSave ? onSave : null,
-            child: Text(
-              saveLabel,
-              style: type.headline.copyWith(
-                color: canSave ? colors.tint : colors.labelTertiary,
-              ),
-            ),
-          ),
+          // Balances Cancel so the title stays centered.
+          const SizedBox(width: 88),
         ],
-      ),
-    );
-  }
-}
-
-/// Capsule chip for date shortcuts and the "show more" buttons.
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.onTap,
-    this.icon,
-    this.selected = false,
-  });
-
-  final String label;
-  final IconData? icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final fg = selected ? colors.tint : colors.label;
-    return Semantics(
-      button: true,
-      selected: selected,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minHeight: AppSpacing.minTouchTarget,
-          ),
-          child: Center(
-            widthFactor: 1,
-            child: DecoratedBox(
-              decoration: ShapeDecoration(
-                color: selected ? colors.tintSoft : colors.fill,
-                shape: const StadiumBorder(),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 7,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (icon != null) ...[
-                      Icon(icon, size: 16, color: fg),
-                      const SizedBox(width: 6),
-                    ],
-                    Text(
-                      label,
-                      style: context.typography.subheadline.copyWith(
-                        color: fg,
-                        fontWeight: selected
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }
