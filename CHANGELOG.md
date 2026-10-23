@@ -10,6 +10,27 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.34.00 - Kairo 2.0 v2 (V9): Yo, Kairo, login and onboarding (2026-10-21)
+
+### Changed in V 01.34.00
+
+- Profile is now "Yo", a grouped list in the style of iOS Settings. A profile card at the top opens the edit sheet; a Kairo row shows his mood and opens his page. The sections are Cuenta, Preferencias, Accesibilidad and Acerca de, then Cerrar sesión.
+- Appearance and language are segmented controls inside the list. My color picks one of the five calendar tones. Calendar visibility is a switch.
+- The edit sheet checks the name and the username before saving, says inline when a username is taken, and changes the photo through an action sheet.
+- Login: a dark hero with Kairo, a time-of-day greeting and task chips that drift and check themselves off. Kairo glances at the form, closes his eyes while you type your password ("No miro, lo prometo."), concentrates while signing in, gets sad (and the card shakes) on an error, and hops when you get in. The hero shrinks while you type.
+- Onboarding: four slides with Kairo in a different mood on each, pill dots, and one button that becomes "Empezar" at the end.
+- Profile data (13 Supabase calls in widgets) now goes through `ProfileRepository` and `ProfileCubit`. Color and visibility apply at once and roll back if the server fails.
+
+### Added in V 01.34.00
+
+- Accessibility settings: reduce motion (on top of the system setting), haptics on or off, and text size from 85% to 200% with a preview. They're saved on the device and apply across the app.
+- Kairo's page (`/profile/kairo`): him in today's mood, buttons for his six cat things, and what he does when.
+- Tests for `ProfileCubit`, `PreferencesService`, the Yo page and the login; goldens for Yo, Kairo, login and onboarding.
+
+### Removed in V 01.34.00
+
+- The old appearance and color sheets (now inline in Yo).
+
 ## V 01.33.00 - Kairo 2.0 v2 (V8): Juntos (2026-10-21)
 
 ### Changed in V 01.33.00
