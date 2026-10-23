@@ -218,6 +218,26 @@ Shared components live in `lib/core/widgets/` and are listed in the debug `/gall
 - **Nudges:** a nudge inserts one `nudges` row per other person on the task. A trigger sends them a push in their language. The database allows one per sender, recipient and task every 30 minutes; a repeat comes back as "Ya le diste un empujoncito hace poco".
 - **Data:** `SocialBloc` (friends, requests, search, nudges) talks to `FriendsRepository`. Writes are optimistic and roll back with a snackbar; realtime changes to `friendships` reload the page (debounced).
 
+### Yo
+- **Header and top cards:** the large title "Yo". A hero card shows the avatar, name, @username and email, and opens the edit sheet. A Kairo row shows a small Kairo in today's mood and his line, and opens his page.
+- **Grouped sections (iOS Settings style):**
+  - **Cuenta:** edit profile, my color (the five calendar tones), and the calendar visibility switch.
+  - **Preferencias:** appearance and language as segmented controls, and notifications in a sheet.
+  - **Accesibilidad:** reduce motion, haptics, and text size.
+  - **Acerca de:** version, source code, author.
+  - **Cerrar sesión:** in red.
+- **Accessibility preferences:** `PreferencesService` stores them on the device and `KairoApp` applies them over the system ones. In-app reduce motion adds to the OS setting (it never turns it off). A chosen text size, from 85% to 200%, replaces the system scale. Haptics reuse `HapticsService.enabled`.
+- **Data:** `ProfileCubit` talks to `ProfileRepository` (profile, edits with photo upload, color, visibility). Color and visibility apply at once and roll back if the server fails. Saving the edit sheet checks the name and, only when it changed, the username (3–30 characters: `a-z 0-9 . _ -`), and reports a taken username inline.
+- **Kairo (`/profile/kairo`):** a large Kairo in today's mood; tapping him changes his line and long-pressing starts Focus. Below are buttons for his six cat things (stand up, stretch, groom, yawn, look, tail) and a "Qué hace y cuándo" list.
+
+### Login and onboarding
+- **Login:**
+  - **Hero:** an `ink` hero with Kairo, a greeting for the time of day, and four task chips that drift and check themselves off (still under reduced motion).
+  - **Form card:** a white card overlaps the hero's edge, with a segmented Entrar / Crear cuenta switch, filled fields with autofill, an `ink` primary button, and Google below an "o" divider.
+  - **Kairo reacts to the form:** he glances over when a field gets focus and closes his eyes while you type a hidden password ("No miro, lo prometo."). He concentrates while signing in, looks sad and the card shakes on an error, and hops before going to Hoy.
+  - **Typing:** while you type, the hero shrinks to its compact height and the greeting steps aside.
+- **Onboarding:** four slides, each with Kairo in a different mood (calm, happy, looking aside, focused). Saltar sits on top and hides on the last slide; dots are pills; one `ink` button reads Siguiente, then Empezar.
+
 ---
 
 ## Kairo, the cat
