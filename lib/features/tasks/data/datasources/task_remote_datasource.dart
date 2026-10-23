@@ -6,12 +6,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/errors/exceptions.dart';
 
 /// Raw Supabase access for tasks and their shares. Throws
-/// [ServerException]; mapping to entities happens in the repository.
+/// [ServerException] when the server answers with an error and
+/// [NetworkException] when it can't be reached (offline, timeout); the
+/// repository queues changes on the second. Mapping to entities happens in
+/// the repository.
 abstract class TaskRemoteDataSource {
   /// Visible tasks (own and shared with me, via RLS) with the shares join.
   Future<List<Map<String, dynamic>>> fetchTasks();
 
-  /// Inserts a task row and returns its id.
+  /// Inserts a task row and returns its id. The row may carry its own `id`
+  /// (tasks created offline get one on the device).
   Future<String> insertTask(Map<String, dynamic> row);
 
   Future<void> updateTask(String id, Map<String, dynamic> changes);
@@ -46,13 +50,20 @@ class TaskRemoteDataSourceImpl implements TaskRemoteDataSource {
     )
   ''';
 
+  static const _timeout = Duration(seconds: 15);
+
   Future<T> _guard<T>(Future<T> Function() run) async {
     try {
-      return await run();
+      return await run().timeout(_timeout);
     } on PostgrestException catch (e) {
-      throw ServerException(message: e.message);
+      throw ServerException(message: e.message, code: e.code);
     } on AuthException catch (e) {
       throw ServerException(message: e.message);
+    } on TimeoutException {
+      throw const NetworkException(message: 'Timed out');
+    } on Exception catch (e) {
+      // Socket and HTTP client errors: the server was never reached.
+      throw NetworkException(message: e.toString());
     }
   }
 

@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:injectable/injectable.dart';
 
 abstract class NetworkInfo {
   Future<bool> get isConnected;
   Stream<bool> get onConnectionChanged;
 }
 
+@LazySingleton(as: NetworkInfo)
 class NetworkInfoImpl implements NetworkInfo {
   NetworkInfoImpl(this._connectivity);
 
