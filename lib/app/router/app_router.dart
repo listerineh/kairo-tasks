@@ -9,6 +9,7 @@ import '../../features/dashboard/presentation/pages/today_page.dart';
 import '../../features/focus/presentation/pages/focus_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
+import '../../features/profile/presentation/pages/kairo_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/social/presentation/pages/social_page.dart';
 import '../../features/tasks/domain/entities/task_entity.dart';
@@ -111,6 +112,13 @@ class AppRouter {
                   path: '/profile',
                   name: RouteNames.profile,
                   builder: (context, state) => const ProfilePage(),
+                  routes: [
+                    GoRoute(
+                      path: 'kairo',
+                      name: RouteNames.kairo,
+                      builder: (context, state) => const KairoPage(),
+                    ),
+                  ],
                 ),
               ],
             ),
