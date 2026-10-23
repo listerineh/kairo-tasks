@@ -1,12 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_motion.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/widgets/kairo_button.dart';
+import '../../../dashboard/domain/mascot/mascot_mood.dart';
+import '../../../dashboard/presentation/widgets/mascot/kairo_mascot.dart';
+import '../../../dashboard/presentation/widgets/mascot/mascot_behavior.dart';
 
+/// Four slides, each with Kairo in a different mood; Saltar on top, pill
+/// dots and one `ink` button that turns into "Empezar" on the last slide.
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
 
@@ -15,233 +22,182 @@ class OnboardingPage extends StatefulWidget {
 }
 
 class _OnboardingPageState extends State<OnboardingPage> {
-  final _pageController = PageController();
-  int _currentPage = 0;
+  final _pages = PageController();
+  int _page = 0;
+
+  static const _count = 4;
 
   @override
   void dispose() {
-    _pageController.dispose();
+    _pages.dispose();
     super.dispose();
   }
 
-  void _finish() {
-    _saveAndNavigate();
-  }
-
-  Future<void> _saveAndNavigate() async {
+  Future<void> _finish() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('has_seen_onboarding', true);
-    if (!mounted) return;
-    context.go('/login');
+    if (mounted) context.go('/login');
   }
 
   void _next() {
-    _pageController.nextPage(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
-
-  void _previous() {
-    _pageController.previousPage(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
+    if (_page == _count - 1) {
+      unawaited(_finish());
+      return;
+    }
+    final motion = context.motion;
+    unawaited(
+      _pages.nextPage(
+        duration: motion.duration(KairoSpring.smooth),
+        curve: motion.curve(KairoSpring.smooth),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final colors = context.appColors;
+    final motion = context.motion;
     final slides = [
-      _Slide(
-        assetIcon: 'assets/icons/app_icon.svg',
-        title: context.l10n.onboardingTitle1,
-        body: context.l10n.onboardingBody1,
+      (MascotMood.idle, null, l10n.onboardingTitle1, l10n.onboardingBody1),
+      (MascotMood.happy, null, l10n.onboardingTitle2, l10n.onboardingBody2),
+      (
+        MascotMood.idle,
+        MascotBehavior.look,
+        l10n.onboardingTitle3,
+        l10n.onboardingBody3,
       ),
-      _Slide(
-        icon: Icons.check_circle,
-        title: context.l10n.onboardingTitle2,
-        body: context.l10n.onboardingBody2,
-      ),
-      _Slide(
-        icon: Icons.people,
-        title: context.l10n.onboardingTitle3,
-        body: context.l10n.onboardingBody3,
-      ),
-      _Slide(
-        icon: Icons.calendar_today,
-        title: context.l10n.onboardingTitle4,
-        body: context.l10n.onboardingBody4,
-      ),
+      (MascotMood.focused, null, l10n.onboardingTitle4, l10n.onboardingBody4),
     ];
+    final last = _page == _count - 1;
 
     return Scaffold(
       backgroundColor: colors.background,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.spacing32,
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: AppSpacing.spacing64),
-                  Expanded(
-                    child: PageView.builder(
-                      controller: _pageController,
-                      onPageChanged: (index) {
-                        setState(() => _currentPage = index);
-                      },
-                      itemCount: slides.length,
-                      itemBuilder: (context, index) => slides[index],
+      body: DefaultTextStyle.merge(
+        // Kairo styles carry no color; the legacy default is secondary gray.
+        style: TextStyle(color: colors.label),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 4, 8, 0),
+                  child: AnimatedOpacity(
+                    opacity: last ? 0 : 1,
+                    duration: motion.duration(KairoSpring.smooth),
+                    child: KairoButton(
+                      label: l10n.skip,
+                      variant: KairoButtonVariant.plain,
+                      onPressed: last ? null : _finish,
                     ),
                   ),
-                  _buildDots(colors),
-                  const SizedBox(height: AppSpacing.spacing24),
-                  _buildBottomNav(),
-                  const SizedBox(height: AppSpacing.spacing24),
-                ],
-              ),
-            ),
-            Positioned(
-              top: 0,
-              right: 0,
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.spacing16),
-                child: TextButton(
-                  onPressed: _finish,
-                  style: TextButton.styleFrom(
-                    foregroundColor: colors.textSecondary,
-                  ),
-                  child: Text(context.l10n.skip),
                 ),
               ),
-            ),
-          ],
+              Expanded(
+                child: PageView.builder(
+                  controller: _pages,
+                  itemCount: _count,
+                  onPageChanged: (i) => setState(() => _page = i),
+                  itemBuilder: (context, i) {
+                    final (mood, cue, title, body) = slides[i];
+                    return _Slide(
+                      mood: mood,
+                      cue: cue,
+                      active: i == _page,
+                      title: title,
+                      body: body,
+                    );
+                  },
+                ),
+              ),
+              Semantics(
+                label: '${_page + 1} / $_count',
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (var i = 0; i < _count; i++)
+                      AnimatedContainer(
+                        duration: motion.duration(KairoSpring.snappy),
+                        curve: motion.curve(KairoSpring.snappy),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: i == _page ? 22 : 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: i == _page ? colors.label : colors.fill,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screenMargin,
+                  AppSpacing.spacing24,
+                  AppSpacing.screenMargin,
+                  AppSpacing.spacing16,
+                ),
+                child: KairoButton(
+                  label: last ? l10n.getStarted : l10n.next,
+                  expand: true,
+                  onPressed: _next,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildDots(AppColorScheme colors) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(4, (index) {
-        final isActive = index == _currentPage;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.spacing4,
-          ),
-          width: isActive ? 10 : 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: isActive
-                ? colors.accent
-                : colors.textMuted.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    final colors = context.appColors;
-    final isLast = _currentPage == 3;
-
-    if (isLast) {
-      return SizedBox(
-        width: double.infinity,
-        child: FilledButton(
-          onPressed: _finish,
-          style: FilledButton.styleFrom(
-            minimumSize: const Size(
-              double.infinity,
-              AppSpacing.buttonHeight,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
-            ),
-            textStyle: context.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          child: Text(context.l10n.getStarted),
-        ),
-      );
-    }
-
-    return Row(
-      children: [
-        TextButton(
-          onPressed: _currentPage == 0 ? null : _previous,
-          style: TextButton.styleFrom(
-            foregroundColor: colors.textSecondary,
-            textStyle: context.textTheme.bodyLarge,
-          ),
-          child: Text(context.l10n.back),
-        ),
-        const Spacer(),
-        TextButton(
-          onPressed: _next,
-          style: TextButton.styleFrom(
-            foregroundColor: colors.accent,
-            textStyle: context.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          child: Text(context.l10n.next),
-        ),
-      ],
     );
   }
 }
 
 class _Slide extends StatelessWidget {
   const _Slide({
+    required this.mood,
+    required this.active,
     required this.title,
     required this.body,
-    this.assetIcon,
-    this.icon,
+    this.cue,
   });
 
-  final String? assetIcon;
-  final IconData? icon;
+  final MascotMood mood;
+  final MascotBehavior? cue;
+  final bool active;
   final String title;
   final String body;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing8),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing32),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (assetIcon != null)
-            SvgPicture.asset(
-              assetIcon!,
-              height: 72,
-              fit: BoxFit.contain,
-            )
-          else
-            Icon(icon, size: 80, color: colors.accent),
-          const SizedBox(height: AppSpacing.spacing48),
-          Text(
-            title,
-            style: context.textTheme.displayMedium,
-            textAlign: TextAlign.center,
+          const SizedBox(height: AppSpacing.spacing24),
+          // A cat thing plays each time the slide comes into view.
+          KairoMascot(
+            mood: mood,
+            cue: cue,
+            cueTrigger: active ? 1 : 0,
+            size: 200,
           ),
-          const SizedBox(height: AppSpacing.spacing16),
+          const SizedBox(height: AppSpacing.spacing24),
+          Semantics(
+            header: true,
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              style: context.typography.title1,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.spacing12),
           Text(
             body,
-            style: context.textTheme.bodyLarge?.copyWith(
-              color: colors.textSecondary,
-            ),
             textAlign: TextAlign.center,
+            style: context.typography.bodyMultiline.copyWith(
+              color: colors.labelSecondary,
+            ),
           ),
         ],
       ),
