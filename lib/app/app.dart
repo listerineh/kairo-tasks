@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kairotasks/generated/app_localizations.dart';
 
+import '../core/services/preferences_service.dart';
 import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/dashboard/presentation/widgets/streak_celebration.dart';
 import '../features/tasks/presentation/bloc/tasks_bloc.dart';
@@ -79,10 +80,30 @@ class KairoApp extends StatelessWidget {
                     GlobalCupertinoLocalizations.delegate,
                   ],
               supportedLocales: const [Locale('es'), Locale('en')],
+              builder: (context, child) => _WithPreferences(child: child!),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Applies the in-app accessibility preferences (reduce motion, text size)
+/// on top of the system ones.
+class _WithPreferences extends StatelessWidget {
+  const _WithPreferences({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final prefs = registeredPreferences;
+    if (prefs == null) return child;
+    return ListenableBuilder(
+      listenable: Listenable.merge([prefs.reduceMotion, prefs.textScale]),
+      builder: (context, _) =>
+          MediaQuery(data: prefs.apply(MediaQuery.of(context)), child: child),
     );
   }
 }
