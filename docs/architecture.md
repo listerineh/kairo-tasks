@@ -247,6 +247,25 @@ Enabled on:
 
 ---
 
+## Offline-First Tasks
+
+Tasks work without a connection (`TaskRepositoryImpl`, V 01.35.00):
+
+| Piece | Where | Role |
+| --- | --- | --- |
+| `TaskLocalStore` | `tasks/data/datasources/task_local_store.dart` | The last server rows and the outbox, per user, in `SharedPreferences` |
+| `PendingOp` | `tasks/data/sync/pending_op.dart` | One waiting change: create (the whole row), update (changed columns), delete; plus shares and the time it was made |
+| `enqueue` / `overlay` / `updateStillWins` | `tasks/data/sync/outbox.dart` | Pure rules: merge changes per task, show waiting changes on top of server rows, last-write-wins |
+| `NetworkInfo` | `core/network/network_info.dart` | `connectivity_plus`; coming back online triggers a sync |
+
+- **Reading:** `watchTasks` emits the stored copy first, then each server fetch (which is stored again). Waiting changes are always laid on top. Errors reach the UI only when there is nothing stored to show.
+- **Writing:** create, edit, complete and delete go to the outbox and show immediately. New tasks get their id on the device (UUID v4). Writes return `Right` as long as someone is signed in.
+- **Sending:** in order, one at a time, under a lock so writes and sends never race. A network error (`NetworkException`: offline or a 15 s timeout) leaves the change waiting. A server error drops it, and the next fetch shows the server's version.
+  - A change made while the same task's change is in flight is appended instead of merged, so it isn't lost.
+  - A create the server already has (`23505`) is sent again as an update.
+- **Conflicts:** an update loses if the server row's `updated_at` is newer than the local edit, or if the task is gone (last-write-wins).
+- **Hint:** `SyncStatusPill` on Hoy shows "Sin conexión · tus cambios se guardan aquí" or "Sincronizando N cambios" from `watchSyncStatus`.
+
 ## Realtime Communication Flow
 
 ```
