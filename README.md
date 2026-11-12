@@ -206,6 +206,7 @@ See [docs/architecture.md](docs/architecture.md) for full details.
 | [docs/design.md](docs/design.md) | Design system, tokens, component patterns |
 | [docs/architecture.md](docs/architecture.md) | Technical architecture & data flow |
 | [docs/redesign-plan.md](docs/redesign-plan.md) | The Kairo 2.0 redesign: direction and phases |
+| [docs/supabase-setup.md](docs/supabase-setup.md) | Setting up a new Supabase project |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
 
 ---
