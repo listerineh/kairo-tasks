@@ -10,6 +10,25 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 02.00.01 - Fixes from testing 2.0 on device (2026-11-12)
+
+### Changed in V 02.00.01
+
+- Yo no longer shows the debug-only component gallery row.
+
+### Fixed in V 02.00.01
+
+- On a day with nothing planned, Kairo no longer says "It's late" in the middle of the day. He says it only at night (before 6:00); on a rest day he says he's resting too.
+- The "Undo" bar after completing or deleting a task now closes after 4 seconds, when the change is committed. Before, it stayed up and its Undo did nothing.
+- Streak wording is right for one day: "1 día de racha" on Hoy, and the streak celebration and notifications no longer say "1 días consecutivos".
+- Planear: blocks of 5 to 15 minutes show their title on one readable line instead of cutting it in half.
+- Planear, Week: when four or more tasks overlap, each block drops its dot and wraps the title over several lines, so it stays readable.
+- Planear: a day with many all-day tasks shows two and a "+N more" chip that expands the strip, so the hours stay on screen.
+- Planear: with large text the header no longer breaks "Planear" or the month mid-word; the Someday and Today pills move under the title.
+- Hoy: timed tasks run by when they start, not when they end. A task that starts tonight and ends after midnight shows in Hoy, labelled "23:00 – Tomorrow, 1:00".
+
+---
+
 ## V 02.00.00 - Kairo 2.0 (2026-11-12)
 
 Kairo 2.0 is a full redesign: "Calma viva, con carácter". It gathers everything shipped in V 01.26 to V 01.35.
