@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -389,6 +390,15 @@ class _LoginPageState extends State<LoginPage>
           ],
         ),
       ),
+      // Apple requires its own sign-in, at least as prominent as Google's,
+      // in iOS apps that offer a third-party login.
+      if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+        _AppleButton(
+          onTap: () =>
+              context.read<AuthBloc>().add(const AuthAppleSignInRequested()),
+        ),
+        const SizedBox(height: AppSpacing.spacing12),
+      ],
       _GoogleButton(
         onTap: () =>
             context.read<AuthBloc>().add(const AuthGoogleSignInRequested()),
@@ -494,6 +504,39 @@ class _GoogleButton extends StatelessWidget {
           SvgPicture.asset('assets/icons/google_logo.svg', width: 20),
           const SizedBox(width: AppSpacing.spacing8),
           Flexible(child: Text(context.l10n.continueWithGoogle)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Sign in with Apple, styled per Apple's guidelines: black in light mode,
+/// white in dark mode, the Apple logo and "Continue with Apple".
+class _AppleButton extends StatelessWidget {
+  const _AppleButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = context.isDarkMode;
+    final bg = dark ? Colors.white : Colors.black;
+    final fg = dark ? Colors.black : Colors.white;
+    return FilledButton(
+      onPressed: onTap,
+      style: FilledButton.styleFrom(
+        foregroundColor: fg,
+        backgroundColor: bg,
+        minimumSize: const Size(double.infinity, 52),
+        shape: const StadiumBorder(),
+        textStyle: context.typography.headline,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.apple, size: 22, color: fg),
+          const SizedBox(width: AppSpacing.spacing8),
+          Flexible(child: Text(context.l10n.continueWithApple)),
         ],
       ),
     );

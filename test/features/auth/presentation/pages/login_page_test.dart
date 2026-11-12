@@ -103,4 +103,19 @@ void main() {
       ),
     ).called(1);
   });
+
+  testWidgets('iOS offers Sign in with Apple and sends the request', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.ensureVisible(find.text('Continue with Apple'));
+    await tester.tap(find.text('Continue with Apple'));
+    verify(() => auth.add(const AuthAppleSignInRequested())).called(1);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
+  testWidgets('Android has no Sign in with Apple', (tester) async {
+    await pump(tester);
+    expect(find.text('Continue with Apple'), findsNothing);
+    expect(find.text('Continue with Google'), findsOneWidget);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.android));
 }
