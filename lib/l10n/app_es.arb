@@ -174,9 +174,23 @@
   "notificationStreakCloseTitle": "¡No pierdas tu racha!",
   "notificationStreakCloseBody": "Es casi medianoche y aún no has completado una tarea hoy. Tienes {count} días consecutivos",
   "notificationStreakLostTitle": "Racha perdida",
-  "notificationStreakLostBody": "Perdiste tu racha de {count} días consecutivos. ¡Empecemos una nueva!",
+  "notificationStreakLostBody": "{count, plural, =1{Perdiste tu racha de 1 día. ¡Empecemos una nueva!} other{Perdiste tu racha de {count} días consecutivos. ¡Empecemos una nueva!}}",
+  "@notificationStreakLostBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "notificationStreakEarnedTitle": "¡+1 día de racha!",
-  "notificationStreakEarnedBody": "Tienes {count} días consecutivos completando tareas",
+  "notificationStreakEarnedBody": "{count, plural, =1{Llevas 1 día de racha completando tareas} other{Tienes {count} días consecutivos completando tareas}}",
+  "@notificationStreakEarnedBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "streakDays": "{count, plural, =1{1 día} other{{count} días}}",
   "@streakDays": {
     "placeholders": {
@@ -271,7 +285,14 @@
   "tipCheer": "Una menos. Bien hecho.",
   "doneOfTotal": "{done} de {total} hechas",
   "@doneOfTotal": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}},
-  "metricStreak": "días de racha",
+  "metricStreak": "{count, plural, =1{día de racha} other{días de racha}}",
+  "@metricStreak": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "metricOverdue": "vencidas",
   "metricDay": "del día",
   "nowLabel": "Ahora",
@@ -308,6 +329,15 @@
   "focusTakeRest": "Tomar descanso",
   "focusNextRound": "Siguiente ronda",
   "focusLeave": "Salir del foco",
+  "allDayMore": "+{count} más",
+  "@allDayMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "showLess": "Mostrar menos",
   "someday": "Algún día",
   "somedayHint": "Tareas sin fecha. Toca una para darle un día.",
   "somedayEmpty": "No hay nada esperando sin fecha.",
@@ -374,6 +404,7 @@
   "kairoLineHappy": "Todo hecho. Hoy fue un buen día.",
   "kairoLineFocused": "Estoy contigo. Nada más existe por 25 minutos.",
   "kairoLineSleeping": "Es tarde. Lo pendiente sigue aquí mañana.",
+  "kairoLineResting": "Hoy no hay nada planeado. Yo también descanso.",
   "kairoLineSad": "La racha está en riesgo. Una tarea pequeña basta.",
   "kairoWhenAlways": "Siempre",
   "kairoWhatAlways": "Respira, parpadea cada pocos segundos y te sigue con la mirada. La línea de su cola marca el progreso del día.",

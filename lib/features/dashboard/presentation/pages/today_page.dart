@@ -124,7 +124,10 @@ class _TodayPageState extends State<TodayPage> {
     final sections = <Widget>[
       Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [_Header(now: now), const SyncStatusPill()],
+        children: [
+          _Header(now: now),
+          const SyncStatusPill(),
+        ],
       ),
       _Hero(
         summary: summary,
@@ -498,7 +501,7 @@ class _Metrics extends StatelessWidget {
         icon: CupertinoIcons.flame_fill,
         color: colors.apricot,
         value: '${summary.streak}',
-        label: l10n.metricStreak,
+        label: l10n.metricStreak(summary.streak),
       ),
       _Metric(
         icon: CupertinoIcons.exclamationmark_circle,
