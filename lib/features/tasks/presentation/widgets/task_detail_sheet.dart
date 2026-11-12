@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../app/di/injection.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../../../core/session/current_user.dart';
 import '../../domain/entities/task_entity.dart';
 
 class TaskDetailSheet extends StatelessWidget {
@@ -311,12 +312,8 @@ class _SharedSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
-    final isOwner = task.ownerId == currentUserId;
-    final count = task.sharedWith.length;
-    final header = isOwner
-        ? 'Shared with $count ${count == 1 ? 'friend' : 'friends'}'
-        : 'Shared by';
+    final isOwner = task.ownerId == getIt<CurrentUser>().id;
+    final header = isOwner ? context.l10n.sharedWith : context.l10n.sharedBy;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
