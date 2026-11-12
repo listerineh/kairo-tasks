@@ -10,6 +10,15 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 01.25.01 - Fix missing logs table (2026-10-21)
+
+### Fixed in V 01.25.01
+
+- Added migration `20261020000001_logs_table_rls.sql`: idempotently creates `public.logs` (the earlier `20260826000022_logs_table.sql` was never applied remotely, so every log flush returned 500 "Could not find the table 'public.logs'").
+- Enabled RLS on `public.logs` with no client policies and revoked `anon`/`authenticated` grants; only the logs Edge Function (service role) can insert.
+
+---
+
 ## V 01.25.00 - Kairo 2.0 calendar (4b): new views and drag to reschedule (2026-10-21)
 
 ### Added in V 01.25.00
