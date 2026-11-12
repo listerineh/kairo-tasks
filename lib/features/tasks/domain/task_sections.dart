@@ -18,28 +18,32 @@ class TaskSection {
 /// - **No date**: unfinished, no due or start date.
 /// - **Completed**: most recently completed first.
 ///
-/// A task's date is its due date, or its start date when it has no due date.
-/// Dated sections run earliest first, ties by priority; "No date" runs by
-/// priority, then newest first.
+/// A task ends at its due date (or its start date when it has none) and
+/// begins at its start date (or its due date). It is overdue when it ended
+/// before today, and in Today when it begins before tomorrow, so a task that
+/// starts tonight and ends after midnight is still today's. Dated sections run
+/// by when tasks begin, ties by priority; "No date" runs by priority, then
+/// newest first.
 List<TaskSection> groupTasks(Iterable<TaskEntity> tasks, DateTime now) {
   final today = DateTime(now.year, now.month, now.day);
   final tomorrow = DateTime(now.year, now.month, now.day + 1);
   final buckets = {for (final k in TaskSectionKind.values) k: <TaskEntity>[]};
 
   for (final task in tasks) {
-    final date = taskDate(task);
+    final ends = taskDate(task);
+    final begins = _begins(task);
     final kind = switch (task) {
       _ when task.status == TaskStatus.completed => TaskSectionKind.completed,
-      _ when date == null => TaskSectionKind.noDate,
-      _ when date.isBefore(today) => TaskSectionKind.overdue,
-      _ when date.isBefore(tomorrow) => TaskSectionKind.today,
+      _ when ends == null || begins == null => TaskSectionKind.noDate,
+      _ when ends.isBefore(today) => TaskSectionKind.overdue,
+      _ when begins.isBefore(tomorrow) => TaskSectionKind.today,
       _ => TaskSectionKind.upcoming,
     };
     buckets[kind]!.add(task);
   }
 
   int byDate(TaskEntity a, TaskEntity b) {
-    final c = taskDate(a)!.compareTo(taskDate(b)!);
+    final c = _begins(a)!.compareTo(_begins(b)!);
     return c != 0 ? c : _rank(a).compareTo(_rank(b));
   }
 
@@ -62,6 +66,9 @@ List<TaskSection> groupTasks(Iterable<TaskEntity> tasks, DateTime now) {
 
 /// The date a task is scheduled for: due date, else start date.
 DateTime? taskDate(TaskEntity t) => t.dueDate ?? t.startDate;
+
+/// When a task begins: start date, else due date.
+DateTime? _begins(TaskEntity t) => t.startDate ?? t.dueDate;
 
 int _rank(TaskEntity t) => switch (t.priority) {
   TaskPriority.urgent => 0,
