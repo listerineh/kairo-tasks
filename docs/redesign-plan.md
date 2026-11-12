@@ -1,6 +1,6 @@
 # Kairo 2.0 - Redesign Plan (v2: "Calma viva, con carácter")
 
-> Working brief for the V 02.00.00 redesign. Rewritten on 2026-10-21 after the interactive prototype was approved.
+> Brief for the V 02.00.00 redesign. Rewritten on 2026-10-21 after the interactive prototype was approved. **Status: shipped as V 02.00.00**; every phase below is done, and this file stays as the record of the direction and what was deferred.
 > When a phase ships, update `docs/design.md` / `docs/architecture.md` so they describe the code as it is, and log it in `CHANGELOG.md`.
 
 Per the changelog convention a full redesign is a **major** bump: `V 02.00.00`. Intermediate phases ship as `V 01.x`; cut `2.0.0` when every screen uses the new direction.
@@ -113,7 +113,7 @@ Each phase ends green: `flutter analyze` with 0 issues, `flutter test`, and gold
 | **V8. Juntos** | Split `social_page.dart` (repository + bloc), new layout, nudges (`nudges` table + push). Friends' streaks and online status are deferred (no data for them) | Bloc tests ✓ |
 | **V9. Yo, settings, onboarding, login** | Grouped settings (reduce motion, haptics, text size), Kairo page, `ProfileRepository` + `ProfileCubit`, login and onboarding with Kairo | Cubit and page tests ✓ |
 | **V10. Offline cache** | Local store, outbox, last-write-wins on `updated_at` (tasks; friends and profile stay online-only) | Outbox rules and repository tests ✓ |
-| **V11. Docs + 2.0.0** | Final pass on `design.md`, `architecture.md`, README; `CHANGELOG` `V 02.00.00` | Docs match code |
+| **V11. Docs + 2.0.0** | Final pass on `design.md`, `architecture.md`, README; `CHANGELOG` `V 02.00.00` | Docs match code ✓ |
 
 Verification needs a Mac:
 
@@ -126,8 +126,14 @@ flutter run -d "iPhone 17 Pro" --dart-define-from-file=.env
 
 ---
 
-## 4. Open decisions
+## 4. Deferred to 2.1
+
+- Dragging a task from Algún día onto a day (V7).
+- Friends' streaks and online status in Juntos (V8): there is no data for them yet.
+- Offline for friends and profile (V10): only tasks work offline.
+- Subtasks, Live Activities and a home screen widget.
+
+## 5. Open decisions
 
 - **Completed history and the full task list:** Hoy shows today and overdue, Planear shows dated and undated tasks. Does a "Todas" view still need to exist (for example under Yo), or is search enough?
 - **Dark mode `ink`:** the dark surface becomes `#262A30` in dark mode. Confirm on device that the tab bar and the "Ahora" card still read as the accent surface.
-- **Subtasks, Live Activities, widgets:** still planned for 2.1.
