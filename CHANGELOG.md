@@ -10,6 +10,29 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 02.00.00 - Kairo 2.0 (2026-11-12)
+
+Kairo 2.0 is a full redesign: "Calma viva, con carácter". It gathers everything shipped in V 01.26 to V 01.35.
+
+### Changed in V 02.00.00
+
+- **New look:** a quiet palette (Niebla, Tinta, Pino) with one dark surface and a lime accent, Manrope type, soft cards, and motion that answers what you do.
+- **New structure:** four tabs and a create button in a floating bar: Hoy, Planear, ＋, Juntos, Yo.
+- **Kairo is a fluffy calico cat** who reflects your day, suggests what to do next, and does cat things on his own.
+- **Hoy** replaces Dashboard and Tasks. **Planear** is the calendar plus "Algún día". **Juntos** adds shared tasks and nudges. **Yo** has grouped settings and Kairo's page.
+- **Focus** is a dark screen with four rounds, rests and +5 minutes, and keeps running in the background.
+- **Tasks work offline** and sync when the connection returns.
+- Login and onboarding were redrawn with Kairo.
+
+### Fixed in V 02.00.00
+
+- The task detail sheet shows "Shared with" / "Shared by" in your language; it was English only.
+
+### Docs in V 02.00.00
+
+- README, `docs/architecture.md`, `docs/design.md` and `AGENTS.md` now describe the app as it is: features, folders, routes, the `nudges` table, Focus, and golden tests.
+- `docs/redesign-plan.md` is marked as shipped and lists what moved to 2.1.
+
 ## V 01.35.00 - Kairo 2.0 v2 (V10): offline tasks (2026-10-22)
 
 ### Added in V 01.35.00
