@@ -58,6 +58,9 @@ class TaskFeedbackListener extends StatelessWidget {
           behavior: SnackBarBehavior.floating,
           // Matches the bloc's undo window before the delete is committed.
           duration: const Duration(seconds: 4),
+          // A snackbar with an action stays up by default; this one must
+          // close when the undo window ends.
+          persist: false,
           action: undo == null
               ? null
               : SnackBarAction(label: context.l10n.undo, onPressed: undo),

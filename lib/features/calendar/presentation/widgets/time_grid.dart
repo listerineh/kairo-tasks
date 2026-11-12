@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -439,6 +440,24 @@ class _BlockState extends State<_Block> {
     );
     final done = b.task.status == TaskStatus.completed;
     final tall = height > 40;
+    // Under ~30 pt one footnote line does not fit with padding: the title
+    // drops to caption size, centred, and does not grow with text size.
+    final short = height < 30;
+    // Four or more side-by-side tasks in Week leave ~40 pt: the dot goes so
+    // the title gets the room, and it wraps over as many lines as fit.
+    final narrow = width < 56;
+    final style = (short || narrow ? type.caption1 : type.footnote).copyWith(
+      color: light ? const Color(0xFF121417) : colors.label,
+      fontWeight: FontWeight.w700,
+      height: short ? 1.0 : null,
+      decoration: done ? TextDecoration.lineThrough : null,
+    );
+    final lineHeight = short ? 13.0 : (narrow ? 16.0 : 18.0);
+    final maxLines = short
+        ? 1
+        : math
+              .max(1, ((height - 10) / lineHeight).floor())
+              .clamp(1, tall ? 4 : 1);
 
     return Positioned(
       top: top,
@@ -472,41 +491,46 @@ class _BlockState extends State<_Block> {
                         ]
                       : null,
                 ),
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(8, tall ? 6 : 2, 6, 2),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4, right: 6),
-                        child: Container(
-                          width: 7,
-                          height: 7,
-                          decoration: BoxDecoration(
-                            color: tone.dot,
-                            shape: BoxShape.circle,
+                child: ClipRect(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      narrow ? 5 : 8,
+                      short ? 0 : (tall ? 6 : 3),
+                      narrow ? 3 : 6,
+                      short ? 0 : 2,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: short
+                          ? CrossAxisAlignment.center
+                          : CrossAxisAlignment.start,
+                      children: [
+                        if (!narrow)
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top: short ? 0 : 4,
+                              right: 6,
+                            ),
+                            child: Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: tone.dot,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        Expanded(
+                          child: Text(
+                            b.task.title,
+                            maxLines: maxLines,
+                            overflow: TextOverflow.ellipsis,
+                            textScaler: MediaQuery.textScalerOf(context)
+                                .clamp(maxScaleFactor: short ? 1.0 : 1.3),
+                            style: style,
                           ),
                         ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          b.task.title,
-                          maxLines: tall ? 2 : 1,
-                          overflow: TextOverflow.ellipsis,
-                          textScaler: MediaQuery.textScalerOf(context)
-                              .clamp(maxScaleFactor: 1.3),
-                          style: type.footnote.copyWith(
-                            color: light
-                                ? const Color(0xFF121417)
-                                : colors.label,
-                            fontWeight: FontWeight.w700,
-                            decoration: done
-                                ? TextDecoration.lineThrough
-                                : null,
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -518,7 +542,10 @@ class _BlockState extends State<_Block> {
   }
 }
 
-class _AllDayStrip extends StatelessWidget {
+/// Date-only tasks above the grid. Each day shows at most two chips
+/// and a "+N more" chip that expands the strip, so a busy day cannot push the
+/// hours off the screen.
+class _AllDayStrip extends StatefulWidget {
   const _AllDayStrip({
     required this.days,
     required this.tasks,
@@ -530,8 +557,21 @@ class _AllDayStrip extends StatelessWidget {
   final ValueChanged<TaskEntity> onTap;
 
   @override
+  State<_AllDayStrip> createState() => _AllDayStripState();
+}
+
+class _AllDayStripState extends State<_AllDayStrip> {
+  static const _visible = 2;
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final l10n = context.l10n;
+    final perDay = [
+      for (final day in widget.days) allDayTasks(widget.tasks, day),
+    ];
+    final overflows = perDay.any((d) => d.length > _visible);
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border(
@@ -547,23 +587,70 @@ class _AllDayStrip extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(width: TimeGrid.gutterWidth),
-            for (final day in days)
+            for (final day in perDay)
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 2),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      for (final t in allDayTasks(tasks, day))
+                      for (final t in _expanded ? day : day.take(_visible))
                         Padding(
                           padding: const EdgeInsets.only(bottom: 2),
-                          child: _AllDayChip(task: t, onTap: () => onTap(t)),
+                          child: _AllDayChip(
+                            task: t,
+                            onTap: () => widget.onTap(t),
+                          ),
+                        ),
+                      if (!_expanded && day.length > _visible)
+                        _MoreChip(
+                          label: l10n.allDayMore(day.length - _visible),
+                          onTap: () => setState(() => _expanded = true),
+                        )
+                      else if (_expanded && overflows && day == perDay.first)
+                        _MoreChip(
+                          label: l10n.showLess,
+                          onTap: () => setState(() => _expanded = false),
                         ),
                     ],
                   ),
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MoreChip extends StatelessWidget {
+  const _MoreChip({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return Semantics(
+      button: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.typography.caption1.copyWith(
+                color: colors.labelSecondary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
         ),
       ),
     );

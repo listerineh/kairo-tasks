@@ -65,6 +65,14 @@ void main() {
     expect(find.text('Nov 3'), findsOneWidget);
   });
 
+  testWidgets('a task across midnight shows both ends', (tester) async {
+    await pump(
+      tester,
+      task(start: DateTime(2026, 10, 20, 23), due: DateTime(2026, 10, 21, 1)),
+    );
+    expect(find.text('23:00 – Tomorrow, 01:00'), findsOneWidget);
+  });
+
   testWidgets('a date-only task due today says Today', (tester) async {
     await pump(tester, task(due: DateTime(2026, 10, 20)));
     expect(find.text('Today'), findsOneWidget);

@@ -89,6 +89,45 @@ void main() {
     expect(y, lessThan(gridOrigin(tester).dy));
   });
 
+  testWidgets('a busy all-day strip shows two and expands on "+N more"', (
+    tester,
+  ) async {
+    await pump(tester, [
+      for (var i = 1; i <= 5; i++) task('allday$i', due: day),
+    ]);
+    expect(find.text('allday1'), findsOneWidget);
+    expect(find.text('allday2'), findsOneWidget);
+    expect(find.text('allday3'), findsNothing);
+
+    await tester.tap(find.text('+3 more'));
+    await tester.pumpAndSettle();
+    expect(find.text('allday5'), findsOneWidget);
+
+    await tester.tap(find.text('Show less'));
+    await tester.pumpAndSettle();
+    expect(find.text('allday3'), findsNothing);
+  });
+
+  testWidgets('a 5-minute block keeps its title on one readable line', (
+    tester,
+  ) async {
+    await pump(tester, [
+      task(
+        'short',
+        start: DateTime(2026, 10, 20, 9),
+        due: DateTime(2026, 10, 20, 9, 5),
+      ),
+    ]);
+    final text = tester.getRect(find.text('short'));
+    final block = tester.getRect(
+      find
+          .ancestor(of: find.text('short'), matching: find.byType(ClipRect))
+          .first,
+    );
+    expect(text.top, greaterThanOrEqualTo(block.top));
+    expect(text.bottom, lessThanOrEqualTo(block.bottom));
+  });
+
   testWidgets('tapping an empty slot creates at the snapped time', (
     tester,
   ) async {

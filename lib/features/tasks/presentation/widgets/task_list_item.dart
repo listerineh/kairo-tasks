@@ -42,6 +42,9 @@ class TaskListItem extends StatelessWidget {
           content: Text(context.l10n.taskCompletedMessage),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 4),
+          // A snackbar with an action stays up by default; this one must
+          // close when the undo window ends.
+          persist: false,
           action: SnackBarAction(
             label: context.l10n.undo,
             onPressed: () => bloc.add(TaskStatusToggled(task.id)),

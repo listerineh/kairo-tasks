@@ -228,6 +228,59 @@ class _Header extends StatelessWidget {
     final month = MaterialLocalizations.of(context)
         .formatMonthYear(state.selectedDate);
 
+    // Past 140% text the pills move under the title, and the month and the
+    // title shrink to fit their line instead of breaking mid-word.
+    final large = MediaQuery.textScalerOf(context).scale(10) > 14;
+    final monthLabel = Row(
+      children: [
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _capitalized(month),
+              maxLines: 1,
+              style: context.typography.subheadline.copyWith(
+                color: colors.labelSecondary,
+              ),
+            ),
+          ),
+        ),
+        _NavButton(
+          icon: CupertinoIcons.chevron_left,
+          label: l10n.calendarPrevious,
+          onTap: onPrevious,
+        ),
+        _NavButton(
+          icon: CupertinoIcons.chevron_right,
+          label: l10n.calendarNext,
+          onTap: onNext,
+        ),
+      ],
+    );
+    final title = Semantics(
+      header: true,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(
+          l10n.navPlan,
+          maxLines: 1,
+          style: context.typography.largeTitle,
+        ),
+      ),
+    );
+    final pills = [
+      _Pill(
+        icon: CupertinoIcons.tray,
+        label: somedayCount > 0 ? '$somedayCount' : null,
+        semanticsLabel: '${l10n.someday}, $somedayCount',
+        onTap: onSomeday,
+      ),
+      const SizedBox(width: AppSpacing.spacing8),
+      _Pill(label: l10n.today, onTap: onToday),
+    ];
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.screenMargin,
@@ -238,55 +291,24 @@ class _Header extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            _capitalized(month),
-                            style: context.typography.subheadline.copyWith(
-                              color: colors.labelSecondary,
-                            ),
-                          ),
-                        ),
-                        _NavButton(
-                          icon: CupertinoIcons.chevron_left,
-                          label: l10n.calendarPrevious,
-                          onTap: onPrevious,
-                        ),
-                        _NavButton(
-                          icon: CupertinoIcons.chevron_right,
-                          label: l10n.calendarNext,
-                          onTap: onNext,
-                        ),
-                      ],
-                    ),
-                    Semantics(
-                      header: true,
-                      child: Text(
-                        l10n.navPlan,
-                        style: context.typography.largeTitle,
-                      ),
-                    ),
-                  ],
+          if (large) ...[
+            monthLabel,
+            title,
+            const SizedBox(height: AppSpacing.spacing8),
+            Row(children: pills),
+          ] else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [monthLabel, title],
+                  ),
                 ),
-              ),
-              _Pill(
-                icon: CupertinoIcons.tray,
-                label: somedayCount > 0 ? '$somedayCount' : null,
-                semanticsLabel: '${l10n.someday}, $somedayCount',
-                onTap: onSomeday,
-              ),
-              const SizedBox(width: AppSpacing.spacing8),
-              _Pill(label: l10n.today, onTap: onToday),
-            ],
-          ),
+                ...pills,
+              ],
+            ),
           const SizedBox(height: AppSpacing.spacing12),
           KairoSegmentedControl<CalendarViewType>(
             segments: {

@@ -155,8 +155,6 @@ class TaskRow extends StatelessWidget {
     final l10n = context.l10n;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final today = DateTime(now.year, now.month, now.day);
-    final day = DateTime(date.year, date.month, date.day);
-    final diff = day.difference(today).inDays;
 
     String time(DateTime d) =>
         MaterialLocalizations.of(context).formatTimeOfDay(
@@ -165,15 +163,32 @@ class TaskRow extends StatelessWidget {
         );
     bool hasTime(DateTime d) => d.hour != 0 || d.minute != 0;
 
-    final dayLabel = switch (diff) {
-      0 => null,
-      1 => l10n.tomorrow,
-      -1 => l10n.yesterday,
-      _ when date.year == now.year => DateFormat.MMMd(locale).format(date),
-      _ => DateFormat.yMMMd(locale).format(date),
-    };
+    String? dayOf(DateTime d) =>
+        switch (DateTime(d.year, d.month, d.day).difference(today).inDays) {
+          0 => null,
+          1 => l10n.tomorrow,
+          -1 => l10n.yesterday,
+          _ when d.year == now.year => DateFormat.MMMd(locale).format(d),
+          _ => DateFormat.yMMMd(locale).format(d),
+        };
+    final dayLabel = dayOf(date);
 
     final start = task.startDate;
+    // Spans midnight (or several days): "23:00 – Tomorrow, 1:00".
+    if (start != null &&
+        task.dueDate != null &&
+        hasTime(start) &&
+        !DateUtils.isSameDay(start, date) &&
+        start.isBefore(date)) {
+      String at(DateTime d) {
+        final dl = dayOf(d);
+        final t = hasTime(d) ? time(d) : null;
+        if (dl == null) return t ?? l10n.today;
+        return t == null ? dl : '$dl, $t';
+      }
+
+      return '${at(start)} – ${at(date)}';
+    }
     String? timeLabel;
     if (hasTime(date)) {
       final sameDayStart =

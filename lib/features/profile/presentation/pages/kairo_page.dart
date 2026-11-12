@@ -101,7 +101,7 @@ class _KairoPageState extends State<KairoPage> {
     final taps = [l10n.mascotMeow, l10n.tipFocus, l10n.tipCheer];
     final line = _tip > 0 && mood != MascotMood.sleeping
         ? taps[(_tip - 1) % taps.length]
-        : kairoLine(context, mood);
+        : kairoLine(context, mood, now: widget.now);
     return KairoCard(
       style: KairoCardStyle.hero,
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),

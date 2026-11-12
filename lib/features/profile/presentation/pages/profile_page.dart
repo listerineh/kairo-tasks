@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -270,13 +269,6 @@ class ProfileView extends StatelessWidget {
             showChevron: true,
             onTap: () => _openUrl('https://listerineh.dev'),
           ),
-          if (kDebugMode)
-            GroupedRow(
-              leading: const Icon(CupertinoIcons.square_grid_2x2),
-              title: 'Component gallery',
-              showChevron: true,
-              onTap: () => context.push('/gallery'),
-            ),
         ],
       ),
       _section(
@@ -477,7 +469,7 @@ class _KairoRow extends StatelessWidget {
         return Semantics(
           button: true,
           label: 'Kairo',
-          hint: kairoLine(context, mood),
+          hint: kairoLine(context, mood, now: now),
           excludeSemantics: true,
           child: Pressable(
             onPressed: () => context.push('/profile/kairo'),
@@ -499,7 +491,7 @@ class _KairoRow extends StatelessWidget {
                       children: [
                         Text('Kairo', style: context.typography.headline),
                         Text(
-                          kairoLine(context, mood),
+                          kairoLine(context, mood, now: now),
                           style: context.typography.footnote.copyWith(
                             color: colors.labelSecondary,
                           ),

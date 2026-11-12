@@ -96,6 +96,43 @@ void main() {
     ]);
   });
 
+  test('timed tasks run by when they start, not when they end', () {
+    final sections = groupTasks([
+      task(
+        'starts-11-15',
+        start: DateTime(2026, 10, 20, 11, 15),
+        due: DateTime(2026, 10, 20, 11, 45),
+      ),
+      task(
+        'starts-11-00',
+        start: DateTime(2026, 10, 20, 11),
+        due: DateTime(2026, 10, 20, 13),
+      ),
+    ], now);
+    expect(ids(sections)[TaskSectionKind.today], [
+      'starts-11-00',
+      'starts-11-15',
+    ]);
+  });
+
+  test('a task that starts tonight and ends after midnight is today', () {
+    final sections = groupTasks([
+      task(
+        'night',
+        start: DateTime(2026, 10, 20, 23),
+        due: DateTime(2026, 10, 21, 1),
+      ),
+    ], now);
+    expect(sections.single.kind, TaskSectionKind.today);
+  });
+
+  test('a task that started before today and ends later is today', () {
+    final sections = groupTasks([
+      task('trip', start: DateTime(2026, 10, 19), due: DateTime(2026, 10, 22)),
+    ], now);
+    expect(sections.single.kind, TaskSectionKind.today);
+  });
+
   test('no-date sorts by priority, then newest first', () {
     final sections = groupTasks([
       task(
