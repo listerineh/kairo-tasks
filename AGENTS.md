@@ -134,6 +134,8 @@ flutter build ios
 
 ### Environment Variables
 
+Setting up a new Supabase project (schema, vault secrets, Edge Functions, auth): see [docs/supabase-setup.md](docs/supabase-setup.md).
+
 Copy `.env.example` to `.env` and fill in the real values:
 
 ```bash
