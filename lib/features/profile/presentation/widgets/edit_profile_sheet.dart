@@ -1,448 +1,254 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/widgets/kairo_avatar.dart';
+import '../../../../core/widgets/kairo_button.dart';
+import '../../domain/entities/profile.dart';
+import '../cubit/profile_cubit.dart';
 
+/// Name, username and photo. Saving goes through [ProfileCubit]; the sheet
+/// closes when a save lands and shows the reason when it doesn't.
 class EditProfileSheet extends StatefulWidget {
-  const EditProfileSheet({super.key});
+  const EditProfileSheet({required this.controller, super.key});
+
+  final ScrollController controller;
 
   @override
   State<EditProfileSheet> createState() => _EditProfileSheetState();
 }
 
 class _EditProfileSheetState extends State<EditProfileSheet> {
-  final _displayNameController = TextEditingController();
-  final _usernameController = TextEditingController();
-  bool _isPublic = false;
-  bool _isLoading = true;
-  bool _isSaving = false;
-  String? _error;
-  String? _avatarUrl;
-  File? _selectedImage;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProfile();
-  }
+  late final Profile _profile = context.read<ProfileCubit>().state.profile!;
+  late final _name = TextEditingController(text: _profile.displayName);
+  late final _username = TextEditingController(text: _profile.username);
+  String? _photoPath;
 
   @override
   void dispose() {
-    _displayNameController.dispose();
-    _usernameController.dispose();
+    _name.dispose();
+    _username.dispose();
     super.dispose();
   }
 
-  Future<void> _loadProfile() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-
-    final metadata = user.userMetadata ?? {};
-    final metadataName = (metadata['display_name'] as String?) ??
-        (metadata['full_name'] as String?) ??
-        (metadata['name'] as String?);
-    final metadataUsername = (metadata['username'] as String?) ??
-        (metadata['preferred_username'] as String?);
-    final metadataAvatar = (metadata['avatar_url'] as String?) ??
-        (metadata['picture'] as String?);
-
+  Future<void> _pick(ImageSource source) async {
     try {
-      final response = await Supabase.instance.client
-          .from('profiles')
-          .select()
-          .eq('id', user.id)
-          .single();
-
-      final profileName = response['display_name'] as String?;
-      final profileUsername = response['username'] as String?;
-      final emailPrefix =
-          user.email != null ? user.email!.split('@').first : '';
-
-      setState(() {
-        _displayNameController.text = (profileName != null &&
-                profileName != emailPrefix)
-            ? profileName
-            : (metadataName ?? profileName ?? '');
-        _usernameController.text = (profileUsername != null &&
-                profileUsername != emailPrefix)
-            ? profileUsername
-            : (metadataUsername ?? profileUsername ?? '');
-        _avatarUrl =
-            (response['avatar_url'] as String?) ?? metadataAvatar;
-        _isPublic =
-            (response['calendar_visibility'] as String?) == 'public';
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = 'Could not load profile: $e';
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _pickImage(ImageSource source) async {
-    final picker = ImagePicker();
-    try {
-      final picked = await picker.pickImage(
+      final picked = await ImagePicker().pickImage(
         source: source,
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 85,
       );
-      if (picked == null) return;
-      setState(() => _selectedImage = File(picked.path));
-    } catch (e) {
-      setState(() => _error = 'Could not select image: $e');
+      if (picked != null && mounted) setState(() => _photoPath = picked.path);
+    } on Exception {
+      // Permission denied or no camera: keep the current photo.
     }
   }
 
-  void _showImageSourcePicker() {
-    showModalBottomSheet<void>(
+  Future<void> _choosePhoto() async {
+    final l10n = context.l10n;
+    final source = await showCupertinoModalPopup<ImageSource>(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final colors = context.appColors;
-        return Container(
-          padding: const EdgeInsets.all(AppSpacing.spacing24),
-          decoration: BoxDecoration(
-            color: colors.surfaceElevated,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppSpacing.radiusXLarge),
-            ),
+      builder: (context) => CupertinoActionSheet(
+        title: Text(l10n.changePhoto),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(context).pop(ImageSource.gallery),
+            child: Text(l10n.chooseFromGallery),
           ),
-          child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.border,
-                    borderRadius: BorderRadius.circular(2),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(context).pop(ImageSource.camera),
+            child: Text(l10n.takePhoto),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.cancel),
+        ),
+      ),
+    );
+    if (source != null) await _pick(source);
+  }
+
+  void _save() => context.read<ProfileCubit>().save(
+    ProfileDraft(
+      displayName: _name.text,
+      username: _username.text,
+      avatarPath: _photoPath,
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+
+    return BlocConsumer<ProfileCubit, ProfileState>(
+      listenWhen: (a, b) => a.saveCount != b.saveCount,
+      listener: (context, _) => Navigator.of(context).pop(),
+      builder: (context, state) {
+        final error = switch (state.saveError) {
+          ProfileSaveError.nameMissing => l10n.nameRequired,
+          ProfileSaveError.usernameInvalid => l10n.usernameInvalid,
+          ProfileSaveError.usernameTaken => l10n.usernameTaken,
+          ProfileSaveError.failed => l10n.profileSaveFailed,
+          null => null,
+        };
+        final photo = _photoPath;
+
+        return ListView(
+          controller: widget.controller,
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.screenMargin,
+            AppSpacing.spacing8,
+            AppSpacing.screenMargin,
+            AppSpacing.spacing32 + MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          children: [
+            Semantics(
+              header: true,
+              child: Text(l10n.editProfile, style: context.typography.title1),
+            ),
+            const SizedBox(height: AppSpacing.spacing24),
+            Center(
+              child: Semantics(
+                button: true,
+                label: l10n.changePhoto,
+                child: GestureDetector(
+                  onTap: _choosePhoto,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      if (photo != null)
+                        ClipOval(
+                          child: Image.file(
+                            File(photo),
+                            width: 96,
+                            height: 96,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      else
+                        KairoAvatar(
+                          name: _profile.displayName,
+                          imageUrl: _profile.avatarUrl,
+                          size: 96,
+                        ),
+                      Positioned(
+                        right: -2,
+                        bottom: -2,
+                        child: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: colors.ink,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: colors.surface, width: 3),
+                          ),
+                          child: Icon(
+                            CupertinoIcons.camera_fill,
+                            size: 15,
+                            color: colors.onInk,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: AppSpacing.spacing24),
-                Text(
-                  context.l10n.changePhoto,
-                  style: context.textTheme.titleLarge,
-                ),
-                const SizedBox(height: AppSpacing.spacing20),
-                ListTile(
-                  leading: const Icon(Icons.photo_library),
-                  title: Text(context.l10n.chooseFromGallery),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _pickImage(ImageSource.gallery);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.camera_alt),
-                  title: Text(context.l10n.takePhoto),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _pickImage(ImageSource.camera);
-                  },
-                ),
-                const SizedBox(height: AppSpacing.spacing16),
-              ],
+              ),
             ),
-          ),
+            const SizedBox(height: AppSpacing.spacing24),
+            _Field(
+              controller: _name,
+              label: l10n.displayName,
+              hint: l10n.displayNameHint,
+              capitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: AppSpacing.spacing12),
+            _Field(
+              controller: _username,
+              label: l10n.username,
+              hint: l10n.usernameHint,
+              prefix: '@',
+            ),
+            if (error != null) ...[
+              const SizedBox(height: AppSpacing.spacing12),
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  error,
+                  style: context.typography.footnote.copyWith(
+                    color: colors.destructive,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.spacing24),
+            KairoButton(
+              label: l10n.saveChanges,
+              expand: true,
+              loading: state.saving,
+              onPressed: _save,
+            ),
+          ],
         );
       },
     );
   }
+}
 
-  Future<String?> _uploadAvatar(String userId) async {
-    final selectedImage = _selectedImage;
-    if (selectedImage == null) return _avatarUrl;
+class _Field extends StatelessWidget {
+  const _Field({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    this.prefix,
+    this.capitalization = TextCapitalization.none,
+  });
 
-    final extension = selectedImage.path.split('.').last.toLowerCase();
-    final ext = ['jpg', 'jpeg', 'png', 'webp'].contains(extension)
-        ? extension
-        : 'jpg';
-    final fileName = '$userId/avatar_${DateTime.now().millisecondsSinceEpoch}.$ext';
-
-    final contentType = ext == 'png'
-        ? 'image/png'
-        : ext == 'webp'
-            ? 'image/webp'
-            : 'image/jpeg';
-
-    await Supabase.instance.client.storage.from('avatars').upload(
-          fileName,
-          selectedImage,
-          fileOptions: FileOptions(
-            contentType: contentType,
-            upsert: false,
-          ),
-        );
-
-    return Supabase.instance.client.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-  }
-
-  Future<void> _save() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-
-    setState(() => _isSaving = true);
-
-    final displayName = _displayNameController.text.trim();
-    final username = _usernameController.text.trim().toLowerCase();
-
-    if (displayName.isEmpty || username.isEmpty) {
-      setState(() {
-        _error = 'Display name and username are required';
-        _isSaving = false;
-      });
-      return;
-    }
-
-    final existing = await Supabase.instance.client
-        .from('profiles')
-        .select('id')
-        .eq('username', username)
-        .neq('id', user.id)
-        .maybeSingle();
-    if (existing != null) {
-      setState(() {
-        _error = 'Username @$username is already taken. Try another one.';
-        _isSaving = false;
-      });
-      return;
-    }
-
-    try {
-      final avatarUrl = await _uploadAvatar(user.id);
-
-      final newProfile = {
-        'id': user.id,
-        'display_name': displayName,
-        'username': username,
-        'avatar_url': avatarUrl,
-        'calendar_visibility': _isPublic ? 'public' : 'private',
-        'updated_at': DateTime.now().toIso8601String(),
-      };
-
-      await Supabase.instance.client
-          .from('profiles')
-          .update(newProfile)
-          .eq('id', user.id);
-
-      await Supabase.instance.client.auth.updateUser(
-        UserAttributes(
-          data: {
-            'display_name': displayName,
-            'username': username,
-            'avatar_url': avatarUrl,
-          },
-        ),
-      );
-
-      if (mounted) Navigator.of(context).pop(newProfile);
-    } catch (e) {
-      setState(() {
-        _error = 'Could not save profile: $e';
-        _isSaving = false;
-      });
-    }
-  }
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final String? prefix;
+  final TextCapitalization capitalization;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
-    return Container(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      decoration: BoxDecoration(
-        color: colors.surfaceElevated,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppSpacing.radiusXLarge),
-        ),
-      ),
-      child: _isLoading
-          ? const SizedBox(
-              height: 200,
-              child: Center(child: CircularProgressIndicator()),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.spacing24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: colors.border,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.spacing24),
-                  Text(context.l10n.editProfile, style: context.textTheme.titleLarge),
-                  const SizedBox(height: AppSpacing.spacing24),
-
-                  // Avatar picker
-                  Center(
-                    child: GestureDetector(
-                      onTap: _showImageSourcePicker,
-                      child: Stack(
-                        alignment: Alignment.bottomRight,
-                        children: [
-                          CircleAvatar(
-                            radius: 48,
-                            backgroundColor: colors.accentSoft,
-                            backgroundImage: _avatarImage,
-                            child: _avatarChild,
-                          ),
-                          CircleAvatar(
-                            radius: 16,
-                            backgroundColor: colors.accent,
-                            child: Icon(
-                              Icons.camera_alt,
-                              size: 16,
-                              color: colors.onTint,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.spacing24),
-
-                  TextField(
-                    controller: _displayNameController,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: InputDecoration(
-                      labelText: context.l10n.displayName,
-                      hintText: context.l10n.displayNameHint,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.spacing16),
-
-                  TextField(
-                    controller: _usernameController,
-                    autocorrect: false,
-                    decoration: InputDecoration(
-                      labelText: context.l10n.username,
-                      hintText: context.l10n.usernameHint,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.spacing20),
-
-                  // Calendar visibility toggle
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.spacing16),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceSubtle,
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusMedium),
-                      border: Border.all(color: colors.border),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          _isPublic
-                              ? Icons.public
-                              : Icons.lock_outline,
-                          color: colors.textSecondary,
-                        ),
-                        const SizedBox(width: AppSpacing.spacing12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                context.l10n.calendarVisibility,
-                                style: context.textTheme.bodyMedium
-                                    ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Text(
-                                _isPublic
-                                    ? context.l10n.privacyPublic
-                                    : context.l10n.privacyPrivate,
-                                style: context.textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Switch(
-                          value: _isPublic,
-                          onChanged: (value) =>
-                              setState(() => _isPublic = value),
-                          activeThumbColor: colors.accent,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  if (_error != null) ...[
-                    const SizedBox(height: AppSpacing.spacing16),
-                    Text(
-                      _error!,
-                      style: context.textTheme.bodySmall?.copyWith(
-                        color: colors.urgent,
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: AppSpacing.spacing24),
-                  ElevatedButton(
-                    onPressed: _isSaving ? null : _save,
-                    child: _isSaving
-                        ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: colors.onTint,
-                            ),
-                          )
-                        : Text(context.l10n.saveChanges),
-                  ),
-                  const SizedBox(height: AppSpacing.spacing16),
-                ],
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 6),
+          child: Text(
+            label,
+            style: context.typography.footnote.copyWith(
+              color: colors.labelSecondary,
             ),
+          ),
+        ),
+        TextField(
+          controller: controller,
+          autocorrect: false,
+          textCapitalization: capitalization,
+          style: context.typography.body,
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixText: prefix,
+            filled: true,
+            fillColor: colors.fill,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusTile),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+      ],
     );
   }
-
-  ImageProvider? get _avatarImage {
-    if (_selectedImage != null) return FileImage(_selectedImage!);
-    if (_avatarUrl != null && _avatarUrl!.isNotEmpty) {
-      return NetworkImage(_avatarUrl!);
-    }
-    return null;
-  }
-
-  Widget? get _avatarChild {
-    if (_selectedImage != null ||
-        (_avatarUrl != null && _avatarUrl!.isNotEmpty)) {
-      return null;
-    }
-    final initial = _displayNameController.text.isNotEmpty
-        ? _displayNameController.text[0].toUpperCase()
-        : '?';
-    return Text(
-      initial,
-      style: context.textTheme.displaySmall?.copyWith(
-        color: context.appColors.accent,
-      ),
-    );
-  }
-
 }

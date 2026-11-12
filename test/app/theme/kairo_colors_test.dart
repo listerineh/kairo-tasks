@@ -48,6 +48,16 @@ void main() {
         expect(contrast(c.onTint, c.tint), greaterThanOrEqualTo(4.5));
       });
 
+      test('text on the ink surface', () {
+        expect(contrast(c.onInk, c.ink), greaterThanOrEqualTo(4.5));
+        expect(contrast(c.onInkSecondary, c.ink), greaterThanOrEqualTo(4.5));
+        expect(contrast(c.lime, c.ink), greaterThanOrEqualTo(4.5));
+      });
+
+      test('onLime on lime buttons', () {
+        expect(contrast(c.onLime, c.lime), greaterThanOrEqualTo(4.5));
+      });
+
       test('onDestructive on destructive and priorityUrgent fills', () {
         expect(
           contrast(c.onDestructive, c.destructive),

@@ -1,14 +1,10 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
-/// Kairo 2.0 type scale (docs/redesign-plan.md §2.2): Apple's Dynamic Type
-/// "Large" sizes and leading.
+/// Kairo 2.0 type scale (docs/design.md § Typography).
 ///
-/// iOS uses the system font (SF Pro Text below 20 pt, Display above), which
-/// is never bundled because its license only covers Apple platforms. Every
-/// other platform uses Inter from `assets/fonts/`, which also keeps golden
-/// tests deterministic.
+/// Manrope on every platform, bundled as static weights (400-800, cut from
+/// the variable font) so iOS, Android and golden tests render the same
+/// glyphs and `copyWith(fontWeight: ...)` picks the matching file.
 ///
 /// Styles carry no color, so they inherit from the surrounding
 /// `DefaultTextStyle`. Font sizes go through `MediaQuery.textScaler`, so
@@ -30,95 +26,71 @@ class KairoTypography extends ThemeExtension<KairoTypography> {
     required this.timer,
   });
 
-  factory KairoTypography.forPlatform(TargetPlatform platform) {
-    final apple =
-        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
-
-    TextStyle style(
-      double size,
-      double lineHeight,
-      FontWeight weight, {
-      double? height,
-    }) {
-      return TextStyle(
-        fontFamily: apple ? (size >= 20 ? _sfDisplay : _sfText) : _inter,
-        fontSize: size,
-        height: height ?? lineHeight / size,
-        fontWeight: weight,
-        letterSpacing: apple ? _sfTracking(size) : interTracking(size),
-        leadingDistribution: TextLeadingDistribution.even,
-      );
-    }
-
+  factory KairoTypography.standard() {
     return KairoTypography(
-      largeTitle: style(34, 41, FontWeight.w700),
-      title1: style(28, 34, FontWeight.w700),
-      title2: style(22, 28, FontWeight.w700),
-      title3: style(20, 25, FontWeight.w600),
-      headline: style(17, 22, FontWeight.w600),
-      body: style(17, 22, FontWeight.w400),
-      bodyMultiline: style(17, 22, FontWeight.w400, height: 1.35),
-      callout: style(16, 21, FontWeight.w400),
-      subheadline: style(15, 20, FontWeight.w400),
-      footnote: style(13, 18, FontWeight.w400),
-      caption1: style(12, 16, FontWeight.w400),
-      timer: style(
-        76,
-        76,
-        FontWeight.w300,
+      largeTitle: manrope(30, 36, FontWeight.w800, tracking: -0.8),
+      title1: manrope(26, 32, FontWeight.w800, tracking: -0.6),
+      title2: manrope(20, 26, FontWeight.w800, tracking: -0.4),
+      title3: manrope(18, 24, FontWeight.w700, tracking: -0.3),
+      headline: manrope(16, 22, FontWeight.w700, tracking: -0.1),
+      body: manrope(16, 22, FontWeight.w600),
+      bodyMultiline: manrope(16, 22, FontWeight.w600, height: 1.38),
+      callout: manrope(15, 20, FontWeight.w600),
+      subheadline: manrope(14, 19, FontWeight.w600),
+      footnote: manrope(13, 18, FontWeight.w600),
+      caption1: manrope(12, 16, FontWeight.w600),
+      timer: manrope(
+        58,
+        58,
+        FontWeight.w600,
+        tracking: -2,
       ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
     );
   }
 
-  static const _inter = 'Inter';
+  static const family = 'Manrope';
 
-  // Engine aliases that resolve to SF Pro Text / Display on Apple platforms.
-  static const _sfText = 'CupertinoSystemText';
-  static const _sfDisplay = 'CupertinoSystemDisplay';
-
-  /// UIKit's default kerning (pt) for each Dynamic Type size.
-  static double _sfTracking(double size) => switch (size) {
-    34 => 0.37,
-    28 => 0.36,
-    22 => 0.35,
-    20 => 0.38,
-    17 => -0.41,
-    16 => -0.32,
-    15 => -0.24,
-    13 => -0.08,
-    _ => 0,
-  };
-
-  /// Inter's dynamic metrics (rsms.me/inter/dynmetrics): slightly open at
-  /// caption sizes, tighter as size grows. Returns tracking in logical px.
-  @visibleForTesting
-  static double interTracking(double size) {
-    final em = -0.0223 + 0.185 * math.exp(-0.1745 * size);
-    return em * size;
+  /// A Manrope style at [size] with [lineHeight] in logical px (or an
+  /// explicit [height] multiplier).
+  static TextStyle manrope(
+    double size,
+    double lineHeight,
+    FontWeight weight, {
+    double tracking = 0,
+    double? height,
+  }) {
+    return TextStyle(
+      fontFamily: family,
+      fontSize: size,
+      height: height ?? lineHeight / size,
+      fontWeight: weight,
+      letterSpacing: tracking,
+      leadingDistribution: TextLeadingDistribution.even,
+    );
   }
 
-  /// Tab root titles (collapsing).
+  /// Tab titles ("Buenos días", "Planear").
   final TextStyle largeTitle;
 
-  /// Sheet hero, focus timer label.
+  /// Sheet titles and the Kairo page.
   final TextStyle title1;
 
-  /// Dashboard section headers.
+  /// Section headers ("Pendientes").
   final TextStyle title2;
 
   /// Card titles.
   final TextStyle title3;
 
-  /// Task and row titles.
+  /// Row titles and buttons.
   final TextStyle headline;
 
   /// Single-line body text.
   final TextStyle body;
 
-  /// Descriptions and any wrapping body copy (line height >= 1.35).
+  /// Suggestions, descriptions and any wrapping copy (line height >= 1.35).
   final TextStyle bodyMultiline;
 
-  /// Secondary rows.
+  /// Chips and secondary rows.
   final TextStyle callout;
 
   /// Metadata.

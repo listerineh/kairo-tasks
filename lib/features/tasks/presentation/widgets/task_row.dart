@@ -107,7 +107,7 @@ class TaskRow extends StatelessWidget {
 
   Widget? _metadata(BuildContext context) {
     final colors = context.appColors;
-    final when = _when(context);
+    final when = whenLabel(context, task, now);
     final names = [
       for (final p in task.sharedWith)
         (p['display_name'] as String?) ?? (p['username'] as String?) ?? '',
@@ -144,8 +144,12 @@ class TaskRow extends StatelessWidget {
     );
   }
 
-  /// "10:00 – 10:30", "Tomorrow, 9:00", "21 Oct" ...
-  String? _when(BuildContext context) {
+  /// "10:00 – 10:30", "Tomorrow, 9:00", "21 Oct" ...; null without a date.
+  static String? whenLabel(
+    BuildContext context,
+    TaskEntity task,
+    DateTime now,
+  ) {
     final date = taskDate(task);
     if (date == null) return null;
     final l10n = context.l10n;

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/widgets/grouped_section.dart';
+import '../../../../core/widgets/kairo_card.dart';
 import '../../../tasks/domain/entities/task_entity.dart';
 import '../../domain/calendar_range.dart';
 import '../../domain/timeline_layout.dart';
@@ -17,6 +18,7 @@ class MonthView extends StatelessWidget {
     required this.onDateTap,
     required this.onTaskTap,
     this.now,
+    this.bottomInset = 0,
     super.key,
   });
 
@@ -28,6 +30,9 @@ class MonthView extends StatelessWidget {
   /// Marks today (tests).
   final DateTime? now;
 
+  /// Extra space after the agenda (e.g. for the tab bar).
+  final double bottomInset;
+
   static const int maxDots = 3;
 
   @override
@@ -37,39 +42,34 @@ class MonthView extends StatelessWidget {
 
     return CustomScrollView(
       slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.spacing8,
-            ),
-            child: Column(
-              children: [
-                const _WeekdayHeader(),
-                _MonthGrid(
-                  selectedDate: selectedDate,
-                  today: today,
-                  tasks: tasks,
-                  onDateTap: onDateTap,
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenMargin,
+          ),
+          sliver: SliverList.list(
+            children: [
+              KairoCard(
+                padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
+                child: Column(
+                  children: [
+                    const _WeekdayHeader(),
+                    _MonthGrid(
+                      selectedDate: selectedDate,
+                      today: today,
+                      tasks: tasks,
+                      onDateTap: onDateTap,
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: AppSpacing.spacing16),
+              _Agenda(day: selectedDate, tasks: agenda, onTaskTap: onTaskTap),
+            ],
           ),
         ),
-        SliverToBoxAdapter(
-          child: Divider(
-            height: AppSpacing.spacing16,
-            thickness: AppSpacing.hairline,
-            color: context.appColors.separator,
-          ),
+        SliverPadding(
+          padding: EdgeInsets.only(bottom: AppSpacing.spacing24 + bottomInset),
         ),
-        SliverToBoxAdapter(
-          child: _Agenda(
-            day: selectedDate,
-            tasks: agenda,
-            onTaskTap: onTaskTap,
-          ),
-        ),
-        const SliverPadding(padding: EdgeInsets.only(bottom: 96)),
       ],
     );
   }
@@ -187,7 +187,7 @@ class _DayCell extends StatelessWidget {
 
     final dots = [
       for (final t in tasks.take(MonthView.maxDots))
-        calendarColor(t.color) ?? colors.tint,
+        CalendarTone.of(t.color).dot,
     ];
 
     return Semantics(
@@ -269,19 +269,21 @@ class _Agenda extends StatelessWidget {
     if (tasks.isEmpty) {
       return GroupedSection(
         header: header,
+        margin: 0,
         children: [GroupedRow(title: l10n.calendarNothingPlanned)],
       );
     }
     final sorted = [...tasks]..sort(_byTime);
     return GroupedSection(
       header: header,
-      separatorInset: 28,
+      margin: 0,
+      separatorInset: 34,
       children: [
         for (final t in sorted)
           GroupedRow(
             title: t.title,
             subtitle: _time(context, t),
-            leading: _ColorBar(color: calendarColor(t.color)),
+            leading: _ToneDot(tone: CalendarTone.of(t.color)),
             onTap: () => onTaskTap(t),
           ),
       ],
@@ -311,18 +313,15 @@ class _Agenda extends StatelessWidget {
   }
 }
 
-class _ColorBar extends StatelessWidget {
-  const _ColorBar({required this.color});
+class _ToneDot extends StatelessWidget {
+  const _ToneDot({required this.tone});
 
-  final Color? color;
+  final CalendarTone tone;
 
   @override
   Widget build(BuildContext context) => Container(
-    width: 4,
-    height: 28,
-    decoration: BoxDecoration(
-      color: color ?? context.appColors.tint,
-      borderRadius: BorderRadius.circular(2),
-    ),
+    width: 10,
+    height: 10,
+    decoration: BoxDecoration(color: tone.dot, shape: BoxShape.circle),
   );
 }

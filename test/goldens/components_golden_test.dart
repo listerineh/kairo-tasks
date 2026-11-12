@@ -6,6 +6,8 @@ import 'package:kairotasks/core/widgets/empty_state.dart';
 import 'package:kairotasks/core/widgets/grouped_section.dart';
 import 'package:kairotasks/core/widgets/kairo_avatar.dart';
 import 'package:kairotasks/core/widgets/kairo_button.dart';
+import 'package:kairotasks/core/widgets/kairo_card.dart';
+import 'package:kairotasks/core/widgets/kairo_chip.dart';
 import 'package:kairotasks/core/widgets/kairo_large_title_scaffold.dart';
 import 'package:kairotasks/core/widgets/kairo_segmented_control.dart';
 import 'package:kairotasks/core/widgets/kairo_sheet.dart';
@@ -18,7 +20,7 @@ import '../helpers/golden.dart';
 void main() {
   goldenTest(
     'kairo_button',
-    size: const Size(390, 420),
+    size: const Size(390, 560),
     builder: (_) => GoldenCanvas(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -26,6 +28,12 @@ void main() {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             KairoButton(label: 'Filled', onPressed: () {}),
+            const SizedBox(height: 12),
+            KairoButton(
+              label: 'Outline',
+              variant: KairoButtonVariant.outline,
+              onPressed: () {},
+            ),
             const SizedBox(height: 12),
             KairoButton(
               label: 'Tinted',
@@ -43,6 +51,15 @@ void main() {
             KairoButton(label: 'Delete', destructive: true, onPressed: () {}),
             const SizedBox(height: 12),
             const KairoButton(label: 'Disabled', onPressed: null),
+            const SizedBox(height: 12),
+            KairoCard(
+              style: KairoCardStyle.ink,
+              child: KairoButton(
+                label: 'Accent',
+                variant: KairoButtonVariant.accent,
+                onPressed: () {},
+              ),
+            ),
           ],
         ),
       ),
@@ -166,34 +183,81 @@ void main() {
   );
 
   goldenTest(
+    'kairo_chips',
+    size: const Size(390, 140),
+    builder: (_) => GoldenCanvas(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            KairoChip(label: 'Hoy', selected: true, onSelected: () {}),
+            KairoChip(label: 'Mañana', selected: false, onSelected: () {}),
+            KairoChip(label: 'Este finde', selected: false, onSelected: () {}),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  goldenTest(
+    'kairo_cards',
+    size: const Size(390, 300),
+    builder: (context) => GoldenCanvas(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            KairoCard(
+              style: KairoCardStyle.hero,
+              child: Text('Kairo sugiere', style: context.typography.title3),
+            ),
+            const SizedBox(height: 12),
+            KairoCard(child: Text('Tile', style: context.typography.body)),
+            const SizedBox(height: 12),
+            KairoCard(
+              style: KairoCardStyle.ink,
+              child: Text('Ahora', style: context.typography.title3),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  goldenTest(
     'tab_bar',
-    size: const Size(390, 120),
+    size: const Size(390, 130),
     builder: (_) => Scaffold(
       body: Align(
         alignment: Alignment.bottomCenter,
         child: KairoTabBar(
-          currentIndex: 1,
+          currentIndex: 0,
           onTap: (_) {},
+          onCreate: () {},
+          createLabel: 'New task',
           items: const [
             KairoTabItem(
-              icon: CupertinoIcons.square_grid_2x2,
-              activeIcon: CupertinoIcons.square_grid_2x2_fill,
-              label: 'Today',
-            ),
-            KairoTabItem(
-              icon: CupertinoIcons.checkmark_circle,
-              activeIcon: CupertinoIcons.checkmark_circle_fill,
-              label: 'Tasks',
+              icon: CupertinoIcons.sun_max,
+              activeIcon: CupertinoIcons.sun_max_fill,
+              label: 'Hoy',
             ),
             KairoTabItem(
               icon: CupertinoIcons.calendar,
               activeIcon: CupertinoIcons.calendar,
-              label: 'Calendar',
+              label: 'Planear',
             ),
             KairoTabItem(
-              icon: CupertinoIcons.person,
-              activeIcon: CupertinoIcons.person_fill,
-              label: 'Profile',
+              icon: CupertinoIcons.person_2,
+              activeIcon: CupertinoIcons.person_2_fill,
+              label: 'Juntos',
+            ),
+            KairoTabItem(
+              icon: CupertinoIcons.person_crop_circle,
+              activeIcon: CupertinoIcons.person_crop_circle_fill,
+              label: 'Yo',
             ),
           ],
         ),

@@ -14,9 +14,7 @@ import '../helpers/mocks.dart';
 void main() {
   final now = DateTime(2026, 10, 20, 15);
 
-  Widget form({TaskEntity? task}) {
-    final bloc = MockTasksBloc();
-    when(() => bloc.state).thenReturn(const TasksState());
+  Widget provided(MockTasksBloc bloc, TaskEntity? task) {
     return BlocProvider<TasksBloc>.value(
       value: bloc,
       child: Scaffold(
@@ -33,9 +31,21 @@ void main() {
     );
   }
 
+  Widget form({TaskEntity? task}) {
+    final bloc = MockTasksBloc();
+    when(() => bloc.state).thenReturn(const TasksState());
+    // Kairo holds still under reduced motion, so the render is stable.
+    return Builder(
+      builder: (context) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(disableAnimations: true),
+        child: provided(bloc, task),
+      ),
+    );
+  }
+
   goldenTest(
     'task_form_new',
-    size: const Size(390, 420),
+    size: const Size(390, 520),
     builder: (_) => form(),
   );
 

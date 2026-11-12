@@ -11,6 +11,7 @@ class RouteNames {
   static const calendar = 'calendar';
   static const social = 'social';
   static const profile = 'profile';
+  static const kairo = 'kairo';
 
   // Debug only
   static const gallery = 'gallery';

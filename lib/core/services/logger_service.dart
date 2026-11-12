@@ -96,6 +96,8 @@ class LoggerService {
 
   /// Logs an error message and immediately flushes the buffer.
   void error(String message, {Object? data, String? traceId}) {
+    // Visible in `flutter run` even when the remote logs are unreachable.
+    if (kDebugMode) debugPrint('LoggerService error: $message $data');
     _add('error', message, data: data, traceId: traceId);
     flush();
   }

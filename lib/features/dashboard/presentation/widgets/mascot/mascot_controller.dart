@@ -6,15 +6,18 @@ import 'package:flutter/scheduler.dart';
 
 import '../../../../../app/theme/app_motion.dart';
 import '../../../domain/mascot/mascot_mood.dart';
+import 'mascot_behavior.dart';
 import 'mascot_pose.dart';
 
 /// Drives every [MascotPose] field toward the current mood's pose with its
 /// own spring, so mood changes morph instead of cutting between animations.
 ///
-/// Behaviors (docs/redesign-plan.md §2.6) are impulses on those springs:
-/// [hop] kicks `lift`, [twitch] kicks the ears and head, blinks close a
-/// separate lid channel. Breathing and blinking are the only ambient motion
-/// and stop when [reduced] is true; in that mode every change snaps.
+/// Reactions are impulses on those springs: [hop] kicks `lift`, [twitch]
+/// kicks the ears and head, blinks close a separate lid channel. Cat things
+/// (stand, stretch, groom, yawn, look, flick) come from a
+/// [MascotBehaviorScheduler] and move the targets instead. Breathing, the
+/// tail sway, blinks and behaviors are the ambient life and stop when
+/// [reduced] is true; in that mode every change snaps.
 class MascotController extends ChangeNotifier {
   MascotController({
     required TickerProvider vsync,
@@ -24,6 +27,10 @@ class MascotController extends ChangeNotifier {
   }) : _mood = mood,
        _reduced = reduceMotion,
        _random = random ?? math.Random() {
+    _behaviors = MascotBehaviorScheduler(
+      _random,
+      firstAt: 3 + _random.nextDouble() * 3,
+    );
     _target = MascotPose.forMood(mood).values;
     _x = List.of(_target);
     _v = List.filled(_x.length, 0);
@@ -37,8 +44,10 @@ class MascotController extends ChangeNotifier {
   static const _eyeCurve = 1;
   static const _earAngle = 4;
   static const _bodySquash = 7;
+  static const _tailAngle = 8;
   static const _headTilt = 9;
   static const _lift = 11;
+  static const _flick = 16;
 
   /// Fields that should overshoot: hop, landing squash, ear twitch.
   static const _bouncyFields = {_earAngle, _bodySquash, _headTilt, _lift};
@@ -46,6 +55,7 @@ class MascotController extends ChangeNotifier {
   static const _happyEyesFor = 1.2;
 
   final math.Random _random;
+  late final MascotBehaviorScheduler _behaviors;
   late final Ticker _ticker;
   late List<double> _target;
   late List<double> _x;
@@ -66,11 +76,17 @@ class MascotController extends ChangeNotifier {
   MascotMood get mood => _mood;
   bool get reduced => _reduced;
 
-  /// The pose to paint now, including breathing and blinks.
+  /// The cat thing running now, if any.
+  MascotBehavior? get behavior => _behaviors.active?.behavior;
+
+  /// The pose to paint now, including breathing, the tail sway and blinks.
   MascotPose get pose {
     final values = List.of(_x);
     values[_eyeOpen] *= _lid;
-    if (!_reduced) values[_bodySquash] += _breath();
+    if (!_reduced) {
+      values[_bodySquash] += _breath();
+      values[_tailAngle] += _sway(values[_flick]);
+    }
     return MascotPose.fromValues(values);
   }
 
@@ -98,6 +114,7 @@ class MascotController extends ChangeNotifier {
   /// A task was completed: hop, land with a squash, eyes ^^ for a moment.
   void hop() {
     if (_reduced) return;
+    _behaviors.cancel(_time);
     _v[_lift] += 1.6;
     _v[_bodySquash] -= 0.6;
     _happyEyesUntil = _time + _happyEyesFor;
@@ -110,6 +127,28 @@ class MascotController extends ChangeNotifier {
     _v[_earAngle] += 4;
     _v[_headTilt] += (_random.nextBool() ? 1 : -1) * 1.2;
     _syncTicker();
+  }
+
+  /// The cat was tapped: [twitch], then a small cat thing (a glance, a tail
+  /// flick, a yawn or a quick groom).
+  void poke() {
+    twitch();
+    if (_reduced) return;
+    const reactions = [
+      MascotBehavior.look,
+      MascotBehavior.flick,
+      MascotBehavior.yawn,
+      MascotBehavior.groom,
+    ];
+    perform(reactions[_random.nextInt(reactions.length)]);
+  }
+
+  /// Starts [behavior] now (taps, the debug gallery). Ignored under reduced
+  /// motion.
+  void perform(MascotBehavior behavior) {
+    if (_reduced) return;
+    _behaviors.trigger(behavior, _time);
+    _retarget();
   }
 
   /// Steps the physics by [dt] seconds. Called by the ticker; exposed so
@@ -125,8 +164,11 @@ class MascotController extends ChangeNotifier {
     }
     if (_happyEyesUntil >= 0 && _time >= _happyEyesUntil) {
       _happyEyesUntil = -1;
-      _retarget();
     }
+    if (!_reduced) _behaviors.update(_time, _mood);
+    // Recomposed every step: behaviors move their targets over time (a yawn
+    // opens and closes).
+    _target = _compose();
     _maybeBlink();
     notifyListeners();
   }
@@ -164,15 +206,25 @@ class MascotController extends ChangeNotifier {
     _x[i] += _v[i] * dt;
   }
 
-  void _retarget() {
-    final target = MascotPose.forMood(_mood).values;
+  /// The mood's pose plus where the cat looks, the ^^ eyes after a hop and
+  /// the running behavior.
+  List<double> _compose() {
+    var target = MascotPose.forMood(_mood).values;
     target[2] += _lookX * 0.6;
     target[3] = (target[3] + _lookY * 0.6).clamp(-1, 1);
+    final active = _behaviors.active;
+    if (active != null && !_reduced) {
+      target = MascotBehaviorScheduler.apply(target, active, _time);
+    }
     if (_happyEyesUntil >= 0) {
       target[_eyeCurve] = 1;
       target[_eyeOpen] = 1;
     }
-    _target = target;
+    return target;
+  }
+
+  void _retarget() {
+    _target = _compose();
     if (_reduced) _snap();
     _syncTicker();
     notifyListeners();
@@ -189,6 +241,15 @@ class MascotController extends ChangeNotifier {
   double _breath() {
     final period = _mood == MascotMood.sleeping ? 6.0 : 4.0;
     return math.sin(2 * math.pi * _time / period) * 0.015;
+  }
+
+  /// Tail sway in radians: lazy when calm, quick during a flick, nearly
+  /// still while focused or asleep.
+  double _sway(double flick) {
+    final quiet = _mood == MascotMood.focused || _mood == MascotMood.sleeping;
+    final energy = flick.clamp(0.0, 1.0);
+    final amplitude = (quiet ? 0.02 : 0.08) + 0.22 * energy;
+    return math.sin(_time * (1.15 + 5 * energy)) * amplitude;
   }
 
   void _scheduleBlink() {

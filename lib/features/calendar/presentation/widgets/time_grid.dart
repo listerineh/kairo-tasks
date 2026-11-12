@@ -25,6 +25,7 @@ class TimeGrid extends StatefulWidget {
     required this.canMove,
     this.now,
     this.initialHourHeight = 56,
+    this.bottomInset = 0,
     super.key,
   });
 
@@ -40,6 +41,9 @@ class TimeGrid extends StatefulWidget {
   /// Current time, for the "now" line and the initial scroll (tests).
   final DateTime? now;
   final double initialHourHeight;
+
+  /// Extra space below the last hour (e.g. for the tab bar).
+  final double bottomInset;
 
   static const double minHourHeight = 32;
   static const double maxHourHeight = 140;
@@ -130,6 +134,8 @@ class _TimeGridState extends State<TimeGrid> {
               physics: _pinchStartSpan != null
                   ? const NeverScrollableScrollPhysics()
                   : null,
+              // Room for a floating tab bar under the last hour.
+              padding: EdgeInsets.only(bottom: widget.bottomInset),
               child: SizedBox(
                 height: _hourHeight * 24,
                 child: Row(
@@ -421,7 +427,9 @@ class _BlockState extends State<_Block> {
     final b = widget.block;
     final colors = context.appColors;
     final type = context.typography;
-    final base = calendarColor(b.task.color) ?? colors.tint;
+    final tone = CalendarTone.of(b.task.color);
+    final brightness = Theme.of(context).brightness;
+    final light = brightness == Brightness.light;
     final width = widget.columnWidth / b.columns;
     final minute = _dragging ? _minute! : b.startMinute;
     final top = minute / 60 * widget.hourHeight;
@@ -430,12 +438,13 @@ class _BlockState extends State<_Block> {
       double.infinity,
     );
     final done = b.task.status == TaskStatus.completed;
+    final tall = height > 40;
 
     return Positioned(
       top: top,
       left: b.column * width + _dayShift * widget.columnWidth + 1,
       width: width - 2,
-      height: height - 1,
+      height: height - 2,
       child: Semantics(
         button: true,
         label: b.task.title,
@@ -447,36 +456,57 @@ class _BlockState extends State<_Block> {
           child: AnimatedScale(
             scale: _dragging ? 1.03 : 1,
             duration: const Duration(milliseconds: 120),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Color.alphaBlend(
-                  base.withValues(alpha: _dragging ? 0.4 : 0.22),
-                  colors.surface,
+            child: Opacity(
+              opacity: done ? 0.55 : 1,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: tone.fillFor(brightness, colors.surface),
+                  borderRadius: BorderRadius.circular(tall ? 14 : 8),
+                  boxShadow: _dragging
+                      ? const [
+                          BoxShadow(
+                            color: Color(0x33121417),
+                            blurRadius: 16,
+                            offset: Offset(0, 6),
+                          ),
+                        ]
+                      : null,
                 ),
-                borderRadius: BorderRadius.circular(6),
-                border: Border(left: BorderSide(color: base, width: 3)),
-                boxShadow: _dragging
-                    ? const [
-                        BoxShadow(
-                          color: Color(0x33000000),
-                          blurRadius: 12,
-                          offset: Offset(0, 4),
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(8, tall ? 6 : 2, 6, 2),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4, right: 6),
+                        child: Container(
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            color: tone.dot,
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                      ]
-                    : null,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(6, 2, 4, 2),
-                child: Text(
-                  b.task.title,
-                  maxLines: height > 40 ? 2 : 1,
-                  overflow: TextOverflow.ellipsis,
-                  textScaler: MediaQuery.textScalerOf(context)
-                      .clamp(maxScaleFactor: 1.3),
-                  style: type.caption1.copyWith(
-                    color: colors.label,
-                    fontWeight: FontWeight.w600,
-                    decoration: done ? TextDecoration.lineThrough : null,
+                      ),
+                      Expanded(
+                        child: Text(
+                          b.task.title,
+                          maxLines: tall ? 2 : 1,
+                          overflow: TextOverflow.ellipsis,
+                          textScaler: MediaQuery.textScalerOf(context)
+                              .clamp(maxScaleFactor: 1.3),
+                          style: type.footnote.copyWith(
+                            color: light
+                                ? const Color(0xFF121417)
+                                : colors.label,
+                            fontWeight: FontWeight.w700,
+                            decoration: done
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -549,28 +579,28 @@ class _AllDayChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final base = calendarColor(task.color) ?? colors.tint;
+    final tone = CalendarTone.of(task.color);
+    final brightness = Theme.of(context).brightness;
     return Semantics(
       button: true,
       child: GestureDetector(
         onTap: onTap,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: Color.alphaBlend(
-              base.withValues(alpha: 0.22),
-              colors.surface,
-            ),
-            borderRadius: BorderRadius.circular(6),
+            color: tone.fillFor(brightness, colors.surface),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Text(
               task.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: context.typography.caption1.copyWith(
-                color: colors.label,
-                fontWeight: FontWeight.w600,
+                color: brightness == Brightness.light
+                    ? const Color(0xFF121417)
+                    : colors.label,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),

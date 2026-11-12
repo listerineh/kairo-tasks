@@ -1,5 +1,4 @@
 import 'package:dartz/dartz.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,6 +42,11 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        // Kairo holds still, so pumpAndSettle can settle.
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child!,
+        ),
         home: BlocProvider<TasksBloc>.value(
           value: bloc,
           child: Builder(
@@ -75,8 +79,8 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Finder headerButton(String label) =>
-      find.widgetWithText(CupertinoButton, label);
+  /// The bottom save button ("Create task", "Save").
+  Finder saveButton() => find.byKey(TaskFormSheet.saveKey);
 
   TasksEvent lastEvent() =>
       verify(() => bloc.add(captureAny())).captured.last as TasksEvent;
@@ -97,7 +101,7 @@ void main() {
 
   testWidgets('Add is disabled until there is a title', (tester) async {
     await open(tester);
-    await tester.tap(headerButton('Add'));
+    await tester.tap(saveButton());
     await tester.pumpAndSettle();
     verifyNever(() => bloc.add(any()));
     expect(find.byType(TaskFormSheet), findsOneWidget);
@@ -121,7 +125,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('This weekend'));
     await tester.pumpAndSettle();
-    await tester.tap(headerButton('Add'));
+    await tester.tap(saveButton());
     await tester.pumpAndSettle();
 
     final event = lastEvent() as TaskCreateRequested;
@@ -134,7 +138,7 @@ void main() {
       await open(tester, initialStart: DateTime(2026, 10, 22, 9, 15));
       await tester.enterText(find.byType(TextField).first, 'Plan');
       await tester.pump();
-      await tester.tap(headerButton('Add'));
+      await tester.tap(saveButton());
       await tester.pumpAndSettle();
 
       final event = lastEvent() as TaskCreateRequested;
@@ -146,7 +150,7 @@ void main() {
       await open(tester, initialStart: DateTime(2026, 10, 22, 23, 45));
       await tester.enterText(find.byType(TextField).first, 'Plan');
       await tester.pump();
-      await tester.tap(headerButton('Add'));
+      await tester.tap(saveButton());
       await tester.pumpAndSettle();
 
       final event = lastEvent() as TaskCreateRequested;
@@ -176,7 +180,7 @@ void main() {
     );
     await tester.tap(find.text('Remove date'));
     await tester.pumpAndSettle();
-    await tester.tap(headerButton('Save'));
+    await tester.tap(saveButton());
     await tester.pumpAndSettle();
 
     expect(
@@ -201,7 +205,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, 'Plan trip');
     await tester.pump();
-    await tester.tap(headerButton('Add'));
+    await tester.tap(saveButton());
     await tester.pumpAndSettle();
 
     expect((lastEvent() as TaskCreateRequested).sharedWith, ['ana']);
@@ -220,7 +224,7 @@ void main() {
     );
     expect(find.text('Share with'), findsNothing);
 
-    await tester.tap(headerButton('Save'));
+    await tester.tap(saveButton());
     await tester.pumpAndSettle();
     expect((lastEvent() as TaskEdited).draft.sharedWithIds, isNull);
   });

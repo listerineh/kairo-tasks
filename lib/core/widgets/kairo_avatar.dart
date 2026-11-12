@@ -9,12 +9,19 @@ class KairoAvatar extends StatelessWidget {
     required this.name,
     this.imageUrl,
     this.size = 40,
+    this.background,
+    this.foreground,
     super.key,
   });
 
   final String name;
   final String? imageUrl;
   final double size;
+
+  /// Initials circle colors; default `tintSoft` and `tint`. Juntos passes a
+  /// friend's calendar tone.
+  final Color? background;
+  final Color? foreground;
 
   /// Up to two initials from the first and last words.
   static String initialsOf(String name) {
@@ -30,7 +37,10 @@ class KairoAvatar extends StatelessWidget {
     final colors = context.appColors;
 
     final initials = DecoratedBox(
-      decoration: BoxDecoration(shape: BoxShape.circle, color: colors.tintSoft),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: background ?? colors.tintSoft,
+      ),
       child: Center(
         child: Text(
           initialsOf(name),
@@ -40,7 +50,7 @@ class KairoAvatar extends StatelessWidget {
             fontSize: size * 0.4,
             height: 1,
             letterSpacing: 0,
-            color: colors.tint,
+            color: foreground ?? colors.tint,
           ),
         ),
       ),

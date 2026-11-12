@@ -1,15 +1,37 @@
+import 'dart:async';
+import 'dart:math' as math;
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_motion.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/services/haptics_service.dart';
+import '../../../../core/widgets/kairo_button.dart';
+import '../../../../core/widgets/kairo_entrance.dart';
+import '../../../../core/widgets/kairo_segmented_control.dart';
+import '../../../dashboard/domain/mascot/mascot_mood.dart';
+import '../../../dashboard/presentation/widgets/mascot/mascot_behavior.dart';
 import '../bloc/auth_bloc.dart';
+import '../widgets/login_hero.dart';
 
+/// Sign in or create an account (docs/design.md § Login and onboarding).
+///
+/// An `ink` hero with Kairo and drifting task chips sits above a white
+/// form card. Kairo follows the form: he glances over when a field gets
+/// focus, closes his eyes while you type a hidden password, concentrates
+/// while signing in, looks sad (and the card shakes) on an error, and hops
+/// when you get in. The hero shrinks while the keyboard is up.
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({super.key, this.now, this.drift});
+
+  /// Fixed in goldens: the greeting's time and the chips' drift phase.
+  final DateTime? now;
+  final double? drift;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -17,223 +39,234 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage>
     with SingleTickerProviderStateMixin {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _usernameController = TextEditingController();
-  bool _isPasswordVisible = false;
-  bool _isSignUp = false;
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  final _name = TextEditingController();
+  final _username = TextEditingController();
+  final _passwordFocus = FocusNode();
+  final _focusScope = FocusScopeNode();
 
-  AnimationController? _animationController;
+  late final AnimationController _shake = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 420),
+  );
+
+  bool _showPassword = false;
+  bool _signUp = false;
+  bool _typing = false;
+  bool _sad = false;
+  int _hops = 0;
+  int _cues = 0;
+  MascotBehavior? _cue;
+  Timer? _sadTimer;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-    _animationController?.forward();
+    _focusScope.addListener(_onFocusChanged);
+    _passwordFocus.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    _nameController.dispose();
-    _usernameController.dispose();
-    _animationController?.dispose();
+    _sadTimer?.cancel();
+    _shake.dispose();
+    _email.dispose();
+    _password.dispose();
+    _name.dispose();
+    _username.dispose();
+    _passwordFocus.dispose();
+    _focusScope.dispose();
     super.dispose();
   }
 
+  void _onFocusChanged() {
+    final typing = _focusScope.hasFocus;
+    if (typing && !_typing) _glance();
+    if (typing != _typing) setState(() => _typing = typing);
+  }
+
+  void _glance() => setState(() {
+    _cue = MascotBehavior.look;
+    _cues++;
+  });
+
+  void _submit() {
+    final email = _email.text.trim();
+    final password = _password.text.trim();
+    if (email.isEmpty || password.isEmpty) {
+      _fail();
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    final bloc = context.read<AuthBloc>();
+    if (_signUp) {
+      final name = _name.text.trim();
+      final username = _username.text.trim().toLowerCase();
+      final fallback = email.split('@').first;
+      bloc.add(
+        AuthSignUpRequested(
+          email: email,
+          password: password,
+          displayName: name.isNotEmpty ? name : fallback,
+          username: username.isNotEmpty ? username : fallback,
+        ),
+      );
+    } else {
+      bloc.add(AuthSignInRequested(email: email, password: password));
+    }
+  }
+
+  /// Sad Kairo for a moment and a short shake of the card.
+  void _fail() {
+    _sadTimer?.cancel();
+    setState(() => _sad = true);
+    _sadTimer = Timer(const Duration(milliseconds: 2400), () {
+      if (mounted) setState(() => _sad = false);
+    });
+    if (!context.motion.reduced) unawaited(_shake.forward(from: 0));
+  }
+
+  MascotMood _mood(AuthStatus status) {
+    if (status == AuthStatus.authenticated) return MascotMood.happy;
+    if (status == AuthStatus.loading) return MascotMood.focused;
+    if (_sad) return MascotMood.sad;
+    if (_passwordFocus.hasFocus && !_showPassword) return MascotMood.sleeping;
+    return MascotMood.idle;
+  }
+
+  String _greeting() {
+    final l10n = context.l10n;
+    final hour = (widget.now ?? DateTime.now()).hour;
+    return hour < 12
+        ? l10n.greetMorning
+        : hour < 19
+        ? l10n.greetAfternoon
+        : l10n.greetEvening;
+  }
+
+  Future<void> _onAuth(BuildContext context, AuthState state) async {
+    if (state.status == AuthStatus.authenticated) {
+      unawaited(registeredHaptics?.celebrated());
+      setState(() => _hops++);
+      // Let the hop land before leaving.
+      await Future<void>.delayed(
+        context.motion.reduced
+            ? Duration.zero
+            : const Duration(milliseconds: 550),
+      );
+      if (context.mounted) context.go('/dashboard');
+    } else if (state.status == AuthStatus.error) {
+      _fail();
+      final message = state.errorMessage;
+      if (message != null) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(message),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final colors = context.appColors;
-    final size = MediaQuery.of(context).size;
 
     return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state.status == AuthStatus.authenticated) {
-          context.go('/tasks');
-        } else if (state.status == AuthStatus.error &&
-            state.errorMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage!)),
-          );
-        }
-      },
+      listenWhen: (a, b) => a.status != b.status,
+      listener: _onAuth,
       child: Scaffold(
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                colors.background,
-                colors.surfaceSubtle,
-              ],
-            ),
-          ),
-          child: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.spacing32,
-                  vertical: AppSpacing.spacing24,
+        backgroundColor: colors.background,
+        body: DefaultTextStyle.merge(
+          style: TextStyle(color: colors.label),
+          child: BlocBuilder<AuthBloc, AuthState>(
+            buildWhen: (a, b) => a.status != b.status,
+            builder: (context, auth) {
+              final mood = _mood(auth.status);
+              return SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.paddingOf(context).bottom + 24,
                 ),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: FadeTransition(
-                    opacity: _animationController ??
-                        const AlwaysStoppedAnimation<double>(1),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        SizedBox(height: size.height * 0.04),
-
-                        // Logo
-                        Center(
-                          child: Container(
-                            width: 140,
-                            height: 140,
-                            decoration: BoxDecoration(
-                              color: colors.surfaceElevated,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colors.textPrimary.withValues(
-                                    alpha: 0.06,
-                                  ),
-                                  blurRadius: 32,
-                                  offset: const Offset(0, 12),
-                                ),
-                              ],
-                            ),
-                            child: SvgPicture.asset(
-                              'assets/icons/app_icon.svg',
-                              width: 140,
-                              height: 140,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: AppSpacing.spacing32),
-
-                        // Title with animation
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          transitionBuilder: (child, animation) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0, 0.1),
-                                  end: Offset.zero,
-                                ).animate(animation),
-                                child: child,
-                              ),
-                            );
-                          },
-                          child: Text(
-                            _isSignUp
-                                ? context.l10n.createAccount
-                                : context.l10n.loginTitle,
-                            key: ValueKey('title_$_isSignUp'),
-                            style: context.textTheme.headlineLarge,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-
-                        const SizedBox(height: AppSpacing.spacing8),
-
-                        Text(
-                          _isSignUp
-                              ? context.l10n.startYourJourney
-                              : context.l10n.startSignInPrompt,
-                          style: context.textTheme.bodyLarge?.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-
-                        const SizedBox(height: AppSpacing.spacing40),
-
-                        // Form
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          layoutBuilder: (currentChild, previousChildren) {
-                            return Stack(
-                              alignment: Alignment.topCenter,
-                              children: [
-                                ...previousChildren,
-                                if (currentChild != null) currentChild,
-                              ],
-                            );
-                          },
-                          child: _buildForm(colors),
-                        ),
-
-                        const SizedBox(height: AppSpacing.spacing24),
-
-                        // Submit
-                        _SubmitButton(
-                          isSignUp: _isSignUp,
-                          onTap: _submit,
-                        ),
-
-                        const SizedBox(height: AppSpacing.spacing24),
-
-                        // Google sign in
-                        _GoogleButton(
-                          onTap: () => context
-                              .read<AuthBloc>()
-                              .add(const AuthGoogleSignInRequested()),
-                        ),
-
-                        const SizedBox(height: AppSpacing.spacing32),
-
-                        // Toggle
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              _isSignUp
-                                  ? context.l10n.alreadyHaveAnAccount
-                                  : context.l10n.dontHaveAnAccount,
-                              style: context.textTheme.bodyMedium?.copyWith(
-                                color: colors.textSecondary,
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _isSignUp = !_isSignUp;
-                                  _animationController
-                                    ?..reset()
-                                    ..forward();
-                                });
-                              },
-                              child: Text(
-                                _isSignUp
-                                ? context.l10n.signIn
-                                : context.l10n.signUp,
-                                style: context.textTheme.bodyMedium?.copyWith(
-                                  color: colors.accent,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        SizedBox(height: size.height * 0.04),
-                      ],
+                child: Stack(
+                  children: [
+                    LoginHero(
+                      mood: mood,
+                      compact: _typing,
+                      title: _signUp ? l10n.createAccount : _greeting(),
+                      subtitle: _signUp
+                          ? l10n.startYourJourney
+                          : l10n.startSignInPrompt,
+                      caption: mood == MascotMood.sleeping
+                          ? l10n.kairoNotLooking
+                          : null,
+                      hopTrigger: _hops,
+                      cue: _cue,
+                      cueTrigger: _cues,
+                      onTapKairo: _glance,
+                      drift: widget.drift,
                     ),
-                  ),
+                    _formCard(context, auth),
+                  ],
                 ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _formCard(BuildContext context, AuthState auth) {
+    final colors = context.appColors;
+    final motion = context.motion;
+    final topInset = MediaQuery.paddingOf(context).top;
+    final heroHeight =
+        topInset + (_typing ? LoginHero.compactHeight : LoginHero.fullHeight);
+
+    return AnimatedPadding(
+      duration: motion.duration(KairoSpring.smooth),
+      curve: motion.curve(KairoSpring.smooth),
+      // Overlap the hero's rounded edge.
+      padding: EdgeInsets.only(top: heroHeight - 30),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: AnimatedBuilder(
+            animation: _shake,
+            builder: (context, child) => Transform.translate(
+              offset: Offset(
+                math.sin(_shake.value * math.pi * 6) * 10 * (1 - _shake.value),
+                0,
               ),
+              child: child,
+            ),
+            child: Container(
+              margin: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenMargin,
+              ),
+              padding: const EdgeInsets.all(AppSpacing.spacing16),
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusHero),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x0A121417),
+                    blurRadius: 2,
+                    offset: Offset(0, 1),
+                  ),
+                  BoxShadow(
+                    color: Color(0x14121417),
+                    blurRadius: 32,
+                    offset: Offset(0, 12),
+                  ),
+                ],
+              ),
+              child: FocusScope(node: _focusScope, child: _form(context, auth)),
             ),
           ),
         ),
@@ -241,239 +274,198 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
-  Widget _buildForm(AppColorScheme colors) {
-    return Column(
-      key: ValueKey('form_$_isSignUp'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (_isSignUp) ...[
-          _ModernTextField(
-            controller: _nameController,
-            label: context.l10n.displayName,
-            hint: context.l10n.displayNameHint,
-            icon: Icons.person_outline,
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: AppSpacing.spacing16),
-          _ModernTextField(
-            controller: _usernameController,
-            label: context.l10n.username,
-            hint: context.l10n.usernameHint,
-            icon: Icons.alternate_email,
-            textInputAction: TextInputAction.next,
-            autocorrect: false,
-          ),
-          const SizedBox(height: AppSpacing.spacing16),
-        ],
-        _ModernTextField(
-          controller: _emailController,
-          label: context.l10n.email,
-          hint: context.l10n.emailHint,
-          icon: Icons.mail_outline,
-          keyboardType: TextInputType.emailAddress,
-          textInputAction: TextInputAction.next,
-        ),
-        const SizedBox(height: AppSpacing.spacing16),
-        _ModernTextField(
-          controller: _passwordController,
-          label: context.l10n.password,
-          hint: _isSignUp
-              ? context.l10n.passwordHintSignUp
-              : context.l10n.passwordHintSignIn,
-          icon: Icons.lock_outline,
-          obscureText: !_isPasswordVisible,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _submit(),
-          suffix: IconButton(
-            icon: Icon(
-              _isPasswordVisible
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined,
-              color: colors.textMuted,
-              size: 20,
-            ),
-            onPressed: () => setState(
-              () => _isPasswordVisible = !_isPasswordVisible,
-            ),
-          ),
-        ),
-        if (!_isSignUp) ...[
-          const SizedBox(height: AppSpacing.spacing8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: GestureDetector(
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(context.l10n.passwordResetComingSoon),
+  Widget _form(BuildContext context, AuthState auth) {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final motion = context.motion;
+
+    final fields = <Widget>[
+      KairoSegmentedControl<bool>(
+        segments: {false: l10n.signIn, true: l10n.signUp},
+        selected: _signUp,
+        onChanged: (v) => setState(() => _signUp = v),
+      ),
+      AnimatedSize(
+        duration: motion.duration(KairoSpring.smooth),
+        curve: motion.curve(KairoSpring.smooth),
+        alignment: Alignment.topCenter,
+        child: _signUp
+            ? Column(
+                children: [
+                  const SizedBox(height: AppSpacing.spacing12),
+                  _Field(
+                    controller: _name,
+                    label: l10n.displayName,
+                    icon: CupertinoIcons.person,
+                    capitalization: TextCapitalization.words,
+                    autofill: AutofillHints.name,
                   ),
-                );
-              },
-              child: Text(
-                context.l10n.forgotPassword,
-                style: context.textTheme.bodySmall?.copyWith(
-                  color: colors.accent,
-                  fontWeight: FontWeight.w600,
+                  const SizedBox(height: AppSpacing.spacing12),
+                  _Field(
+                    controller: _username,
+                    label: l10n.username,
+                    icon: CupertinoIcons.at,
+                    autofill: AutofillHints.newUsername,
+                  ),
+                ],
+              )
+            : const SizedBox(width: double.infinity),
+      ),
+      AutofillGroup(
+        child: Column(
+          children: [
+            const SizedBox(height: AppSpacing.spacing12),
+            _Field(
+              controller: _email,
+              label: l10n.email,
+              icon: CupertinoIcons.mail,
+              keyboard: TextInputType.emailAddress,
+              autofill: AutofillHints.email,
+            ),
+            const SizedBox(height: AppSpacing.spacing12),
+            _Field(
+              controller: _password,
+              focusNode: _passwordFocus,
+              label: l10n.password,
+              icon: CupertinoIcons.lock,
+              obscure: !_showPassword,
+              done: true,
+              onSubmitted: _submit,
+              autofill: _signUp
+                  ? AutofillHints.newPassword
+                  : AutofillHints.password,
+              suffix: IconButton(
+                tooltip: l10n.password,
+                onPressed: () => setState(() => _showPassword = !_showPassword),
+                icon: Icon(
+                  _showPassword ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
+                  size: 20,
+                  color: colors.labelSecondary,
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+      if (!_signUp)
+        Align(
+          alignment: Alignment.centerRight,
+          child: KairoButton(
+            label: l10n.forgotPassword,
+            variant: KairoButtonVariant.plain,
+            onPressed: () => ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                SnackBar(
+                  content: Text(l10n.passwordResetComingSoon),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              ),
           ),
-        ],
+        )
+      else
+        const SizedBox(height: AppSpacing.spacing16),
+      KairoButton(
+        label: _signUp ? l10n.createAccountButton : l10n.signIn,
+        expand: true,
+        loading: auth.status == AuthStatus.loading,
+        onPressed: _submit,
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.spacing12),
+        child: Row(
+          children: [
+            Expanded(child: Divider(color: colors.separator)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                l10n.orDivider,
+                style: context.typography.footnote.copyWith(
+                  color: colors.labelSecondary,
+                ),
+              ),
+            ),
+            Expanded(child: Divider(color: colors.separator)),
+          ],
+        ),
+      ),
+      _GoogleButton(
+        onTap: () =>
+            context.read<AuthBloc>().add(const AuthGoogleSignInRequested()),
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < fields.length; i++)
+          KairoEntrance(index: math.min(i, 5), child: fields[i]),
       ],
     );
   }
-
-  void _submit() {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-
-    if (email.isEmpty || password.isEmpty) return;
-
-    if (_isSignUp) {
-      final name = _nameController.text.trim();
-      final username = _usernameController.text.trim().toLowerCase();
-      context.read<AuthBloc>().add(
-            AuthSignUpRequested(
-              email: email,
-              password: password,
-              displayName: name.isNotEmpty ? name : email.split('@').first,
-              username: username.isNotEmpty
-                  ? username
-                  : email.split('@').first,
-            ),
-          );
-    } else {
-      context.read<AuthBloc>().add(
-            AuthSignInRequested(email: email, password: password),
-          );
-    }
-  }
 }
 
-class _ModernTextField extends StatelessWidget {
-  const _ModernTextField({
+class _Field extends StatelessWidget {
+  const _Field({
     required this.controller,
     required this.label,
-    required this.hint,
     required this.icon,
-    this.keyboardType,
-    this.textInputAction,
-    this.obscureText = false,
-    this.autocorrect = true,
+    this.focusNode,
+    this.keyboard,
+    this.obscure = false,
+    this.done = false,
     this.onSubmitted,
     this.suffix,
+    this.autofill,
+    this.capitalization = TextCapitalization.none,
   });
 
   final TextEditingController controller;
+  final FocusNode? focusNode;
   final String label;
-  final String hint;
   final IconData icon;
-  final TextInputType? keyboardType;
-  final TextInputAction? textInputAction;
-  final bool obscureText;
-  final bool autocorrect;
-  final void Function(String)? onSubmitted;
+  final TextInputType? keyboard;
+  final bool obscure;
+  final bool done;
+  final VoidCallback? onSubmitted;
   final Widget? suffix;
+  final String? autofill;
+  final TextCapitalization capitalization;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surfaceElevated,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
-        border: Border.all(
-          color: colors.border.withValues(alpha: 0.5),
+    final radius = BorderRadius.circular(AppSpacing.radiusTile);
+    return TextField(
+      controller: controller,
+      focusNode: focusNode,
+      keyboardType: keyboard,
+      obscureText: obscure,
+      autocorrect: false,
+      textCapitalization: capitalization,
+      textInputAction: done ? TextInputAction.done : TextInputAction.next,
+      onSubmitted: onSubmitted == null ? null : (_) => onSubmitted!(),
+      autofillHints: autofill == null ? null : [autofill!],
+      style: context.typography.body,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, size: 20, color: colors.labelSecondary),
+        suffixIcon: suffix,
+        filled: true,
+        fillColor: colors.fill,
+        border: OutlineInputBorder(
+          borderRadius: radius,
+          borderSide: BorderSide.none,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: colors.textPrimary.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        textInputAction: textInputAction,
-        obscureText: obscureText,
-        autocorrect: autocorrect,
-        onSubmitted: onSubmitted,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          floatingLabelBehavior: FloatingLabelBehavior.auto,
-          prefixIcon: Icon(icon, color: colors.textSecondary),
-          suffixIcon: suffix,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.spacing16,
-            vertical: AppSpacing.spacing16,
-          ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: radius,
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: radius,
+          borderSide: BorderSide(color: colors.tint, width: 1.5),
         ),
       ),
-    );
-  }
-}
-
-class _SubmitButton extends StatelessWidget {
-  const _SubmitButton({
-    required this.isSignUp,
-    required this.onTap,
-  });
-
-  final bool isSignUp;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
-        final isLoading = state.status == AuthStatus.loading;
-
-        return GestureDetector(
-          onTap: isLoading ? null : onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            height: 56,
-            decoration: BoxDecoration(
-              color: colors.accent,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.accent.withValues(alpha: 0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Center(
-              child: isLoading
-                  ? SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: colors.onTint,
-                      ),
-                    )
-                  : Text(
-                      isSignUp
-                          ? context.l10n.createAccountButton
-                          : context.l10n.signIn,
-                      style: context.textTheme.bodyLarge?.copyWith(
-                        color: colors.onTint,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-            ),
-          ),
-        );
-      },
     );
   }
 }
@@ -486,24 +478,23 @@ class _GoogleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-
-    return OutlinedButton.icon(
+    return OutlinedButton(
       onPressed: onTap,
-      icon: SvgPicture.asset(
-        'assets/icons/google_logo.svg',
-        width: 24,
-        height: 24,
-      ),
-      label: Text(context.l10n.continueWithGoogle),
       style: OutlinedButton.styleFrom(
-        foregroundColor: colors.textPrimary,
-        backgroundColor: colors.surfaceElevated,
-        side: BorderSide(color: colors.border),
-        minimumSize: const Size(double.infinity, 56),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        foregroundColor: colors.label,
+        backgroundColor: colors.surface,
+        side: BorderSide(color: colors.separator),
+        minimumSize: const Size(double.infinity, 52),
+        shape: const StadiumBorder(),
+        textStyle: context.typography.headline,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SvgPicture.asset('assets/icons/google_logo.svg', width: 20),
+          const SizedBox(width: AppSpacing.spacing8),
+          Flexible(child: Text(context.l10n.continueWithGoogle)),
+        ],
       ),
     );
   }

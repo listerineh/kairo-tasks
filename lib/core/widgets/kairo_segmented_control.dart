@@ -7,8 +7,9 @@ import '../../app/theme/app_spacing.dart';
 import '../extensions/context_extensions.dart';
 import '../services/haptics_service.dart';
 
-/// iOS-style segmented control: the thumb slides to the selection with the
-/// `snappy` spring and every change ticks a selection haptic.
+/// Segmented control: a white thumb slides over the `fill` track to the
+/// selection with the `snappy` spring, and every change ticks a selection
+/// haptic.
 class KairoSegmentedControl<T> extends StatelessWidget {
   const KairoSegmentedControl({
     required this.segments,
@@ -39,16 +40,15 @@ class KairoSegmentedControl<T> extends StatelessWidget {
     final x = count == 1 ? 0.0 : -1 + 2 * index / (count - 1);
 
     return ConstrainedBox(
-      // 32 pt like iOS, inside a 44 pt tall touch area.
       constraints: const BoxConstraints(minHeight: AppSpacing.minTouchTarget),
       child: Center(
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: colors.fill,
-            borderRadius: BorderRadius.circular(9),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(2),
+            padding: const EdgeInsets.all(3),
             child: Stack(
               children: [
                 Positioned.fill(
@@ -62,12 +62,12 @@ class KairoSegmentedControl<T> extends StatelessWidget {
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: colors.surfaceRaised,
-                          borderRadius: BorderRadius.circular(7),
+                          borderRadius: BorderRadius.circular(11),
                           boxShadow: const [
                             BoxShadow(
-                              color: Color(0x1F000000),
-                              blurRadius: 8,
-                              offset: Offset(0, 3),
+                              color: Color(0x1F121417),
+                              blurRadius: 3,
+                              offset: Offset(0, 1),
                             ),
                           ],
                         ),
@@ -119,7 +119,7 @@ class _Segment extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 28),
+          constraints: const BoxConstraints(minHeight: 38),
           child: Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(
@@ -134,9 +134,9 @@ class _Segment extends StatelessWidget {
                   label,
                   maxLines: 1,
                   textAlign: TextAlign.center,
-                  style: context.typography.footnote.copyWith(
+                  style: context.typography.subheadline.copyWith(
                     color: colors.label,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
               ),

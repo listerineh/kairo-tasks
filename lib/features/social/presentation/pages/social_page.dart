@@ -1,1230 +1,333 @@
 import 'dart:async';
+import 'dart:math' as math;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../../../core/services/logger_service.dart';
-import '../../../../app/theme/app_colors.dart';
+import '../../../../app/di/injection.dart';
 import '../../../../app/theme/app_spacing.dart';
-import '../../../../app/widgets/kairo_header.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/widgets/kairo_button.dart';
+import '../../../../core/widgets/kairo_card.dart';
+import '../../../../core/widgets/kairo_entrance.dart';
+import '../../../../core/widgets/kairo_sheet.dart';
+import '../../../../core/widgets/kairo_tab_bar.dart';
+import '../../../../core/widgets/pressable.dart';
+import '../../../tasks/domain/entities/task_entity.dart';
+import '../../../tasks/presentation/bloc/tasks_bloc.dart';
+import '../../../tasks/presentation/widgets/task_feedback.dart';
 import '../../../tasks/presentation/widgets/task_form_sheet.dart';
+import '../../domain/entities/friend.dart';
+import '../../domain/shared_tasks.dart';
+import '../bloc/social_bloc.dart';
+import '../widgets/add_friend_sheet.dart';
+import '../widgets/friend_sheet.dart';
+import '../widgets/friends_strip.dart';
+import '../widgets/request_card.dart';
+import '../widgets/shared_task_card.dart';
 
-class SocialPage extends StatefulWidget {
-  const SocialPage({super.key});
+/// Juntos (docs/redesign-plan.md §2.3): requests, friends, and the tasks you
+/// share, with a nudge and a focus session for each.
+class SocialPage extends StatelessWidget {
+  const SocialPage({super.key, this.bloc});
 
-  @override
-  State<SocialPage> createState() => _SocialPageState();
-}
-
-class _SocialPageState extends State<SocialPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final _searchController = TextEditingController();
-  Timer? _debounce;
-
-  bool _isLoading = true;
-  List<Map<String, dynamic>> _searchResults = [];
-  List<Map<String, dynamic>> _friends = [];
-  List<Map<String, dynamic>> _pendingRequests = [];
-  Set<String> _sentRequestIds = {};
-  Set<String> _friendIds = {};
-  RealtimeChannel? _realtimeChannel;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(
-      length: 3,
-      vsync: this,
-      initialIndex: 1,
-    );
-    _loadSocialData();
-    _searchController.addListener(_onSearchChanged);
-
-    _realtimeChannel = Supabase.instance.client
-        .channel('friendships_updates')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'friendships',
-          callback: (payload) async {
-            if (!mounted) return;
-            await _loadSocialData();
-            final query = _searchController.text.trim();
-            if (query.isNotEmpty) {
-              await _searchUsers(query);
-            }
-          },
-        )
-        .subscribe();
-  }
-
-  @override
-  void dispose() {
-    unawaited(_realtimeChannel?.unsubscribe().then((_) {}) ?? Future<void>.value());
-    if (_realtimeChannel != null) {
-      unawaited(Supabase.instance.client.removeChannel(_realtimeChannel!).then((_) {}));
-    }
-    _tabController.dispose();
-    _debounce?.cancel();
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _onSearchChanged() {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 400), () {
-      _searchUsers(_searchController.text.trim());
-    });
-  }
-
-  Future<void> _loadSocialData() async {
-    LoggerService.instance.info(
-      'Loading social data',
-      data: {'operation': 'social.loadSocialData'},
-    );
-    setState(() => _isLoading = true);
-    try {
-      final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId == null) {
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      final [friendshipsRaw, pendingRaw] = await Future.wait([
-        Supabase.instance.client
-            .from('friendships')
-            .select(
-                'id, status, requester_id, addressee_id, requester_color, addressee_color, created_at')
-            .or('requester_id.eq.$userId,addressee_id.eq.$userId')
-            .eq('status', 'accepted'),
-        Supabase.instance.client
-            .from('friendships')
-            .select('id, status, requester_id, addressee_id, created_at')
-            .or('requester_id.eq.$userId,addressee_id.eq.$userId')
-            .eq('status', 'pending'),
-      ]);
-
-      final friendships =
-          (friendshipsRaw as List).cast<Map<String, dynamic>>();
-      final allPending = (pendingRaw as List).cast<Map<String, dynamic>>();
-      final receivedPending = allPending
-          .where((p) => p['addressee_id'] == userId)
-          .toList();
-      final sentPending = allPending
-          .where((p) => p['requester_id'] == userId)
-          .toList();
-
-      final profileIds = <String>{};
-      for (final f in friendships) {
-        final otherId = f['requester_id'] == userId
-            ? f['addressee_id']
-            : f['requester_id'];
-        profileIds.add(otherId as String);
-      }
-      for (final p in receivedPending) {
-        profileIds.add(p['requester_id'] as String);
-      }
-      for (final p in sentPending) {
-        profileIds.add(p['addressee_id'] as String);
-      }
-
-      final profileMap = <String, Map<String, dynamic>>{};
-      if (profileIds.isNotEmpty) {
-        final profilesData = await Supabase.instance.client
-            .from('profiles')
-            .select('id, username, display_name, avatar_url')
-            .filter('id', 'in', profileIds.toList());
-        for (final p in (profilesData as List).cast<Map<String, dynamic>>()) {
-          profileMap[p['id'] as String] = p;
-        }
-      }
-
-      setState(() {
-        _friendIds = friendships.map((f) {
-          return f['requester_id'] == userId
-              ? f['addressee_id'] as String
-              : f['requester_id'] as String;
-        }).toSet();
-        _sentRequestIds = sentPending
-            .map((p) => p['addressee_id'] as String)
-            .toSet();
-        _friends = friendships.map((f) {
-          final isRequester = f['requester_id'] == userId;
-          final otherId = isRequester
-              ? f['addressee_id'] as String
-              : f['requester_id'] as String;
-          final color = isRequester
-              ? (f['requester_color'] as String? ?? '#6B8FA3')
-              : (f['addressee_color'] as String? ?? '#6B8FA3');
-          return {
-            ...f,
-            'profile': profileMap[otherId] ?? <String, dynamic>{},
-            'color': color,
-            'is_requester': isRequester,
-            'friendship_id': f['id'] as String,
-          };
-        }).toList();
-        _pendingRequests = receivedPending.map((p) {
-          final requesterId = p['requester_id'] as String;
-          return {
-            ...p,
-            'requester_profile': profileMap[requesterId] ?? <String, dynamic>{},
-          };
-        }).toList();
-        _isLoading = false;
-      });
-      LoggerService.instance.info(
-        'Social data loaded',
-        data: {
-          'operation': 'social.loadSocialData',
-          'friend_count': _friends.length,
-          'pending_count': _pendingRequests.length,
-        },
-      );
-    } catch (e) {
-      LoggerService.instance.error(
-        'Failed to load social data',
-        data: {'operation': 'social.loadSocialData', 'error': e.toString()},
-      );
-      setState(() => _isLoading = false);
-      _showError('Could not load social data: $e');
-    }
-  }
-
-  Future<void> _searchUsers(String query) async {
-    LoggerService.instance.info(
-      'Searching users',
-      data: {'operation': 'social.searchUsers', 'query': query},
-    );
-
-    if (query.isEmpty) {
-      setState(() => _searchResults = []);
-      return;
-    }
-
-    final currentUser = Supabase.instance.client.auth.currentUser;
-    if (currentUser == null) return;
-
-    try {
-      final results = await Supabase.instance.client
-          .from('profiles')
-          .select('id, username, display_name, avatar_url')
-          .ilike('username', '%$query%')
-          .neq('id', currentUser.id)
-          .limit(20);
-
-      setState(() {
-        _searchResults = results.map((profile) {
-          final id = profile['id'] as String;
-          return {
-            ...profile,
-            'is_friend': _friendIds.contains(id),
-            'is_request_sent': _sentRequestIds.contains(id),
-          };
-        }).toList();
-      });
-    } catch (e) {
-      LoggerService.instance.error(
-        'User search failed',
-        data: {
-          'operation': 'social.searchUsers',
-          'query': query,
-          'error': e.toString(),
-        },
-      );
-      debugPrint(e.toString());
-      setState(() => _searchResults = []);
-      _showError('Could not search users: $e');
-    }
-  }
-
-  Future<void> _sendRequest(String addresseeId) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId == null) return;
-
-    LoggerService.instance.info(
-      'Sending friend request',
-      data: {'operation': 'social.sendRequest', 'addressee_id': addresseeId},
-    );
-
-    final l10n = context.l10n;
-    try {
-      await Supabase.instance.client.from('friendships').insert({
-        'requester_id': userId,
-        'addressee_id': addresseeId,
-        'status': 'pending',
-      });
-      _showSuccess(l10n.friendRequestSent);
-      _sentRequestIds.add(addresseeId);
-      await _searchUsers(_searchController.text.trim());
-      await _loadSocialData();
-    } catch (e) {
-      LoggerService.instance.error(
-        'Failed to send friend request',
-        data: {
-          'operation': 'social.sendRequest',
-          'addressee_id': addresseeId,
-          'error': e.toString(),
-        },
-      );
-      debugPrint(e.toString());
-      _showError('Could not send request: $e');
-    }
-  }
-
-  Future<void> _respondRequest(String requestId, String status) async {
-    LoggerService.instance.info(
-      'Responding to friend request',
-      data: {
-        'operation': 'social.respondRequest',
-        'friendship_id': requestId,
-        'status': status,
-      },
-    );
-
-    final l10n = context.l10n;
-    try {
-      await Supabase.instance.client
-          .from('friendships')
-          .update({'status': status})
-          .eq('id', requestId);
-
-      _showSuccess(
-        status == 'accepted' ? l10n.friendRequestAccepted : l10n.requestDeclined,
-      );
-      await _loadSocialData();
-      await _searchUsers(_searchController.text.trim());
-    } catch (e) {
-      LoggerService.instance.error(
-        'Failed to respond to friend request',
-        data: {
-          'operation': 'social.respondRequest',
-          'friendship_id': requestId,
-          'status': status,
-          'error': e.toString(),
-        },
-      );
-      debugPrint(e.toString());
-      _showError('Could not respond to request: $e');
-    }
-  }
-
-  Future<void> _removeFriend(String friendshipId) async {
-    LoggerService.instance.info(
-      'Removing friend',
-      data: {'operation': 'social.removeFriend', 'friendship_id': friendshipId},
-    );
-
-    final l10n = context.l10n;
-    try {
-      await Supabase.instance.client
-          .from('friendships')
-          .delete()
-          .eq('id', friendshipId);
-      _showSuccess(l10n.friendRemoved);
-      await _loadSocialData();
-      await _searchUsers(_searchController.text.trim());
-    } catch (e) {
-      LoggerService.instance.error(
-        'Failed to remove friend',
-        data: {
-          'operation': 'social.removeFriend',
-          'friendship_id': friendshipId,
-          'error': e.toString(),
-        },
-      );
-      debugPrint(e.toString());
-      _showError('Could not remove friend: $e');
-    }
-  }
-
-  Future<void> _updateFriendColor(
-    String friendshipId,
-    String color, {
-    required bool isRequester,
-  }) async {
-    LoggerService.instance.info(
-      'Updating friend color',
-      data: {
-        'operation': 'social.updateFriendColor',
-        'friendship_id': friendshipId,
-        'color': color,
-      },
-    );
-
-    try {
-      await Supabase.instance.client
-          .from('friendships')
-          .update({
-            if (isRequester) 'requester_color': color,
-            if (!isRequester) 'addressee_color': color,
-          })
-          .eq('id', friendshipId);
-      _showSuccess('Color saved');
-      await _loadSocialData();
-    } catch (e) {
-      LoggerService.instance.error(
-        'Failed to update friend color',
-        data: {
-          'operation': 'social.updateFriendColor',
-          'friendship_id': friendshipId,
-          'color': color,
-          'error': e.toString(),
-        },
-      );
-      debugPrint(e.toString());
-      _showError('Could not save color: $e');
-    }
-  }
-
-  void _showSuccess(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _showError(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  Future<void> _openFriendDetail(Map<String, dynamic> friend) async {
-    final other = friend['profile'] as Map<String, dynamic>?;
-    if (other == null) return;
-
-    final friendId = other['id'] as String?;
-    final displayName =
-        other['display_name'] as String? ??
-        other['username'] as String? ??
-        context.l10n.friend;
-    final username = other['username'] as String? ?? '';
-    final avatarUrl = other['avatar_url'] as String?;
-    final color = friend['color'] as String? ?? '#6B8FA3';
-    final friendshipId = friend['friendship_id'] as String? ?? '';
-    final isRequester = friend['is_requester'] as bool? ?? false;
-
-    final shouldRemove = await showModalBottomSheet<bool?>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _FriendDetailSheet(
-        displayName: displayName,
-        username: username,
-        color: color,
-        avatarUrl: avatarUrl,
-        onColor: (newColor) => _updateFriendColor(
-          friendshipId,
-          newColor,
-          isRequester: isRequester,
-        ),
-        onCreateTask: () => _showCreateTaskWithFriend(friendId),
-      ),
-    );
-
-    if (shouldRemove ?? false) {
-      await _removeFriend(friendshipId);
-    }
-  }
-
-  void _showCreateTaskWithFriend(String? friendId) {
-    if (friendId == null) return;
-    unawaited(showTaskForm(context, initialFriendId: friendId));
-  }
+  /// Tests pass their own; the app builds one from DI.
+  final SocialBloc? bloc;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
-
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: const KairoHeader(),
-        centerTitle: true,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: colors.accent,
-          unselectedLabelColor: colors.textSecondary,
-          indicatorColor: colors.accent,
-          indicatorWeight: 3,
-          tabs: [
-            _Tab(
-              icon: Icons.search,
-              label: context.l10n.search,
-              count: _searchResults.length,
-            ),
-            _Tab(
-              icon: Icons.people,
-              label: context.l10n.friends,
-              count: _friends.length,
-            ),
-            _Tab(
-              icon: Icons.mail,
-              label: context.l10n.requests,
-              count: _pendingRequests.length,
-            ),
-          ],
-        ),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _SearchTab(
-                  controller: _searchController,
-                  results: _searchResults,
-                  onAdd: _sendRequest,
-                  onRefresh: _loadSocialData,
-                ),
-                _FriendsTab(
-                  friends: _friends,
-                  colors: colors,
-                  onOpen: _openFriendDetail,
-                  onRefresh: _loadSocialData,
-                ),
-                _RequestsTab(
-                  requests: _pendingRequests,
-                  onAccept: _respondRequest,
-                  onDecline: _respondRequest,
-                  colors: colors,
-                  onRefresh: _loadSocialData,
-                ),
-              ],
-            ),
-    );
+    final injected = bloc;
+    return injected != null
+        ? BlocProvider.value(value: injected, child: const SocialView())
+        : BlocProvider(
+            create: (_) => getIt<SocialBloc>()..add(const SocialStarted()),
+            child: const SocialView(),
+          );
   }
 }
 
-class _Tab extends StatelessWidget {
-  const _Tab({
-    required this.icon,
-    required this.label,
-    required this.count,
-  });
+class SocialView extends StatelessWidget {
+  const SocialView({super.key, this.now});
 
-  final IconData icon;
-  final String label;
-  final int count;
+  /// Fixed in goldens; otherwise the current time.
+  final DateTime? now;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
-
-    return Tab(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 18),
-          const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (count > 0) ...[
-            const SizedBox(width: 4),
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                color: colors.urgent,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  count.toString(),
-                  style: TextStyle(
-                    color: colors.onDestructive,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
+    return TaskFeedbackListener(
+      child: BlocListener<SocialBloc, SocialState>(
+        listenWhen: (a, b) => a.noticeCount != b.noticeCount,
+        listener: _showNotice,
+        child: Scaffold(
+          backgroundColor: context.appColors.background,
+          body: SafeArea(
+            bottom: false,
+            child: DefaultTextStyle.merge(
+              style: TextStyle(color: context.appColors.label),
+              child: BlocBuilder<SocialBloc, SocialState>(
+                builder: (context, social) => switch (social.status) {
+                  SocialStatus.loading => const Center(
+                    child: CupertinoActivityIndicator(),
                   ),
-                ),
+                  SocialStatus.failure => _loadError(context),
+                  SocialStatus.ready => BlocBuilder<TasksBloc, TasksState>(
+                    buildWhen: (a, b) => a.tasks != b.tasks,
+                    builder: (context, tasks) =>
+                        _content(context, social, sharedTasks(tasks.tasks)),
+                  ),
+                },
               ),
             ),
-          ],
-        ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _content(
+    BuildContext context,
+    SocialState state,
+    List<TaskEntity> shared,
+  ) {
+    final l10n = context.l10n;
+    final bloc = context.read<SocialBloc>();
+    final time = now ?? DateTime.now();
+    final bottom = math.max(
+      MediaQuery.paddingOf(context).bottom,
+      KairoTabBar.contentPadding(context),
+    );
+
+    final sections = <Widget>[
+      _Header(
+        count: state.friends.length,
+        onAdd: () => _openAddFriend(context),
+      ),
+      for (final r in state.requests)
+        RequestCard(
+          key: ValueKey('request-${r.id}'),
+          request: r,
+          onAccept: () {
+            unawaited(HapticFeedback.lightImpact());
+            bloc.add(FriendRequestAnswered(r, accept: true));
+          },
+          onDecline: () => bloc.add(FriendRequestAnswered(r, accept: false)),
+        ),
+      if (state.friends.isEmpty)
+        KairoCard(
+          child: EmptyState(
+            icon: CupertinoIcons.person_2,
+            title: l10n.noFriendsTitle,
+            message: l10n.friendsNone,
+            action: KairoButton(
+              label: l10n.addFriend,
+              icon: CupertinoIcons.person_add,
+              variant: KairoButtonVariant.tinted,
+              onPressed: () => _openAddFriend(context),
+            ),
+          ),
+        )
+      else
+        FriendsStrip(
+          friends: state.friends,
+          onOpen: (f) => _openFriend(context, f),
+        ),
+      if (state.friends.isNotEmpty) ...[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.spacing4,
+            AppSpacing.spacing8,
+            AppSpacing.spacing4,
+            0,
+          ),
+          child: Semantics(
+            header: true,
+            child: Text(l10n.doingTogether, style: context.typography.title2),
+          ),
+        ),
+        if (shared.isEmpty)
+          KairoCard(
+            child: EmptyState(
+              icon: CupertinoIcons.hand_raised,
+              title: l10n.doingTogetherEmpty,
+              message: l10n.doingTogetherEmptyHint,
+            ),
+          )
+        else
+          for (final t in shared)
+            SharedTaskCard(
+              key: ValueKey('shared-${t.id}'),
+              task: t,
+              now: time,
+              nudged: state.nudged.contains(t.id),
+              onNudge: () {
+                unawaited(HapticFeedback.selectionClick());
+                bloc.add(NudgeSent(t));
+              },
+              onFocus: () => context.push('/focus', extra: t),
+              onOpen: () => showTaskDetail(context, t),
+            ),
+      ],
+    ];
+
+    return RefreshIndicator.adaptive(
+      onRefresh: () {
+        final done = Completer<void>();
+        bloc.add(SocialRefreshed(done));
+        return done.future;
+      },
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.screenMargin,
+          AppSpacing.spacing12,
+          AppSpacing.screenMargin,
+          bottom,
+        ),
+        itemCount: sections.length,
+        separatorBuilder: (_, _) =>
+            const SizedBox(height: AppSpacing.spacing12),
+        itemBuilder: (context, i) =>
+            KairoEntrance(index: i.clamp(0, 5), child: sections[i]),
+      ),
+    );
+  }
+
+  Widget _loadError(BuildContext context) {
+    final l10n = context.l10n;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.screenMargin),
+        child: EmptyState(
+          icon: CupertinoIcons.exclamationmark_triangle,
+          title: l10n.socialLoadError,
+          action: KairoButton(
+            label: l10n.tryAgain,
+            variant: KairoButtonVariant.tinted,
+            onPressed: () =>
+                context.read<SocialBloc>().add(const SocialStarted()),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static void _showNotice(BuildContext context, SocialState state) {
+    final l10n = context.l10n;
+    final text = switch (state.notice) {
+      SocialNotice.requestSent => l10n.friendRequestSent,
+      SocialNotice.requestAccepted => l10n.friendRequestAccepted,
+      SocialNotice.requestDeclined => l10n.requestDeclined,
+      SocialNotice.friendRemoved => l10n.friendRemoved,
+      SocialNotice.nudged => l10n.nudgeSent,
+      SocialNotice.nudgedRecently => l10n.nudgedRecently,
+      SocialNotice.failed => l10n.socialActionFailed,
+      null => null,
+    };
+    if (text == null) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
+      );
+  }
+
+  /// Sheets live on the root navigator, above this page's provider.
+  static void _openAddFriend(BuildContext context) {
+    final bloc = context.read<SocialBloc>();
+    unawaited(
+      showKairoSheet<void>(
+        context: context,
+        detents: const [KairoSheetDetent.large],
+        builder: (context, controller) => BlocProvider.value(
+          value: bloc,
+          child: AddFriendSheet(controller: controller),
+        ),
+      ).whenComplete(() => bloc.add(const SocialSearchChanged(''))),
+    );
+  }
+
+  static void _openFriend(BuildContext context, Friend friend) {
+    final bloc = context.read<SocialBloc>();
+    final pageContext = context;
+    unawaited(
+      showKairoSheet<void>(
+        context: context,
+        detents: const [KairoSheetDetent.medium, KairoSheetDetent.large],
+        builder: (context, controller) => BlocProvider.value(
+          value: bloc,
+          child: FriendSheet(
+            friendId: friend.id,
+            controller: controller,
+            onCreateTask: () => unawaited(
+              showTaskForm(pageContext, initialFriendId: friend.id),
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
-class _SearchTab extends StatelessWidget {
-  const _SearchTab({
-    required this.controller,
-    required this.results,
-    required this.onAdd,
-    required this.onRefresh,
-  });
+class _Header extends StatelessWidget {
+  const _Header({required this.count, required this.onAdd});
 
-  final TextEditingController controller;
-  final List<Map<String, dynamic>> results;
-  final void Function(String) onAdd;
-  final Future<void> Function() onRefresh;
+  final int count;
+  final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final colors = context.appColors;
-
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: AppSpacing.spacing16),
-          Container(
-            decoration: BoxDecoration(
-              color: colors.surfaceElevated,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.textPrimary.withValues(alpha: 0.04),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                hintText: context.l10n.searchHint,
-                prefixIcon: Icon(Icons.search, color: colors.textSecondary),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.all(AppSpacing.spacing16),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.spacing16),
-          Text(
-            results.isEmpty ? context.l10n.searchEmpty : context.l10n.searchResults,
-            style: context.textTheme.bodyMedium?.copyWith(
-              color: colors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.spacing8),
-          Expanded(
-            child: RefreshIndicator(
-              color: colors.accent,
-              backgroundColor: colors.surfaceElevated,
-              onRefresh: onRefresh,
-              child: results.isEmpty
-                  ? LayoutBuilder(
-                      builder: (context, constraints) {
-                        return SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minHeight: constraints.maxHeight,
-                            ),
-                            child: _EmptySearchState(colors: colors),
-                          ),
-                        );
-                      },
-                    )
-                  : ListView.builder(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      itemCount: results.length,
-                      itemBuilder: (context, index) {
-                        final user = results[index];
-                        final isFriend = (user['is_friend'] as bool?) ?? false;
-                        final isRequestSent =
-                            (user['is_request_sent'] as bool?) ?? false;
-
-                        return _UserListTile(
-                          profile: user,
-                          trailing: isFriend
-                              ? _StatusChip(
-                                  icon: Icons.check,
-                                  label: context.l10n.friends,
-                                  color: colors.accent,
-                                )
-                              : isRequestSent
-                                  ? _StatusChip(
-                                      icon: Icons.hourglass_empty,
-                                      label: context.l10n.pending,
-                                      color: colors.textMuted,
-                                    )
-                                  : _IconActionButton(
-                                      icon: Icons.person_add,
-                                      tooltip: context.l10n.sendFriendRequest,
-                                      onPressed: () => onAdd(user['id'] as String),
-                                    ),
-                        );
-                      },
-                    ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FriendsTab extends StatelessWidget {
-  const _FriendsTab({
-    required this.friends,
-    required this.colors,
-    required this.onOpen,
-    required this.onRefresh,
-  });
-
-  final List<Map<String, dynamic>> friends;
-  final AppColorScheme colors;
-  final void Function(Map<String, dynamic> friend) onOpen;
-  final Future<void> Function() onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
-      child: RefreshIndicator(
-        color: colors.accent,
-        backgroundColor: colors.surfaceElevated,
-        onRefresh: onRefresh,
-        child: friends.isEmpty
-            ? LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                      ),
-                      child: _EmptyState(
-                        icon: Icons.people_outline,
-                        title: context.l10n.noFriendsTitle,
-                        subtitle: context.l10n.noFriendsSubtitle,
-                        colors: colors,
-                      ),
-                    ),
-                  );
-                },
-              )
-            : ListView.builder(
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: friends.length,
-                itemBuilder: (context, index) {
-                  final friend = friends[index];
-
-                  return _UserListTile(
-                    profile: (friend['profile'] as Map<String, dynamic>?) ?? {},
-                    onTap: () => onOpen(friend),
-                  );
-                },
-              ),
-      ),
-    );
-  }
-}
-
-class _RequestsTab extends StatelessWidget {
-  const _RequestsTab({
-    required this.requests,
-    required this.onAccept,
-    required this.onDecline,
-    required this.colors,
-    required this.onRefresh,
-  });
-
-  final List<Map<String, dynamic>> requests;
-  final void Function(String, String) onAccept;
-  final void Function(String, String) onDecline;
-  final AppColorScheme colors;
-  final Future<void> Function() onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing16),
-      child: RefreshIndicator(
-        color: colors.accent,
-        backgroundColor: colors.surfaceElevated,
-        onRefresh: onRefresh,
-        child: requests.isEmpty
-            ? LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                      ),
-                      child: _EmptyState(
-                        icon: Icons.mail_outline,
-                        title: context.l10n.noPendingRequestsTitle,
-                        subtitle: context.l10n.noPendingRequestsSubtitle,
-                        colors: colors,
-                      ),
-                    ),
-                  );
-                },
-              )
-            : ListView.builder(
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: requests.length,
-                itemBuilder: (context, index) {
-                  final request = requests[index];
-                  final requester =
-                      request['requester_profile'] as Map<String, dynamic>?;
-
-                  return _UserListTile(
-                    profile: requester ?? {},
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _IconActionButton(
-                          icon: Icons.check,
-                          backgroundColor: colors.accent,
-                          iconColor: colors.onTint,
-                          onPressed: () => onAccept(
-                            request['id'] as String,
-                            'accepted',
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.spacing8),
-                        _IconActionButton(
-                          icon: Icons.close,
-                          backgroundColor: colors.urgent.withValues(alpha: 0.1),
-                          iconColor: colors.urgent,
-                          onPressed: () => onDecline(
-                            request['id'] as String,
-                            'rejected',
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-      ),
-    );
-  }
-}
-
-class _UserListTile extends StatelessWidget {
-  const _UserListTile({
-    required this.profile,
-    this.trailing,
-    this.onTap,
-  });
-
-  final Map<String, dynamic> profile;
-  final Widget? trailing;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final displayName = profile['display_name'] as String? ?? '';
-    final username = profile['username'] as String? ?? '';
-    final avatarUrl = profile['avatar_url'] as String?;
-
-    final card = Container(
-      margin: const EdgeInsets.symmetric(vertical: AppSpacing.spacing8),
-      padding: const EdgeInsets.all(AppSpacing.spacing12),
-      decoration: BoxDecoration(
-        color: colors.surfaceElevated,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
-        boxShadow: [
-          BoxShadow(
-            color: colors.textPrimary.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing4),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          _UserAvatar(url: avatarUrl, displayName: displayName),
-          const SizedBox(width: AppSpacing.spacing12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  displayName,
-                  style: context.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+                  l10n.togetherPeople(count),
+                  style: context.typography.subheadline.copyWith(
+                    color: colors.labelSecondary,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '@$username',
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    color: colors.textSecondary,
+                Semantics(
+                  header: true,
+                  child: Text(
+                    l10n.navTogether,
+                    style: context.typography.largeTitle,
                   ),
                 ),
               ],
             ),
           ),
-          if (trailing != null) trailing!,
-        ],
-      ),
-    );
-
-    if (onTap != null) {
-      return GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: card,
-      );
-    }
-    return card;
-  }
-}
-
-class _UserAvatar extends StatelessWidget {
-  const _UserAvatar({this.url, this.displayName});
-
-  final String? url;
-  final String? displayName;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-
-    return CircleAvatar(
-      radius: 28,
-      backgroundColor: colors.accentSoft,
-      backgroundImage: url != null ? NetworkImage(url!) : null,
-      child: url == null
-          ? Text(
-              (displayName ?? '?')[0].toUpperCase(),
-              style: context.textTheme.titleMedium?.copyWith(
-                color: colors.accent,
-              ),
-            )
-          : null,
-    );
-  }
-}
-
-class _IconActionButton extends StatelessWidget {
-  const _IconActionButton({
-    required this.icon,
-    required this.onPressed,
-    this.backgroundColor,
-    this.iconColor,
-    this.tooltip,
-  });
-
-  final IconData icon;
-  final VoidCallback onPressed;
-  final Color? backgroundColor;
-  final Color? iconColor;
-  final String? tooltip;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-
-    final button = Material(
-      color: backgroundColor ?? colors.accentSoft,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onPressed,
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(
-            icon,
-            color: iconColor ?? colors.accent,
-            size: 20,
-          ),
-        ),
-      ),
-    );
-
-    if (tooltip != null) {
-      return Tooltip(
-        message: tooltip,
-        child: button,
-      );
-    }
-
-    return button;
-  }
-}
-
-class _FriendDetailSheet extends StatelessWidget {
-  const _FriendDetailSheet({
-    required this.displayName,
-    required this.username,
-    required this.color,
-    required this.onColor,
-    required this.onCreateTask,
-    this.avatarUrl,
-  });
-
-  final String displayName;
-  final String username;
-  final String? avatarUrl;
-  final String color;
-  final void Function(String) onColor;
-  final VoidCallback onCreateTask;
-
-  static const _palette = [
-    '#4A6741',
-    '#5A7C51',
-    '#6B8C7A',
-    '#6B8FA3',
-    '#7A7A8C',
-    '#8C7B6B',
-    '#9B7A5B',
-    '#A36B6B',
-    '#8E6B9B',
-    '#6B5B8C',
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
-    return Container(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      decoration: BoxDecoration(
-        color: colors.surfaceElevated,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppSpacing.radiusXLarge),
-        ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.spacing24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.border,
-                    borderRadius: BorderRadius.circular(2),
+          Semantics(
+            button: true,
+            label: l10n.addFriend,
+            excludeSemantics: true,
+            child: Pressable(
+              onPressed: onAdd,
+              child: Container(
+                width: AppSpacing.minTouchTarget,
+                height: AppSpacing.minTouchTarget,
+                decoration: ShapeDecoration(
+                  color: colors.surface,
+                  shape: CircleBorder(
+                    side: BorderSide(color: colors.separator),
                   ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.spacing24),
-              CircleAvatar(
-                radius: 48,
-                backgroundColor: colors.accentSoft,
-                backgroundImage:
-                    avatarUrl != null ? NetworkImage(avatarUrl!) : null,
-                child: avatarUrl == null
-                    ? Text(
-                        displayName.isNotEmpty
-                            ? displayName[0].toUpperCase()
-                            : '?',
-                        style: context.textTheme.displaySmall?.copyWith(
-                          color: colors.accent,
-                        ),
-                      )
-                    : null,
-              ),
-              const SizedBox(height: AppSpacing.spacing16),
-              Text(
-                displayName,
-                style: context.textTheme.titleLarge,
-              ),
-              Text(
-                '@$username',
-                style: context.textTheme.bodyMedium?.copyWith(
-                  color: colors.textSecondary,
+                child: Icon(
+                  CupertinoIcons.person_add,
+                  size: 20,
+                  color: colors.label,
                 ),
               ),
-              const SizedBox(height: AppSpacing.spacing24),
-              Text(
-                context.l10n.friendColor,
-                style: context.textTheme.labelLarge,
-              ),
-              const SizedBox(height: AppSpacing.spacing12),
-              Wrap(
-                spacing: AppSpacing.spacing12,
-                runSpacing: AppSpacing.spacing12,
-                alignment: WrapAlignment.center,
-                children: _palette.map((hex) {
-                  final selected = hex == color;
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      onColor(hex);
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: _parseColor(hex),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: selected
-                              ? colors.textPrimary
-                              : Colors.transparent,
-                          width: 3,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: AppSpacing.spacing24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    onCreateTask();
-                  },
-                  icon: const Icon(Icons.add_task),
-                  label: Text(context.l10n.createTaskTogether),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.spacing12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  icon: const Icon(Icons.delete),
-                  label: Text(context.l10n.removeFriend),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: colors.urgent,
-                    side: BorderSide(color: colors.urgent),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.spacing16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Color _parseColor(String hex) {
-    try {
-      return Color(int.parse(hex.replaceFirst('#', '0xFF')));
-    } catch (_) {
-      return Colors.grey;
-    }
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.spacing12,
-        vertical: AppSpacing.spacing8,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptySearchState extends StatelessWidget {
-  const _EmptySearchState({required this.colors});
-
-  final AppColorScheme colors;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search, size: 48, color: colors.textMuted),
-          const SizedBox(height: AppSpacing.spacing12),
-          Text(
-            context.l10n.searchPrompt,
-            style: context.textTheme.bodyLarge?.copyWith(
-              color: colors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.colors,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final AppColorScheme colors;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 48, color: colors.textMuted),
-          const SizedBox(height: AppSpacing.spacing16),
-          Text(
-            title,
-            style: context.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.spacing4),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: context.textTheme.bodyMedium?.copyWith(
-              color: colors.textSecondary,
             ),
           ),
         ],

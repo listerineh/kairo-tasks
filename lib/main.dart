@@ -17,6 +17,7 @@ import 'core/constants/app_constants.dart';
 import 'core/services/logger_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/notification_store.dart';
+import 'core/services/preferences_service.dart';
 
 Future<void> main() async {
   // Bindings, init and runApp must share one zone, or Flutter reports a
@@ -65,6 +66,7 @@ Future<void> _bootstrap() async {
 
   // Initialize dependency injection
   await configureDependencies();
+  await getIt<PreferencesService>().load();
 
   // Load onboarding flag and current session
   final prefs = await SharedPreferences.getInstance();
