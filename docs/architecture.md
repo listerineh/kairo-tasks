@@ -46,33 +46,38 @@ lib/
 │   ├── router/                   # Navigation (go_router)
 │   │   ├── app_router.dart       # Route definitions
 │   │   ├── route_names.dart      # Named route constants
-│   │   └── shell_scaffold.dart   # Bottom navigation shell
+│   │   └── shell_scaffold.dart   # Shell with the floating KairoTabBar
 │   ├── locale/                   # Locale management
 │   │   └── locale_service.dart   # Selected Locale persistence
+│   ├── gallery/                  # Debug-only component gallery (/gallery)
 │   ├── widgets/                  # Shared app-level widgets
-│   │   └── kairo_header.dart     # Branded header widget
+│   │   └── notification_bell.dart # Bell with the unread badge
 │   └── theme/                    # Design system implementation
-│       ├── app_theme.dart        # ThemeData builder
-│       ├── app_colors.dart       # Color tokens
-│       └── app_spacing.dart      # Spacing & sizing tokens
+│       ├── app_theme.dart        # ThemeData builder (light and dark)
+│       ├── kairo_colors.dart     # Color tokens (ThemeExtension)
+│       ├── kairo_typography.dart # Type scale (ThemeExtension, Manrope)
+│       ├── app_motion.dart       # Springs and the reduced-motion switch
+│       ├── app_spacing.dart      # Spacing, radii and sizing tokens
+│       └── theme_service.dart    # Selected ThemeMode persistence
 ├── core/                         # Shared utilities (no business logic)
 │   ├── constants/                # App-wide constants
 │   ├── errors/                   # Failure & Exception classes
 │   ├── extensions/               # Dart/Flutter extensions
-│   ├── network/                  # Connectivity helpers
-│   ├── services/                 # Push + local notification orchestration
-│   │   └── notification_service.dart
+│   ├── network/                  # NetworkInfo (connectivity_plus)
+│   ├── services/                 # Notifications, haptics, preferences, logger
+│   ├── session/                  # CurrentUser (who is signed in)
 │   ├── utils/                    # Formatters, validators, helpers
-│   └── widgets/                  # Shared reusable widgets
+│   └── widgets/                  # Shared components (buttons, cards, sheet, tab bar…)
 └── features/                     # Feature modules
     ├── auth/                     # Authentication
     ├── onboarding/               # First-launch tour
-    ├── tasks/                    # Task management (CRUD, priority)
-    ├── calendar/                 # Calendar view
-    ├── social/                   # Friends, shared calendars
+    ├── dashboard/                # Hoy (TodaySummary) and Kairo the cat (mascot/)
+    ├── tasks/                    # Task management (CRUD, priority, offline-first)
+    ├── calendar/                 # Planear: day, week and month views
+    ├── social/                   # Juntos: friends, shared tasks, nudges
     ├── notifications/            # Push + in-app notifications
-    ├── focus/                    # Pomodoro focus timer (ADHD-friendly)
-    └── profile/                  # User settings & profile
+    ├── focus/                    # Focus sessions (ADHD-friendly)
+    └── profile/                  # Yo: profile, settings and Kairo's page
 ```
 
 ### Feature Module Structure
@@ -220,6 +225,17 @@ The `completed_at` column is set by a database trigger when `status` changes to 
 | created_at | TIMESTAMPTZ | DEFAULT NOW() |
 | | | UNIQUE(requester_id, addressee_id) |
 
+#### `nudges`
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PK |
+| sender_id | UUID | FK → profiles(id) |
+| recipient_id | UUID | FK → profiles(id) |
+| task_id | UUID | FK → tasks(id) |
+| created_at | TIMESTAMPTZ | DEFAULT NOW() |
+
+A nudge is a gentle push about a shared task. Inserting one sends a push to the recipient.
+
 ### Row Level Security (RLS)
 
 All tables have RLS enabled. Key policies:
@@ -228,6 +244,7 @@ All tables have RLS enabled. Key policies:
 - **shared_tasks**: Only task owners can share. Only participants can view.
 - **friendships**: Users can see their own friendship records.
 - **profiles**: Public read for username/display_name. Only owner can update.
+- **nudges**: Only between accepted friends, about a task both can see, and at most one per friend and task every 30 minutes.
 
 ### Public Calendar Access (RPC)
 
@@ -375,23 +392,27 @@ Using `go_router` with declarative routing.
 ```
 /onboarding         → OnboardingPage
 /login              → LoginPage
-/dashboard          → DashboardPage (tab 0)
-/tasks              → TasksPage (tab 1)
-/tasks/:id          → TaskDetailPage
-/tasks/create       → CreateTaskPage
-/calendar           → CalendarPage (tab 2)
-/social             → SocialPage (tab 3)
-/profile            → ProfilePage (tab 4)
+/dashboard          → TodayPage (tab Hoy)
+/dashboard/tasks    → TasksPage (the full task list)
+/calendar           → CalendarPage (tab Planear)
+/social             → SocialPage (tab Juntos)
+/profile            → ProfilePage (tab Yo)
+/profile/kairo      → Kairo's page
 /notifications      → NotificationsPage
-/focus              → FocusPage
+/focus              → FocusPage (takes an optional task as `extra`)
+/gallery            → Component gallery (debug builds only)
 ```
 
-`AppRouter.create(initialLocation)` computes the initial route:
-- If `has_seen_onboarding` has not been set, the user starts at `/onboarding`
-- Otherwise it falls back to the current auth session (logged-in users land on `/tasks`, logged-out users on `/login`)
+Old `/tasks` links redirect to `/dashboard/tasks`. Tasks are created and edited in sheets (`showTaskForm`, `showTaskDetail`), not routes.
+
+`main` computes the initial route and registers the router in DI once, so locale and theme changes never rebuild the navigation stack:
+- Signed in: `/dashboard`
+- Signed out: `/login`, or `/onboarding` if `has_seen_onboarding` has not been set
+
+A redirect sends signed-out users to `/login` and signed-in users away from it.
 
 ### Shell Route
-The main tabs (tasks, calendar, social, profile) share a `ShellRoute` with `BottomNavigationBar`, preserving state between tabs.
+The four tabs share a `StatefulShellRoute` with the floating `KairoTabBar` (`ShellScaffold`), preserving each tab's state. The bar's center ＋ opens the task form.
 
 ---
 
@@ -400,21 +421,21 @@ The main tabs (tasks, calendar, social, profile) share a `ShellRoute` with `Bott
 - `NotificationService` is a singleton in `lib/core/services/notification_service.dart`
 - Android FCM: token stored in `profiles.fcm_token`, refresh updates Supabase
 - Foreground messages are shown as local notifications
-- `onMessageOpenedApp` and `getInitialMessage` navigate via `AppRouter.router`
-- Payload `type` values (`friend_request`, `shared_task`, `task_due`, etc.) map to routes (`/social`, `/tasks`, `/calendar`)
+- `onMessageOpenedApp` and `getInitialMessage` navigate with the app's router
+- Payload `type` values (`friend_request`, `shared_task`, `task_due`, etc.) map to routes (`/social`, `/dashboard/tasks`, `/calendar`); a nudge opens `/social`
 - iOS: push notification toggles are now active; remote delivery still needs a paid Apple Developer account for APNs
 - Streak reminders: 23:00 close-to-losing and 00:00:01 lost-streak notifications
-- In-app notification bell in `KairoHeader` navigates to `/notifications`
-- Focus timer end notifications are scheduled locally with `zonedSchedule`
+- The `NotificationBell` on Hoy shows the unread badge and opens `/notifications`
+- Focus round-end notifications are scheduled locally with `zonedSchedule` (through the `FocusAlarm` port)
 - Soft persistent reminders (`scheduleSoftReminder`) are scheduled from `TaskDetailSheet` and cancelled when a new one replaces it
 
 ## Focus Mode
 
-- `FocusCubit` in `lib/features/focus/presentation/cubit/` manages timer state
-- `FocusPage` (`/focus`) lets the user pick a pending task and start a 25-minute Pomodoro session
-- `FocusButton` in the dashboard `KairoHeader` opens `/focus`
-- Timer uses a 1-second `Timer.periodic`; it schedules a local notification on start and cancels on pause/reset/close
-- At the end of a focus session the user can mark the task complete or take a 5-minute break
+- `FocusSession` (`features/focus/domain/`, pure) holds the session: four rounds of 25 minutes, 5-minute rests, a 15-minute rest after the fourth, and +5 minutes. It stores the **end timestamp**, not ticks, so the countdown survives backgrounding.
+- `FocusCubit` (`features/focus/presentation/cubit/`) is a `@lazySingleton`: the session keeps running when the user leaves the screen. It takes a clock, so tests use a fake one.
+- `FocusAlarm` is the port for the round-end notification; `NotificationFocusAlarm` implements it with `NotificationService`.
+- `FocusPage` (`/focus`) is dark in every theme. Hoy opens it from the "Ahora" card (with that task) or by long-pressing Kairo; with no task it asks what to focus on.
+- When a round ends the user can rest or complete the task.
 
 ---
 
@@ -443,9 +464,13 @@ The main tabs (tasks, calendar, social, profile) share a `ShellRoute` with `Bott
 - Test individual widgets with mocked BLoC
 - Verify rendering, interactions, accessibility
 
+### Golden Tests
+- `test/goldens/` holds a golden per component and per screen in light, dark and 200% text (`goldenTest` in `test/helpers/golden.dart`, which loads the real Manrope font)
+- Update with `flutter test --update-goldens test/goldens` and review the PNGs
+- Widgets with Kairo render with `disableAnimations: true` so they settle
+
 ### Integration Tests
-- Test full feature flows (create task, toggle complete, etc.)
-- Use Supabase local development for backend tests (future)
+- None yet. Backend rules (RLS, triggers) are checked by hand against the Supabase project.
 
 ### File Naming
 ```
