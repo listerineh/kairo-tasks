@@ -10,6 +10,21 @@ Format: **V xx.yy.zz**
 
 ---
 
+## V 02.01.00 - iOS on TestFlight (unreleased)
+
+### Added in V 02.01.00
+
+- iOS releases go to **TestFlight**: each `v*` tag builds, signs with Xcode's cloud-managed certificates (App Store Connect API key) and uploads the app. No `.p12` or provisioning profile in the secrets anymore.
+- **Sign in with Apple** on the iOS login screen ("Continuar con Apple"), above Google, black or white with the theme.
+- iOS **push notifications** capability (`aps-environment`) and the remote-notification background mode.
+- `docs/ios-release.md`: one-time setup in the Apple and Firebase consoles, the GitHub secrets and how to check a release.
+
+### Needs before release
+
+- The paid team's ID in `DEVELOPMENT_TEAM`; the personal team cannot sign push or Sign in with Apple.
+
+---
+
 ## V 02.00.01 - Fixes from testing 2.0 on device (2026-11-12)
 
 ### Changed in V 02.00.01
