@@ -1,7 +1,7 @@
 # Kairo - Design System
 
 > Kairo 2.0 direction: **"Calma viva, con carácter"**. Mature and elegant, but alive.
-> The plan and phase status live in [redesign-plan.md](redesign-plan.md). Sections marked *(target)* describe the approved prototype and are not in the code yet; everything else describes the code as it is.
+> The plan and phase status live in [redesign-plan.md](redesign-plan.md). This document describes the code as it is in V 02.00.00.
 
 ---
 
@@ -198,7 +198,7 @@ Shared components live in `lib/core/widgets/` and are listed in the debug `/gall
 - Segmented control: `fill` track, white thumb with a soft shadow that slides between options.
 
 ### Sheets
-- Radius 30 top, grabber, background dimmed to 50%. *(target)* Background scales to 0.94.
+- Radius 30 top, grabber, background dimmed to 50%.
 
 ### Task form
 - `TaskFormSheet`: Cancel and title on top; a large title field with Kairo's head peeking over its line (watching while you type, happy once there is a title); optional sections as chips (Cuándo, Prioridad, Con alguien); a full-width `ink` button at the bottom that names what it creates ("Crear tarea · Mañana 9:00"), or says what is missing. Kairo peeks over the top edge and reacts to typing.

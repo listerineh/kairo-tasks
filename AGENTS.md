@@ -26,7 +26,6 @@ Kairo is a mobile-first collaborative task management app with:
 | Navigation | go_router | 14.x |
 | Realtime | Supabase Realtime (Postgres Changes) | - |
 | Push Notifications | Firebase Cloud Messaging | - |
-| Calendar | table_calendar | 3.x |
 
 ## Architecture
 
@@ -53,7 +52,7 @@ See [docs/design.md](docs/design.md) for the complete design system including to
 - Line height: at least 1.35x for multi-line text
 - Motion: springs from `app_motion.dart` through `context.motion`; respect reduced motion
 - Kairo the calico cat is the app's character; see `docs/design.md`
-- Reuse the shared `KairoHeader` widget for app branding on new screens
+- Build screens from the shared components in `lib/core/widgets/` (`KairoCard`, `KairoButton`, `KairoChip`, `KairoSheet`, `GroupedSection`); tab roots use a `largeTitle` header
 
 ## Code Conventions
 
