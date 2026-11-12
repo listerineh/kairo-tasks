@@ -26,6 +26,9 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          # Pinned to the version the app is built and tested with; the
+          # latest stable can make pubspec.lock fail to resolve.
+          flutter-version: '3.47.1'
 
       - name: Install dependencies
         run: flutter pub get

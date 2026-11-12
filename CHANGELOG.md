@@ -14,6 +14,7 @@ Format: **V xx.yy.zz**
 
 ### Changed in V 02.00.01
 
+- Release workflows pin Flutter 3.47.1. The latest stable (3.50.0) could not resolve the locked dependencies, so the 2.0.1 build failed.
 - Yo no longer shows the debug-only component gallery row.
 
 ### Fixed in V 02.00.01
