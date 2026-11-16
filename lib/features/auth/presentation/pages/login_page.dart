@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../app/theme/app_motion.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/services/haptics_service.dart';
 import '../../../../core/widgets/kairo_button.dart';
@@ -392,6 +394,27 @@ class _LoginPageState extends State<LoginPage>
       _GoogleButton(
         onTap: () =>
             context.read<AuthBloc>().add(const AuthGoogleSignInRequested()),
+      ),
+      Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.spacing8),
+        child: Center(
+          child: CupertinoButton(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            minimumSize: const Size(44, 44),
+            onPressed: () => launchUrl(
+              Uri.parse(AppConstants.privacyPolicyUrl),
+              mode: LaunchMode.externalApplication,
+            ),
+            child: Text(
+              l10n.privacyPolicy,
+              style: context.typography.footnote.copyWith(
+                color: colors.labelSecondary,
+                decoration: TextDecoration.underline,
+                decorationColor: colors.labelSecondary,
+              ),
+            ),
+          ),
+        ),
       ),
     ];
 

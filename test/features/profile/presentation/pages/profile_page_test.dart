@@ -105,4 +105,36 @@ void main() {
     await tester.tap(find.text('Try again'));
     verify(() => cubit.load()).called(1);
   });
+
+  testWidgets('deleting the account asks first', (tester) async {
+    when(() => cubit.deleteAccount()).thenAnswer((_) async {});
+    await pump(tester, ready);
+    await tester.tap(find.text('Delete account'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete your account?'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    verifyNever(() => cubit.deleteAccount());
+
+    await tester.tap(find.text('Delete account'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete account').last);
+    await tester.pumpAndSettle();
+    verify(() => cubit.deleteAccount()).called(1);
+  });
+
+  testWidgets('a deleted account signs out', (tester) async {
+    whenListen(
+      cubit,
+      Stream.fromIterable([
+        ready.copyWith(deletion: AccountDeletion.deleting),
+        ready.copyWith(deletion: AccountDeletion.deleted),
+      ]),
+      initialState: ready,
+    );
+    await pump(tester, ready);
+    await tester.pump();
+    verify(() => auth.add(const AuthSignOutRequested())).called(1);
+  });
 }

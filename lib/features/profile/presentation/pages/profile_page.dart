@@ -12,6 +12,7 @@ import '../../../../app/di/injection.dart';
 import '../../../../app/locale/locale_service.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/theme_service.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/services/preferences_service.dart';
 import '../../../../core/widgets/empty_state.dart';
@@ -80,6 +81,26 @@ class ProfileView extends StatelessWidget {
         BlocListener<AuthBloc, AuthState>(
           listenWhen: (a, b) => b.status == AuthStatus.unauthenticated,
           listener: (context, _) => context.go('/login'),
+        ),
+        BlocListener<ProfileCubit, ProfileState>(
+          listenWhen: (a, b) =>
+              a.deletion != b.deletion &&
+              (b.deletion == AccountDeletion.deleted ||
+                  b.deletion == AccountDeletion.failed),
+          listener: (context, state) {
+            if (state.deletion == AccountDeletion.deleted) {
+              context.read<AuthBloc>().add(const AuthSignOutRequested());
+              return;
+            }
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                SnackBar(
+                  content: Text(context.l10n.deleteAccountFailed),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+          },
         ),
         BlocListener<ProfileCubit, ProfileState>(
           listenWhen: (a, b) => a.updateFailed != b.updateFailed,
@@ -269,6 +290,12 @@ class ProfileView extends StatelessWidget {
             showChevron: true,
             onTap: () => _openUrl('https://listerineh.dev'),
           ),
+          GroupedRow(
+            leading: const Icon(CupertinoIcons.lock_shield),
+            title: l10n.privacyPolicy,
+            showChevron: true,
+            onTap: () => _openUrl(AppConstants.privacyPolicyUrl),
+          ),
         ],
       ),
       _section(
@@ -278,6 +305,15 @@ class ProfileView extends StatelessWidget {
             destructive: true,
             onTap: () =>
                 context.read<AuthBloc>().add(const AuthSignOutRequested()),
+          ),
+          BlocSelector<ProfileCubit, ProfileState, bool>(
+            selector: (s) => s.deletion == AccountDeletion.deleting,
+            builder: (context, deleting) => GroupedRow(
+              title: l10n.deleteAccount,
+              destructive: true,
+              trailing: deleting ? const CupertinoActivityIndicator() : null,
+              onTap: deleting ? null : () => _confirmDelete(context),
+            ),
           ),
         ],
       ),
@@ -375,6 +411,31 @@ class ProfileView extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static Future<void> _confirmDelete(BuildContext context) async {
+    final l10n = context.l10n;
+    final cubit = context.read<ProfileCubit>();
+    final delete = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text(l10n.deleteAccountQuestion),
+        content: Text(l10n.deleteAccountHint),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.deleteAccount),
+          ),
+        ],
+      ),
+    );
+    if (delete ?? false) await cubit.deleteAccount();
   }
 
   static Future<void> _openUrl(String url) async {

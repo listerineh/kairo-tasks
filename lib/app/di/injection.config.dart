@@ -106,14 +106,15 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i161.AuthRemoteDataSource>(
       () => _i161.AuthRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
     );
-    gh.lazySingleton<_i555.FriendsRepository>(
-      () => _i880.FriendsRepositoryImpl(
-        gh<_i454.SupabaseClient>(),
-        gh<_i369.CurrentUser>(),
-      ),
-    );
     gh.lazySingleton<_i894.ProfileRepository>(
       () => _i334.ProfileRepositoryImpl(
+        gh<_i454.SupabaseClient>(),
+        gh<_i369.CurrentUser>(),
+        gh<_i265.TaskLocalStore>(),
+      ),
+    );
+    gh.lazySingleton<_i555.FriendsRepository>(
+      () => _i880.FriendsRepositoryImpl(
         gh<_i454.SupabaseClient>(),
         gh<_i369.CurrentUser>(),
       ),

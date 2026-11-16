@@ -125,4 +125,49 @@ void main() {
     act: (cubit) => cubit.setCalendarPublic(value: true),
     expect: () => [ready.copyWith(profile: me.copyWith(calendarPublic: true))],
   );
+
+  group('deleteAccount', () {
+    blocTest<ProfileCubit, ProfileState>(
+      'goes from deleting to deleted',
+      setUp: () => when(() => repo.deleteAccount())
+          .thenAnswer((_) async => const Right(unit)),
+      build: build,
+      seed: () => ready,
+      act: (cubit) => cubit.deleteAccount(),
+      expect: () => [
+        ready.copyWith(deletion: AccountDeletion.deleting),
+        ready.copyWith(deletion: AccountDeletion.deleted),
+      ],
+    );
+
+    blocTest<ProfileCubit, ProfileState>(
+      'reports a failure and can try again',
+      setUp: () => when(() => repo.deleteAccount())
+          .thenAnswer((_) async => const Left(ServerFailure())),
+      build: build,
+      seed: () => ready,
+      act: (cubit) async {
+        await cubit.deleteAccount();
+        await cubit.deleteAccount();
+      },
+      expect: () => [
+        ready.copyWith(deletion: AccountDeletion.deleting),
+        ready.copyWith(deletion: AccountDeletion.failed),
+        ready.copyWith(deletion: AccountDeletion.deleting),
+        ready.copyWith(deletion: AccountDeletion.failed),
+      ],
+      verify: (_) => verify(() => repo.deleteAccount()).called(2),
+    );
+
+    blocTest<ProfileCubit, ProfileState>(
+      'ignores a second tap while deleting',
+      setUp: () => when(() => repo.deleteAccount())
+          .thenAnswer((_) async => const Right(unit)),
+      build: build,
+      seed: () => ready.copyWith(deletion: AccountDeletion.deleting),
+      act: (cubit) => cubit.deleteAccount(),
+      expect: () => <ProfileState>[],
+      verify: (_) => verifyNever(() => repo.deleteAccount()),
+    );
+  });
 }
