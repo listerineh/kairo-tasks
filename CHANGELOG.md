@@ -31,6 +31,12 @@ Format: **V xx.yy.zz**
 - **Tour**: four steps with story bars, a back button and left-aligned copy. Each step plays a small live piece of the app once: Kairo says hello, a task under "Now" gets done, the focus ring draws itself, a shared task fills up and a friend nudges you. Swiping still works.
 - Sign-out falls back to a local sign-out when the server session is already gone.
 
+### Fixed in V 02.01.00
+
+- iOS: Firebase never started because `GoogleService-Info.plist` was not in the app bundle, so push notifications did not work on iPhone. Startup also no longer waits on the push that opened the app (it could hang on the launch screen).
+- The notification permission is asked after signing in, not at first launch before the tour.
+- Logs sent by a device right after its account was deleted no longer fail the whole batch; they are kept without the user.
+
 ### Removed in V 02.01.00
 
 - The unused microphone permission string on iOS, and `SCHEDULE_EXACT_ALARM` on Android (reminders are inexact). iOS declares `ITSAppUsesNonExemptEncryption = false`.
