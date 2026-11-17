@@ -169,7 +169,13 @@ class NotificationService {
       }
 
       const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-      const darwinInit = DarwinInitializationSettings();
+      // No prompt at launch: permission is asked once the user has signed
+      // in (registerFcmToken), when there is something to notify about.
+      const darwinInit = DarwinInitializationSettings(
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
+      );
       const initSettings = InitializationSettings(
         android: androidInit,
         iOS: darwinInit,
@@ -361,6 +367,8 @@ class NotificationService {
     );
 
     try {
+      // Asks only the first time; later calls return the saved answer.
+      if (!await requestPermission()) return;
       final token = await _messaging!.getToken();
       LoggerService.instance.info(
         'FCM token retrieved',
