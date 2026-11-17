@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -78,21 +79,25 @@ class _FocusViewState extends State<_FocusView> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: DefaultTextStyle.merge(
-          style: TextStyle(color: colors.label),
-          child: BlocBuilder<FocusCubit, FocusState>(
-            builder: (context, state) => Column(
-              children: [
-                _TopBar(state: state, onClose: () => _leave(context)),
-                Expanded(
-                  child: state.chosen
-                      ? _Timer(state: state)
-                      : const _TaskPicker(),
-                ),
-              ],
+    // The focus screen is always dark, so the status bar is light.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: SafeArea(
+          child: DefaultTextStyle.merge(
+            style: TextStyle(color: colors.label),
+            child: BlocBuilder<FocusCubit, FocusState>(
+              builder: (context, state) => Column(
+                children: [
+                  _TopBar(state: state, onClose: () => _leave(context)),
+                  Expanded(
+                    child: state.chosen
+                        ? _Timer(state: state)
+                        : const _TaskPicker(),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
