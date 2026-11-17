@@ -290,6 +290,16 @@ class _DayColumn extends StatelessWidget {
                   ),
                 ),
               ),
+              // Now runs under the blocks, so it never crosses a title.
+              if (isToday)
+                Positioned(
+                  top: (now.hour * 60 + now.minute) / 60 * hourHeight - 1,
+                  left: 0,
+                  right: 0,
+                  child: IgnorePointer(
+                    child: Container(height: 2, color: colors.destructive),
+                  ),
+                ),
               for (final b in blocks)
                 _Block(
                   key: ValueKey('${b.task.id}-$dayIndex'),
@@ -301,15 +311,6 @@ class _DayColumn extends StatelessWidget {
                   canMove: canMove(b.task),
                   onTap: () => onTaskTap(b.task),
                   onMove: (shift, minute) => onMove(b.task, shift, minute),
-                ),
-              if (isToday)
-                Positioned(
-                  top: (now.hour * 60 + now.minute) / 60 * hourHeight - 1,
-                  left: 0,
-                  right: 0,
-                  child: IgnorePointer(
-                    child: Container(height: 2, color: colors.destructive),
-                  ),
                 ),
             ],
           ),
