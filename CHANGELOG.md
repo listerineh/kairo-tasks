@@ -10,7 +10,7 @@ Format: **V xx.yy.zz**
 
 ---
 
-## V 02.01.00 - iOS on TestFlight (unreleased)
+## V 02.01.00 - Ready for the stores (unreleased)
 
 ### Added in V 02.01.00
 
@@ -18,6 +18,22 @@ Format: **V xx.yy.zz**
 - **Sign in with Apple** on the iOS login screen ("Continuar con Apple"), above Google, black or white with the theme.
 - iOS **push notifications** capability (`aps-environment`) and the remote-notification background mode.
 - `docs/ios-release.md`: one-time setup in the Apple and Firebase consoles, the GitHub secrets and how to check a release.
+- **Delete account** in Yo: after a confirmation, the `delete-account` Edge Function removes the user, their profile, tasks, shares, friendships, nudges, logs and photo at once, and the app clears its offline copy and signs out. Friends get no "stopped sharing" pushes from it.
+- **Privacy policy** links in Yo (Acerca de) and on the login screen, to listerineh.dev/kairo/privacy.
+- iOS privacy manifest (`PrivacyInfo.xcprivacy`): no tracking; the data the app keeps and why; the UserDefaults reason.
+- `tool/brand/`: the icon's SVG sources and a renderer for the icon and launch images.
+
+### Changed in V 02.01.00
+
+- **New app icon**: Kairo peeking up from the bottom edge on ink. Android uses it as an adaptive icon on ink.
+- **Launch screen**: the icon on Niebla (dark in dark mode) on iOS; Android shows the same colors, and the adaptive icon from Android 12.
+- **Login**: it opens on Kairo, a greeting and the ways in (Apple on iOS, Google, "Continue with email"). Email slides a sheet up with the form while Kairo shrinks above it and closes his eyes for the password; back returns to the ways in. The drifting task chips are gone.
+- **Tour**: four steps with story bars, a back button and left-aligned copy. Each step plays a small live piece of the app once: Kairo says hello, a task under "Now" gets done, the focus ring draws itself, a shared task fills up and a friend nudges you. Swiping still works.
+- Sign-out falls back to a local sign-out when the server session is already gone.
+
+### Removed in V 02.01.00
+
+- The unused microphone permission string on iOS, and `SCHEDULE_EXACT_ALARM` on Android (reminders are inexact). iOS declares `ITSAppUsesNonExemptEncryption = false`.
 
 ### Needs before release
 

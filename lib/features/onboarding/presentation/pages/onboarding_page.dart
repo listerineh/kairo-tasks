@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,12 +9,15 @@ import '../../../../app/theme/app_motion.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/widgets/kairo_button.dart';
-import '../../../dashboard/domain/mascot/mascot_mood.dart';
-import '../../../dashboard/presentation/widgets/mascot/kairo_mascot.dart';
-import '../../../dashboard/presentation/widgets/mascot/mascot_behavior.dart';
+import '../widgets/tour_vignettes.dart';
 
-/// Four slides, each with Kairo in a different mood; Saltar on top, pill
-/// dots and one `ink` button that turns into "Empezar" on the last slide.
+/// The first-run tour (docs/design.md § Login and onboarding).
+///
+/// Four steps, each a small live piece of the app that plays once as it
+/// comes into view: Kairo says hello, a task under "Now" gets done, the
+/// focus ring draws itself, a shared task fills up and a friend nudges you.
+/// Story-style bars on top, Skip until the last step, a back button and one
+/// `ink` button. Swiping works too.
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
 
@@ -39,18 +43,23 @@ class _OnboardingPageState extends State<OnboardingPage> {
     if (mounted) context.go('/login');
   }
 
-  void _next() {
-    if (_page == _count - 1) {
-      unawaited(_finish());
-      return;
-    }
+  void _goTo(int page) {
     final motion = context.motion;
     unawaited(
-      _pages.nextPage(
+      _pages.animateToPage(
+        page,
         duration: motion.duration(KairoSpring.smooth),
         curve: motion.curve(KairoSpring.smooth),
       ),
     );
+  }
+
+  void _next() {
+    if (_page == _count - 1) {
+      unawaited(_finish());
+    } else {
+      _goTo(_page + 1);
+    }
   }
 
   @override
@@ -58,17 +67,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final l10n = context.l10n;
     final colors = context.appColors;
     final motion = context.motion;
-    final slides = [
-      (MascotMood.idle, null, l10n.onboardingTitle1, l10n.onboardingBody1),
-      (MascotMood.happy, null, l10n.onboardingTitle2, l10n.onboardingBody2),
-      (
-        MascotMood.idle,
-        MascotBehavior.look,
-        l10n.onboardingTitle3,
-        l10n.onboardingBody3,
-      ),
-      (MascotMood.focused, null, l10n.onboardingTitle4, l10n.onboardingBody4),
+    final steps = [
+      (l10n.tourTitle1, l10n.tourBody1),
+      (l10n.tourTitle2, l10n.tourBody2),
+      (l10n.tourTitle3, l10n.tourBody3),
+      (l10n.tourTitle4, l10n.tourBody4),
     ];
+    final first = _page == 0;
     final last = _page == _count - 1;
 
     return Scaffold(
@@ -79,19 +84,28 @@ class _OnboardingPageState extends State<OnboardingPage> {
         child: SafeArea(
           child: Column(
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 4, 8, 0),
-                  child: AnimatedOpacity(
-                    opacity: last ? 0 : 1,
-                    duration: motion.duration(KairoSpring.smooth),
-                    child: KairoButton(
-                      label: l10n.skip,
-                      variant: KairoButtonVariant.plain,
-                      onPressed: last ? null : _finish,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.spacing24,
+                  AppSpacing.spacing8,
+                  AppSpacing.spacing12,
+                  0,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _Progress(page: _page, count: _count),
                     ),
-                  ),
+                    AnimatedOpacity(
+                      opacity: last ? 0 : 1,
+                      duration: motion.duration(KairoSpring.smooth),
+                      child: KairoButton(
+                        label: l10n.skip,
+                        variant: KairoButtonVariant.plain,
+                        onPressed: last ? null : () => _goTo(_count - 1),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Expanded(
@@ -100,48 +114,58 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   itemCount: _count,
                   onPageChanged: (i) => setState(() => _page = i),
                   itemBuilder: (context, i) {
-                    final (mood, cue, title, body) = slides[i];
-                    return _Slide(
-                      mood: mood,
-                      cue: cue,
-                      active: i == _page,
+                    final (title, body) = steps[i];
+                    return _Step(
+                      vignette: TourVignette(step: i, active: i == _page),
                       title: title,
                       body: body,
                     );
                   },
                 ),
               ),
-              Semantics(
-                label: '${_page + 1} / $_count',
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    for (var i = 0; i < _count; i++)
-                      AnimatedContainer(
-                        duration: motion.duration(KairoSpring.snappy),
-                        curve: motion.curve(KairoSpring.snappy),
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        width: i == _page ? 22 : 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          color: i == _page ? colors.label : colors.fill,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.screenMargin,
                   AppSpacing.spacing24,
-                  AppSpacing.screenMargin,
+                  AppSpacing.spacing16,
+                  AppSpacing.spacing24,
                   AppSpacing.spacing16,
                 ),
-                child: KairoButton(
-                  label: last ? l10n.getStarted : l10n.next,
-                  expand: true,
-                  onPressed: _next,
+                child: Row(
+                  children: [
+                    // The back button makes room for itself and grows in
+                    // from behind the main button.
+                    AnimatedContainer(
+                      duration: motion.duration(KairoSpring.smooth),
+                      curve: motion.curve(KairoSpring.smooth),
+                      width: first ? 0 : 52 + AppSpacing.spacing12,
+                      height: 52,
+                      alignment: Alignment.centerLeft,
+                      child: OverflowBox(
+                        alignment: Alignment.centerLeft,
+                        maxWidth: 52,
+                        child: IgnorePointer(
+                          ignoring: first,
+                          child: AnimatedOpacity(
+                            opacity: first ? 0 : 1,
+                            duration: motion.duration(KairoSpring.smooth),
+                            child: AnimatedScale(
+                              scale: first ? 0.6 : 1,
+                              duration: motion.duration(KairoSpring.snappy),
+                              curve: motion.curve(KairoSpring.snappy),
+                              child: _BackButton(onTap: () => _goTo(_page - 1)),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: KairoButton(
+                        label: last ? l10n.getStarted : l10n.next,
+                        expand: true,
+                        onPressed: _next,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -152,54 +176,123 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 }
 
-class _Slide extends StatelessWidget {
-  const _Slide({
-    required this.mood,
-    required this.active,
+/// One bar per step, filled up to the current one.
+class _Progress extends StatelessWidget {
+  const _Progress({required this.page, required this.count});
+
+  final int page;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final motion = context.motion;
+    return Semantics(
+      label: context.l10n.tourStep(page + 1, count),
+      child: Row(
+        children: [
+          for (var i = 0; i < count; i++) ...[
+            if (i > 0) const SizedBox(width: 6),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: Container(
+                  height: 4,
+                  color: colors.fill,
+                  alignment: Alignment.centerLeft,
+                  child: AnimatedFractionallySizedBox(
+                    duration: motion.duration(KairoSpring.smooth),
+                    curve: motion.curve(KairoSpring.smooth),
+                    widthFactor: i <= page ? 1 : 0,
+                    heightFactor: 1,
+                    child: ColoredBox(color: colors.label),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _Step extends StatelessWidget {
+  const _Step({
+    required this.vignette,
     required this.title,
     required this.body,
-    this.cue,
   });
 
-  final MascotMood mood;
-  final MascotBehavior? cue;
-  final bool active;
+  final Widget vignette;
   final String title;
   final String body;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing32),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spacing24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: AppSpacing.spacing24),
-          // A cat thing plays each time the slide comes into view.
-          KairoMascot(
-            mood: mood,
-            cue: cue,
-            cueTrigger: active ? 1 : 0,
-            size: 200,
-          ),
-          const SizedBox(height: AppSpacing.spacing24),
-          Semantics(
-            header: true,
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: context.typography.title1,
+          Expanded(
+            child: Center(
+              child: FittedBox(fit: BoxFit.scaleDown, child: vignette),
             ),
           ),
-          const SizedBox(height: AppSpacing.spacing12),
-          Text(
-            body,
-            textAlign: TextAlign.center,
-            style: context.typography.bodyMultiline.copyWith(
-              color: colors.labelSecondary,
+          const SizedBox(height: AppSpacing.spacing24),
+          // Same room for every step, so the copy doesn't jump.
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 132),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Semantics(
+                  header: true,
+                  child: Text(title, style: context.typography.largeTitle),
+                ),
+                const SizedBox(height: AppSpacing.spacing8),
+                Text(
+                  body,
+                  style: context.typography.bodyMultiline.copyWith(
+                    color: colors.labelSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _BackButton extends StatelessWidget {
+  const _BackButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return Tooltip(
+      message: context.l10n.back,
+      child: Material(
+        color: colors.surface,
+        shape: CircleBorder(side: BorderSide(color: colors.separator)),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox.square(
+            dimension: 52,
+            child: Icon(
+              CupertinoIcons.chevron_back,
+              size: 20,
+              color: colors.label,
+            ),
+          ),
+        ),
       ),
     );
   }

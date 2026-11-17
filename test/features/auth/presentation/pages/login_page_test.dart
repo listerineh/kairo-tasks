@@ -40,11 +40,17 @@ void main() {
           ),
           child: BlocProvider<AuthBloc>.value(
             value: auth,
-            child: LoginPage(now: DateTime(2026, 10, 21, 9), drift: 0),
+            child: LoginPage(now: DateTime(2026, 10, 21, 9)),
           ),
         ),
       ),
     );
+    await tester.pump(const Duration(seconds: 1));
+  }
+
+  Future<void> openEmail(WidgetTester tester) async {
+    await tester.tap(find.text('Continue with email'));
+    await tester.pump();
     await tester.pump(const Duration(seconds: 1));
   }
 
@@ -56,8 +62,26 @@ void main() {
     expect(find.text('Good morning'), findsOneWidget);
   });
 
+  testWidgets('opens on the ways in, with the form one tap away', (
+    tester,
+  ) async {
+    await pump(tester);
+    expect(find.text('Continue with Google'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+
+    await openEmail(tester);
+    expect(find.widgetWithText(TextField, 'Email'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('Continue with email'), findsOneWidget);
+  });
+
   testWidgets('Kairo closes his eyes for a hidden password', (tester) async {
     await pump(tester);
+    await openEmail(tester);
     expect(mood(tester), MascotMood.idle);
 
     await tester.tap(find.widgetWithText(TextField, 'Password'));
@@ -74,6 +98,7 @@ void main() {
     tester,
   ) async {
     await pump(tester);
+    await openEmail(tester);
     // The segmented control says "Sign In" too; the button comes last.
     await tester.tap(find.text('Sign In').last);
     await tester.pump(const Duration(milliseconds: 100));
@@ -85,6 +110,7 @@ void main() {
 
   testWidgets('signing in sends the credentials', (tester) async {
     await pump(tester);
+    await openEmail(tester);
     await tester.enterText(
       find.widgetWithText(TextField, 'Email'),
       'ana@example.com',

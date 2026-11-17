@@ -18,23 +18,23 @@ import '../../../../core/widgets/kairo_button.dart';
 import '../../../../core/widgets/kairo_entrance.dart';
 import '../../../../core/widgets/kairo_segmented_control.dart';
 import '../../../dashboard/domain/mascot/mascot_mood.dart';
+import '../../../dashboard/presentation/widgets/mascot/kairo_mascot.dart';
 import '../../../dashboard/presentation/widgets/mascot/mascot_behavior.dart';
 import '../bloc/auth_bloc.dart';
-import '../widgets/login_hero.dart';
 
 /// Sign in or create an account (docs/design.md § Login and onboarding).
 ///
-/// An `ink` hero with Kairo and drifting task chips sits above a white
-/// form card. Kairo follows the form: he glances over when a field gets
-/// focus, closes his eyes while you type a hidden password, concentrates
-/// while signing in, looks sad (and the card shakes) on an error, and hops
-/// when you get in. The hero shrinks while the keyboard is up.
+/// It opens on Kairo, a greeting and the ways in: Apple (iOS), Google, and
+/// "Continue with email". Email slides a white sheet up with the form while
+/// Kairo shrinks above it. Kairo follows along: he glances over when the
+/// form opens, closes his eyes while you type a hidden password,
+/// concentrates while signing in, looks sad (and the sheet shakes) on an
+/// error, and hops when you get in.
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key, this.now, this.drift});
+  const LoginPage({super.key, this.now});
 
-  /// Fixed in goldens: the greeting's time and the chips' drift phase.
+  /// Fixed in goldens: the greeting's time.
   final DateTime? now;
-  final double? drift;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -49,14 +49,19 @@ class _LoginPageState extends State<LoginPage>
   final _passwordFocus = FocusNode();
   final _focusScope = FocusScopeNode();
 
+  /// Kairo's area above the email form, and its least height above the
+  /// ways in (it takes about half the screen when there is room).
+  static const double _compactHero = 176;
+  static const double _minHero = 240;
+
   late final AnimationController _shake = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 420),
   );
 
+  bool _withEmail = false;
   bool _showPassword = false;
   bool _signUp = false;
-  bool _typing = false;
   bool _sad = false;
   int _hops = 0;
   int _cues = 0;
@@ -66,7 +71,6 @@ class _LoginPageState extends State<LoginPage>
   @override
   void initState() {
     super.initState();
-    _focusScope.addListener(_onFocusChanged);
     _passwordFocus.addListener(() => setState(() {}));
   }
 
@@ -83,16 +87,20 @@ class _LoginPageState extends State<LoginPage>
     super.dispose();
   }
 
-  void _onFocusChanged() {
-    final typing = _focusScope.hasFocus;
-    if (typing && !_typing) _glance();
-    if (typing != _typing) setState(() => _typing = typing);
-  }
-
   void _glance() => setState(() {
     _cue = MascotBehavior.look;
     _cues++;
   });
+
+  void _openEmail() {
+    setState(() => _withEmail = true);
+    _glance();
+  }
+
+  void _closeEmail() {
+    FocusScope.of(context).unfocus();
+    setState(() => _withEmail = false);
+  }
 
   void _submit() {
     final email = _email.text.trim();
@@ -120,7 +128,7 @@ class _LoginPageState extends State<LoginPage>
     }
   }
 
-  /// Sad Kairo for a moment and a short shake of the card.
+  /// Sad Kairo for a moment and a short shake of the form.
   void _fail() {
     _sadTimer?.cancel();
     setState(() => _sad = true);
@@ -134,7 +142,9 @@ class _LoginPageState extends State<LoginPage>
     if (status == AuthStatus.authenticated) return MascotMood.happy;
     if (status == AuthStatus.loading) return MascotMood.focused;
     if (_sad) return MascotMood.sad;
-    if (_passwordFocus.hasFocus && !_showPassword) return MascotMood.sleeping;
+    if (_withEmail && _passwordFocus.hasFocus && !_showPassword) {
+      return MascotMood.sleeping;
+    }
     return MascotMood.idle;
   }
 
@@ -177,99 +187,89 @@ class _LoginPageState extends State<LoginPage>
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     final colors = context.appColors;
+    final motion = context.motion;
 
     return BlocListener<AuthBloc, AuthState>(
       listenWhen: (a, b) => a.status != b.status,
       listener: _onAuth,
-      child: Scaffold(
-        backgroundColor: colors.background,
-        body: DefaultTextStyle.merge(
-          style: TextStyle(color: colors.label),
-          child: BlocBuilder<AuthBloc, AuthState>(
-            buildWhen: (a, b) => a.status != b.status,
-            builder: (context, auth) {
-              final mood = _mood(auth.status);
-              return SingleChildScrollView(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.paddingOf(context).bottom + 24,
+      child: PopScope(
+        // Back from the email form returns to the ways in.
+        canPop: !_withEmail,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) _closeEmail();
+        },
+        child: Scaffold(
+          backgroundColor: colors.background,
+          body: DefaultTextStyle.merge(
+            style: TextStyle(color: colors.label),
+            child: BlocBuilder<AuthBloc, AuthState>(
+              buildWhen: (a, b) => a.status != b.status,
+              builder: (context, auth) => SafeArea(
+                bottom: false,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final heroHeight = _withEmail
+                        ? _compactHero
+                        : math.max(_minHero, constraints.maxHeight * 0.46);
+                    return Stack(
+                      children: [
+                        Column(
+                          children: [
+                            AnimatedContainer(
+                              duration: motion.duration(KairoSpring.smooth),
+                              curve: motion.curve(KairoSpring.smooth),
+                              height: heroHeight,
+                              child: _Hero(
+                                mood: _mood(auth.status),
+                                compact: _withEmail,
+                                hopTrigger: _hops,
+                                cue: _cue,
+                                cueTrigger: _cues,
+                                onTapKairo: _glance,
+                              ),
+                            ),
+                            Expanded(
+                              child: AnimatedSwitcher(
+                                duration: motion.duration(KairoSpring.smooth),
+                                switchInCurve: motion.curve(KairoSpring.smooth),
+                                switchOutCurve: Curves.easeOut,
+                                transitionBuilder: _panelTransition,
+                                // Both panels fill the space below Kairo.
+                                layoutBuilder: (current, previous) => Stack(
+                                  fit: StackFit.expand,
+                                  children: [...previous, ?current],
+                                ),
+                                child: _withEmail
+                                    ? KeyedSubtree(
+                                        key: const ValueKey('email'),
+                                        child: _emailSheet(context, auth),
+                                      )
+                                    : KeyedSubtree(
+                                        key: const ValueKey('start'),
+                                        child: _start(context),
+                                      ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Positioned(
+                          top: AppSpacing.spacing8,
+                          left: AppSpacing.spacing16,
+                          child: AnimatedOpacity(
+                            opacity: _withEmail ? 1 : 0,
+                            duration: motion.duration(KairoSpring.snappy),
+                            child: IgnorePointer(
+                              ignoring: !_withEmail,
+                              child: _BackButton(onTap: _closeEmail),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
-                child: Stack(
-                  children: [
-                    LoginHero(
-                      mood: mood,
-                      compact: _typing,
-                      title: _signUp ? l10n.createAccount : _greeting(),
-                      subtitle: _signUp
-                          ? l10n.startYourJourney
-                          : l10n.startSignInPrompt,
-                      caption: mood == MascotMood.sleeping
-                          ? l10n.kairoNotLooking
-                          : null,
-                      hopTrigger: _hops,
-                      cue: _cue,
-                      cueTrigger: _cues,
-                      onTapKairo: _glance,
-                      drift: widget.drift,
-                    ),
-                    _formCard(context, auth),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _formCard(BuildContext context, AuthState auth) {
-    final colors = context.appColors;
-    final motion = context.motion;
-    final topInset = MediaQuery.paddingOf(context).top;
-    final heroHeight =
-        topInset + (_typing ? LoginHero.compactHeight : LoginHero.fullHeight);
-
-    return AnimatedPadding(
-      duration: motion.duration(KairoSpring.smooth),
-      curve: motion.curve(KairoSpring.smooth),
-      // Overlap the hero's rounded edge.
-      padding: EdgeInsets.only(top: heroHeight - 30),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: AnimatedBuilder(
-            animation: _shake,
-            builder: (context, child) => Transform.translate(
-              offset: Offset(
-                math.sin(_shake.value * math.pi * 6) * 10 * (1 - _shake.value),
-                0,
               ),
-              child: child,
-            ),
-            child: Container(
-              margin: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenMargin,
-              ),
-              padding: const EdgeInsets.all(AppSpacing.spacing16),
-              decoration: BoxDecoration(
-                color: colors.surface,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusHero),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0A121417),
-                    blurRadius: 2,
-                    offset: Offset(0, 1),
-                  ),
-                  BoxShadow(
-                    color: Color(0x14121417),
-                    blurRadius: 32,
-                    offset: Offset(0, 12),
-                  ),
-                ],
-              ),
-              child: FocusScope(node: _focusScope, child: _form(context, auth)),
             ),
           ),
         ),
@@ -277,163 +277,400 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
-  Widget _form(BuildContext context, AuthState auth) {
+  /// The email sheet rises from the bottom; the start panel just fades.
+  Widget _panelTransition(Widget child, Animation<double> animation) {
+    final isSheet = child.key == const ValueKey('email');
+    if (!isSheet) return FadeTransition(opacity: animation, child: child);
+    return SlideTransition(
+      position: Tween(
+        begin: const Offset(0, 1),
+        end: Offset.zero,
+      ).animate(animation),
+      child: child,
+    );
+  }
+
+  Widget _start(BuildContext context) {
     final l10n = context.l10n;
     final colors = context.appColors;
-    final motion = context.motion;
+    final bottom = MediaQuery.paddingOf(context).bottom;
 
-    final fields = <Widget>[
-      KairoSegmentedControl<bool>(
-        segments: {false: l10n.signIn, true: l10n.signUp},
-        selected: _signUp,
-        onChanged: (v) => setState(() => _signUp = v),
-      ),
-      AnimatedSize(
-        duration: motion.duration(KairoSpring.smooth),
-        curve: motion.curve(KairoSpring.smooth),
-        alignment: Alignment.topCenter,
-        child: _signUp
-            ? Column(
-                children: [
-                  const SizedBox(height: AppSpacing.spacing12),
-                  _Field(
-                    controller: _name,
-                    label: l10n.displayName,
-                    icon: CupertinoIcons.person,
-                    capitalization: TextCapitalization.words,
-                    autofill: AutofillHints.name,
-                  ),
-                  const SizedBox(height: AppSpacing.spacing12),
-                  _Field(
-                    controller: _username,
-                    label: l10n.username,
-                    icon: CupertinoIcons.at,
-                    autofill: AutofillHints.newUsername,
-                  ),
-                ],
-              )
-            : const SizedBox(width: double.infinity),
-      ),
-      AutofillGroup(
-        child: Column(
-          children: [
-            const SizedBox(height: AppSpacing.spacing12),
-            _Field(
-              controller: _email,
-              label: l10n.email,
-              icon: CupertinoIcons.mail,
-              keyboard: TextInputType.emailAddress,
-              autofill: AutofillHints.email,
-            ),
-            const SizedBox(height: AppSpacing.spacing12),
-            _Field(
-              controller: _password,
-              focusNode: _passwordFocus,
-              label: l10n.password,
-              icon: CupertinoIcons.lock,
-              obscure: !_showPassword,
-              done: true,
-              onSubmitted: _submit,
-              autofill: _signUp
-                  ? AutofillHints.newPassword
-                  : AutofillHints.password,
-              suffix: IconButton(
-                tooltip: l10n.password,
-                onPressed: () => setState(() => _showPassword = !_showPassword),
-                icon: Icon(
-                  _showPassword ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
-                  size: 20,
-                  color: colors.labelSecondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      if (!_signUp)
-        Align(
-          alignment: Alignment.centerRight,
-          child: KairoButton(
-            label: l10n.forgotPassword,
-            variant: KairoButtonVariant.plain,
-            onPressed: () => ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(
-                SnackBar(
-                  content: Text(l10n.passwordResetComingSoon),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              ),
-          ),
-        )
-      else
-        const SizedBox(height: AppSpacing.spacing16),
-      KairoButton(
-        label: _signUp ? l10n.createAccountButton : l10n.signIn,
-        expand: true,
-        loading: auth.status == AuthStatus.loading,
-        onPressed: _submit,
-      ),
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.spacing12),
-        child: Row(
-          children: [
-            Expanded(child: Divider(color: colors.separator)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                l10n.orDivider,
-                style: context.typography.footnote.copyWith(
-                  color: colors.labelSecondary,
-                ),
-              ),
-            ),
-            Expanded(child: Divider(color: colors.separator)),
-          ],
-        ),
-      ),
+    final actions = <Widget>[
       // Apple requires its own sign-in, at least as prominent as Google's,
       // in iOS apps that offer a third-party login.
-      if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+      if (defaultTargetPlatform == TargetPlatform.iOS)
         _AppleButton(
           onTap: () =>
               context.read<AuthBloc>().add(const AuthAppleSignInRequested()),
         ),
-        const SizedBox(height: AppSpacing.spacing12),
-      ],
       _GoogleButton(
         onTap: () =>
             context.read<AuthBloc>().add(const AuthGoogleSignInRequested()),
       ),
-      Padding(
-        padding: const EdgeInsets.only(top: AppSpacing.spacing8),
-        child: Center(
-          child: CupertinoButton(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            minimumSize: const Size(44, 44),
-            onPressed: () => launchUrl(
-              Uri.parse(AppConstants.privacyPolicyUrl),
-              mode: LaunchMode.externalApplication,
+      KairoButton(
+        label: l10n.continueWithEmail,
+        variant: KairoButtonVariant.plain,
+        expand: true,
+        onPressed: _openEmail,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.spacing24,
+          0,
+          AppSpacing.spacing24,
+          bottom + AppSpacing.spacing16,
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: math.max(
+              0,
+              constraints.maxHeight - bottom - AppSpacing.spacing16,
             ),
-            child: Text(
-              l10n.privacyPolicy,
-              style: context.typography.footnote.copyWith(
-                color: colors.labelSecondary,
-                decoration: TextDecoration.underline,
-                decorationColor: colors.labelSecondary,
+          ),
+          child: IntrinsicHeight(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                KairoEntrance(
+                  child: Semantics(
+                    header: true,
+                    child: Text(
+                      _greeting(),
+                      textAlign: TextAlign.center,
+                      style: context.typography.largeTitle,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.spacing8),
+                KairoEntrance(
+                  index: 1,
+                  child: Text(
+                    l10n.loginSubtitle,
+                    textAlign: TextAlign.center,
+                    style: context.typography.bodyMultiline.copyWith(
+                      color: colors.labelSecondary,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                const SizedBox(height: AppSpacing.spacing24),
+                for (var i = 0; i < actions.length; i++) ...[
+                  if (i > 0) const SizedBox(height: AppSpacing.spacing12),
+                  KairoEntrance(index: i + 2, child: actions[i]),
+                ],
+                KairoEntrance(
+                  index: actions.length + 2,
+                  child: const _Consent(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _emailSheet(BuildContext context, AuthState auth) {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final motion = context.motion;
+    final bottom = MediaQuery.paddingOf(context).bottom;
+
+    return AnimatedBuilder(
+      animation: _shake,
+      builder: (context, child) => Transform.translate(
+        offset: Offset(
+          math.sin(_shake.value * math.pi * 6) * 10 * (1 - _shake.value),
+          0,
+        ),
+        child: child,
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x14121417),
+              blurRadius: 40,
+              offset: Offset(0, -12),
+            ),
+          ],
+        ),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.spacing20,
+            AppSpacing.spacing24,
+            AppSpacing.spacing20,
+            bottom + AppSpacing.spacing16,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: FocusScope(
+                node: _focusScope,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    KairoSegmentedControl<bool>(
+                      segments: {false: l10n.signIn, true: l10n.createAccount},
+                      selected: _signUp,
+                      onChanged: (v) => setState(() => _signUp = v),
+                    ),
+                    AnimatedSize(
+                      duration: motion.duration(KairoSpring.smooth),
+                      curve: motion.curve(KairoSpring.smooth),
+                      alignment: Alignment.topCenter,
+                      child: _signUp
+                          ? Column(
+                              children: [
+                                const SizedBox(height: AppSpacing.spacing12),
+                                _Field(
+                                  controller: _name,
+                                  label: l10n.displayName,
+                                  icon: CupertinoIcons.person,
+                                  capitalization: TextCapitalization.words,
+                                  autofill: AutofillHints.name,
+                                ),
+                                const SizedBox(height: AppSpacing.spacing12),
+                                _Field(
+                                  controller: _username,
+                                  label: l10n.username,
+                                  icon: CupertinoIcons.at,
+                                  autofill: AutofillHints.newUsername,
+                                ),
+                              ],
+                            )
+                          : const SizedBox(width: double.infinity),
+                    ),
+                    AutofillGroup(
+                      child: Column(
+                        children: [
+                          const SizedBox(height: AppSpacing.spacing12),
+                          _Field(
+                            controller: _email,
+                            label: l10n.email,
+                            icon: CupertinoIcons.mail,
+                            keyboard: TextInputType.emailAddress,
+                            autofill: AutofillHints.email,
+                          ),
+                          const SizedBox(height: AppSpacing.spacing12),
+                          _Field(
+                            controller: _password,
+                            focusNode: _passwordFocus,
+                            label: l10n.password,
+                            icon: CupertinoIcons.lock,
+                            obscure: !_showPassword,
+                            done: true,
+                            onSubmitted: _submit,
+                            autofill: _signUp
+                                ? AutofillHints.newPassword
+                                : AutofillHints.password,
+                            suffix: IconButton(
+                              tooltip: l10n.password,
+                              onPressed: () => setState(
+                                () => _showPassword = !_showPassword,
+                              ),
+                              icon: Icon(
+                                _showPassword
+                                    ? CupertinoIcons.eye_slash
+                                    : CupertinoIcons.eye,
+                                size: 20,
+                                color: colors.labelSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!_signUp)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: KairoButton(
+                          label: l10n.forgotPassword,
+                          variant: KairoButtonVariant.plain,
+                          onPressed: () => ScaffoldMessenger.of(context)
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              SnackBar(
+                                content: Text(l10n.passwordResetComingSoon),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            ),
+                        ),
+                      )
+                    else
+                      const SizedBox(height: AppSpacing.spacing20),
+                    KairoButton(
+                      label: _signUp ? l10n.createAccount : l10n.signIn,
+                      expand: true,
+                      loading: auth.status == AuthStatus.loading,
+                      onPressed: _submit,
+                    ),
+                    const _Consent(),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ];
+    );
+  }
+}
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var i = 0; i < fields.length; i++)
-          KairoEntrance(index: math.min(i, 5), child: fields[i]),
-      ],
+/// Kairo and, while he looks away from a password, his promise.
+class _Hero extends StatelessWidget {
+  const _Hero({
+    required this.mood,
+    required this.compact,
+    required this.hopTrigger,
+    required this.cue,
+    required this.cueTrigger,
+    required this.onTapKairo,
+  });
+
+  final MascotMood mood;
+  final bool compact;
+  final int hopTrigger;
+  final MascotBehavior? cue;
+  final int cueTrigger;
+  final VoidCallback onTapKairo;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final motion = context.motion;
+    final caption = mood == MascotMood.sleeping
+        ? context.l10n.kairoNotLooking
+        : null;
+    // Bottom-anchored; while the hero animates between heights the top
+    // clips instead of overflowing.
+    return SingleChildScrollView(
+      reverse: true,
+      physics: const NeverScrollableScrollPhysics(),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: motion.duration(KairoSpring.smooth),
+              curve: motion.curve(KairoSpring.smooth),
+              height: compact ? 124 : 200,
+              child: FittedBox(
+                child: KairoMascot(
+                  mood: mood,
+                  hopTrigger: hopTrigger,
+                  cue: cue,
+                  cueTrigger: cueTrigger,
+                  onTap: onTapKairo,
+                  size: 200,
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 28,
+              child: AnimatedSwitcher(
+                duration: motion.duration(KairoSpring.smooth),
+                child: caption == null
+                    ? const SizedBox.shrink()
+                    : Text(
+                        caption,
+                        key: ValueKey(caption),
+                        style: context.typography.footnote.copyWith(
+                          color: colors.tint,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.spacing8),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BackButton extends StatelessWidget {
+  const _BackButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return Tooltip(
+      message: context.l10n.back,
+      child: Material(
+        color: colors.surface,
+        shape: CircleBorder(side: BorderSide(color: colors.separator)),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox.square(
+            dimension: 44,
+            child: Icon(
+              CupertinoIcons.chevron_back,
+              size: 20,
+              color: colors.label,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "By continuing you agree to the Privacy policy." The whole line opens
+/// the policy, so the target stays large.
+class _Consent extends StatelessWidget {
+  const _Consent();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final style = context.typography.footnote.copyWith(
+      color: colors.labelSecondary,
+    );
+    return Semantics(
+      link: true,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => launchUrl(
+          Uri.parse(AppConstants.privacyPolicyUrl),
+          mode: LaunchMode.externalApplication,
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.spacing8),
+            child: Center(
+              child: Text.rich(
+                TextSpan(
+                  style: style,
+                  children: [
+                    TextSpan(text: '${l10n.legalConsentLead} '),
+                    TextSpan(
+                      text: l10n.privacyPolicy,
+                      style: style.copyWith(
+                        color: colors.tint,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const TextSpan(text: '.'),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -517,7 +754,7 @@ class _GoogleButton extends StatelessWidget {
         foregroundColor: colors.label,
         backgroundColor: colors.surface,
         side: BorderSide(color: colors.separator),
-        minimumSize: const Size(double.infinity, 52),
+        minimumSize: const Size(double.infinity, 54),
         shape: const StadiumBorder(),
         textStyle: context.typography.headline,
       ),
@@ -550,7 +787,7 @@ class _AppleButton extends StatelessWidget {
       style: FilledButton.styleFrom(
         foregroundColor: fg,
         backgroundColor: bg,
-        minimumSize: const Size(double.infinity, 52),
+        minimumSize: const Size(double.infinity, 54),
         shape: const StadiumBorder(),
         textStyle: context.typography.headline,
       ),
