@@ -32,7 +32,9 @@ appstoreconnect.apple.com → Apps → **+ New App**: platform iOS, name Kairo (
 
 ### 4. App Store Connect API key (portal)
 
-App Store Connect → Users and Access → **Integrations → App Store Connect API** → Team Keys → **+**:
+The first time, the Account Holder has to turn on API access: App Store Connect → Users and Access → **Integrations** (App Store Connect API is selected) → **Request Access** → accept the terms → Submit. Apple reviews it; it is often approved at once, but it can take a while. Until then there is no **Team Keys** tab.
+
+Once access is approved, Users and Access → **Integrations → App Store Connect API** → **Team Keys** → **Generate API Key** (or **+** if there is one already). Use a team key, not the individual key under Edit Profile: Xcode's cloud signing needs the Issuer ID and the Admin role, which only team keys have.
 
 - Name: `GitHub Actions`
 - Access: **Admin** (cloud-managed distribution signing needs it).
