@@ -342,7 +342,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(
         state.copyWith(
           status: AuthStatus.error,
-          errorMessage: 'Google sign-in failed: $e',
+          // The details are in the log; the person gets a short message.
+          errorMessage: 'Google sign-in failed. Please try again.',
         ),
       );
     }

@@ -61,6 +61,18 @@ jobs:
             cp .env.example .env 2>/dev/null || touch .env
           fi
 
+      # Google sign-in needs the reversed iOS client ID as a URL scheme. Info.plist
+      # reads it from ios/Flutter/Env.xcconfig, which is gitignored, so build it
+      # here from GOOGLE_IOS_CLIENT_ID in .env.
+      - name: Write Env.xcconfig
+        run: |
+          CLIENT_ID=$(grep '^GOOGLE_IOS_CLIENT_ID=' .env | head -1 | cut -d= -f2- | tr -d "\"' \r")
+          if [ -z "$CLIENT_ID" ]; then
+            echo "::error::GOOGLE_IOS_CLIENT_ID is missing in .env; Google sign-in would crash."
+            exit 1
+          fi
+          echo "REVERSED_GOOGLE_CLIENT_ID=com.googleusercontent.apps.${CLIENT_ID%.apps.googleusercontent.com}" > ios/Flutter/Env.xcconfig
+
       # Firebase configuration for iOS (GoogleService-Info.plist is gitignored).
       - name: Decode GoogleService-Info.plist
         env:
