@@ -36,6 +36,7 @@ Format: **V xx.yy.zz**
 - iOS: Firebase never started because `GoogleService-Info.plist` was not in the app bundle, so push notifications did not work on iPhone. Startup also no longer waits on the push that opened the app (it could hang on the launch screen).
 - The notification permission is asked after signing in, not at first launch before the tour.
 - Logs sent by a device right after its account was deleted no longer fail the whole batch; they are kept without the user.
+- iOS builds from CI: "Continuar con Google" crashed with a missing URL scheme, because `Env.xcconfig` (gitignored) did not exist on the runner. The iOS workflow now writes it from `GOOGLE_IOS_CLIENT_ID` and fails the build if it is missing. A failed Google sign-in shows a short message instead of the raw exception.
 
 ### Removed in V 02.01.00
 
