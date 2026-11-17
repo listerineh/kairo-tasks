@@ -27,7 +27,8 @@ DateTime stepDate(
   };
 }
 
-/// Tasks whose span (start, else due, else creation; until due) touches [day].
+/// Tasks whose span (start, else due; until due) touches [day]. Tasks with
+/// no date at all live in "Algún día", not on the day they were created.
 List<TaskEntity> tasksOnDay(Iterable<TaskEntity> tasks, DateTime day) {
   final start = _day(day);
   final end = DateTime(start.year, start.month, start.day + 1);
@@ -38,7 +39,8 @@ List<TaskEntity> tasksOnDay(Iterable<TaskEntity> tasks, DateTime day) {
 }
 
 bool _overlaps(TaskEntity t, DateTime start, DateTime end) {
-  final from = t.startDate ?? t.dueDate ?? t.createdAt;
+  final from = t.startDate ?? t.dueDate;
+  if (from == null) return false;
   final to = t.dueDate ?? from;
   // A zero-length task still belongs to the day it sits on.
   return from.isBefore(end) && (to.isAfter(start) || to == start);
