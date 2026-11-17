@@ -1,4 +1,4 @@
-name: Release Android APK
+name: Release Android (APK and AAB)
 
 on:
   push:
@@ -72,18 +72,27 @@ jobs:
           keyAlias=${{ secrets.KEY_ALIAS }}
           keyPassword=${{ secrets.KEY_PASSWORD }}
           EOF
+          else
+            echo "::warning::KEYSTORE_BASE64 not set. The build is debug-signed; Google Play will reject the .aab."
           fi
 
       - name: Build release APK
         run: flutter build apk --release --dart-define-from-file=.env
 
-      - name: Prepare release asset
+      # Google Play takes an Android App Bundle, signed with the upload key.
+      - name: Build release app bundle
+        run: flutter build appbundle --release --dart-define-from-file=.env
+
+      - name: Prepare release assets
         run: |
           VERSION=$(grep '^version:' pubspec.yaml | sed 's/^version: //')
           cp "build/app/outputs/apk/release/Kairo-${VERSION}-release.apk" "Kairo-${VERSION}-release.apk"
+          cp build/app/outputs/bundle/release/app-release.aab "Kairo-${VERSION}-release.aab"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: Kairo-*.apk
+          files: |
+            Kairo-*.apk
+            Kairo-*.aab
           generate_release_notes: true
