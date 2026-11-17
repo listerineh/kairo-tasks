@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
@@ -80,7 +81,15 @@ class KairoApp extends StatelessWidget {
                     GlobalCupertinoLocalizations.delegate,
                   ],
               supportedLocales: const [Locale('es'), Locale('en')],
-              builder: (context, child) => _WithPreferences(child: child!),
+              // Status bar icons follow the theme; a dark screen (Focus)
+              // sets its own region on top.
+              builder: (context, child) =>
+                  AnnotatedRegion<SystemUiOverlayStyle>(
+                    value: Theme.of(context).brightness == Brightness.dark
+                        ? SystemUiOverlayStyle.light
+                        : SystemUiOverlayStyle.dark,
+                    child: _WithPreferences(child: child!),
+                  ),
             ),
           ),
         ),

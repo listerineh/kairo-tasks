@@ -58,6 +58,11 @@ void main() {
       expect(tasksOnDay([span, before, after], day), [span]);
     });
 
+    test('a task without a date is on no day (it is in Algún día)', () {
+      final t = task('someday');
+      expect(tasksOnDay([t], DateTime(2026, 1, 1)), isEmpty);
+    });
+
     test('a task ending exactly at midnight belongs to its own day', () {
       final t = task(
         'endsMidnight',

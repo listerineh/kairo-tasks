@@ -369,6 +369,20 @@ class NotificationService {
     try {
       // Asks only the first time; later calls return the saved answer.
       if (!await requestPermission()) return;
+      // On iOS the APNs token arrives a moment after permission is granted,
+      // and getToken() fails until it does. Wait for it (up to ~5 s); if it
+      // never comes (the simulator has no APNs), onTokenRefresh saves the
+      // token later.
+      if (Platform.isIOS) {
+        String? apns;
+        for (var i = 0; i < 10 && apns == null; i++) {
+          apns = await _messaging!.getAPNSToken();
+          if (apns == null) {
+            await Future<void>.delayed(const Duration(milliseconds: 500));
+          }
+        }
+        if (apns == null) return;
+      }
       final token = await _messaging!.getToken();
       LoggerService.instance.info(
         'FCM token retrieved',

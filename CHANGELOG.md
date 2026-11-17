@@ -22,6 +22,7 @@ Format: **V xx.yy.zz**
 - **Privacy policy** links in Yo (Acerca de) and on the login screen, to listerineh.dev/kairo/privacy.
 - iOS privacy manifest (`PrivacyInfo.xcprivacy`): no tracking; the data the app keeps and why; the UserDefaults reason.
 - `tool/brand/`: the icon's SVG sources and a renderer for the icon and launch images.
+- Store screenshots for the App Store (6.9") and Google Play in `store/screenshots/`.
 
 ### Changed in V 02.01.00
 
@@ -37,6 +38,10 @@ Format: **V xx.yy.zz**
 - The notification permission is asked after signing in, not at first launch before the tour.
 - Logs sent by a device right after its account was deleted no longer fail the whole batch; they are kept without the user.
 - iOS builds from CI: "Continuar con Google" crashed with a missing URL scheme, because `Env.xcconfig` (gitignored) did not exist on the runner. The iOS workflow now writes it from `GOOGLE_IOS_CLIENT_ID` and fails the build if it is missing. A failed Google sign-in shows a short message instead of the raw exception.
+
+- The status bar follows the theme everywhere and is light on the dark Focus screen (its time was dark on dark).
+- Planear: the "now" line runs under task blocks instead of crossing their titles, and tasks without a date stay in "Algún día" instead of showing in the day agenda of the day they were created.
+- iOS push: the app waits for the APNs token before saving the FCM token, so the first sign-in on an iPhone registers for push.
 
 ### Removed in V 02.01.00
 
