@@ -68,7 +68,15 @@ Deno.serve(async (req) => {
     };
   });
 
-  const { error } = await supabase.from("logs").insert(records);
+  let { error } = await supabase.from("logs").insert(records);
+
+  // A device can still send logs for a user who was just deleted (it flushes
+  // its buffer after the account is gone). Keep the logs, without the user.
+  if (error?.code === "23503") {
+    ({ error } = await supabase
+      .from("logs")
+      .insert(records.map((r) => ({ ...r, user_id: null }))));
+  }
 
   if (error) {
     return new Response(
