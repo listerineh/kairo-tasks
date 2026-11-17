@@ -8,6 +8,9 @@ class AppConstants {
   static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
+  // Public pages the stores and the app link to.
+  static const String privacyPolicyUrl = 'https://listerineh.dev/kairo/privacy';
+
   // Animation durations
   static const Duration animationFast = Duration(milliseconds: 200);
   static const Duration animationNormal = Duration(milliseconds: 300);

@@ -232,11 +232,14 @@ Shared components live in `lib/core/widgets/` and are listed in the debug `/gall
 
 ### Login and onboarding
 - **Login:**
-  - **Hero:** an `ink` hero with Kairo, a greeting for the time of day, and four task chips that drift and check themselves off (still under reduced motion).
-  - **Form card:** a white card overlaps the hero's edge, with a segmented Entrar / Crear cuenta switch, filled fields with autofill, an `ink` primary button, and Google below an "o" divider.
-  - **Kairo reacts to the form:** he glances over when a field gets focus and closes his eyes while you type a hidden password ("No miro, lo prometo."). He concentrates while signing in, looks sad and the card shakes on an error, and hops before going to Hoy.
-  - **Typing:** while you type, the hero shrinks to its compact height and the greeting steps aside.
-- **Onboarding:** four slides, each with Kairo in a different mood (calm, happy, looking aside, focused). Saltar sits on top and hides on the last slide; dots are pills; one `ink` button reads Siguiente, then Empezar.
+  - **Ways in:** on Niebla, Kairo sits above a greeting for the time of day and one line ("Entra para seguir donde lo dejaste."). At the bottom: Continuar con Apple (iOS only, black or white per Apple's guidelines), Continuar con Google (outline), Continuar con correo (plain), and the consent line that opens the privacy policy.
+  - **Email sheet:** a white sheet slides up with a segmented Iniciar sesión / Crear cuenta switch, filled fields with autofill, an `ink` primary button and the consent line. Kairo shrinks above it; a round back button (and the system back) returns to the ways in.
+  - **Kairo reacts:** he glances over when the form opens or you tap him and closes his eyes while you type a hidden password ("No miro, lo prometo." in `tint`). He concentrates while signing in, looks sad and the sheet shakes on an error, and hops before going to Hoy.
+- **Tour:** four steps (hola, un momento a la vez, foco, juntos). Story bars on top fill up to the current step; Omitir jumps to the last step and hides there. Each step is a live vignette that plays once as it comes into view (Kairo glances over; a task under "Ahora" gets checked and slides away; the lime ring draws itself; a shared task fills up and a friend's nudge pops in), with a large left-aligned title and one line below. A round back button joins the `ink` Continuar / Empezar button from the second step. Reduced motion shows each vignette's final frame.
+
+### App icon and launch screen
+- **Icon:** Kairo peeking up from the bottom edge on `ink`: ears with the orange and black patches, green eyes, pink nose, and a soft rim so the black ear reads on ink. Sources in `assets/icons/app_icon.svg` and `tool/brand/app_icon_foreground.svg` (Android's adaptive foreground on `#121417`); `flutter test tool/brand/render_icons_test.dart` renders the PNGs, then `dart run flutter_launcher_icons`.
+- **Launch screen:** the icon as a 96 pt rounded tile on Niebla (`#0E1012` in dark mode) on iOS; on Android the same background, with the adaptive icon from Android 12.
 
 ---
 

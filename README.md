@@ -207,6 +207,7 @@ See [docs/architecture.md](docs/architecture.md) for full details.
 | [docs/architecture.md](docs/architecture.md) | Technical architecture & data flow |
 | [docs/redesign-plan.md](docs/redesign-plan.md) | The Kairo 2.0 redesign: direction and phases |
 | [docs/supabase-setup.md](docs/supabase-setup.md) | Setting up a new Supabase project |
+| [docs/ios-release.md](docs/ios-release.md) | iOS release: TestFlight, push and Sign in with Apple |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
 
 ---

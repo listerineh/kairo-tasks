@@ -27,7 +27,7 @@ void main() {
         context,
         BlocProvider<AuthBloc>.value(
           value: auth,
-          child: LoginPage(now: DateTime(2026, 10, 21, 15), drift: 0.15),
+          child: LoginPage(now: DateTime(2026, 10, 21, 15)),
         ),
       );
     },

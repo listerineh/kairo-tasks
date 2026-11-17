@@ -462,7 +462,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       'Signing out',
       data: {'operation': 'auth.signOut'},
     );
-    await _client.auth.signOut();
+    try {
+      await _client.auth.signOut();
+    } on AuthException {
+      // A deleted account has no session left on the server; forgetting the
+      // local one is all that remains.
+      await _client.auth.signOut(scope: SignOutScope.local);
+    }
     emit(const AuthState(status: AuthStatus.unauthenticated));
     LoggerService.instance.info(
       'Sign out successful',

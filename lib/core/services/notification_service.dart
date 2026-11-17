@@ -169,7 +169,13 @@ class NotificationService {
       }
 
       const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-      const darwinInit = DarwinInitializationSettings();
+      // No prompt at launch: permission is asked once the user has signed
+      // in (registerFcmToken), when there is something to notify about.
+      const darwinInit = DarwinInitializationSettings(
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
+      );
       const initSettings = InitializationSettings(
         android: androidInit,
         iOS: darwinInit,
@@ -207,8 +213,14 @@ class NotificationService {
         FirebaseMessaging.onMessage.listen(_onForegroundMessage);
         FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpened);
         _messaging!.onTokenRefresh.listen(_onTokenRefresh);
-        final initial = await _messaging.getInitialMessage();
-        if (initial != null) _navigateFromMessage(initial);
+        // Not awaited: with the UIScene lifecycle on iOS it may resolve late
+        // or never, and startup must not wait on it. By the time it arrives
+        // the router exists, so a push that opened the app still navigates.
+        unawaited(
+          _messaging.getInitialMessage().then((initial) {
+            if (initial != null) _navigateFromMessage(initial);
+          }),
+        );
       } else {
         LoggerService.instance.info(
           'FCM is unavailable',
@@ -355,6 +367,8 @@ class NotificationService {
     );
 
     try {
+      // Asks only the first time; later calls return the saved answer.
+      if (!await requestPermission()) return;
       final token = await _messaging!.getToken();
       LoggerService.instance.info(
         'FCM token retrieved',

@@ -6,15 +6,19 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../../../core/session/current_user.dart';
+import '../../../tasks/data/datasources/task_local_store.dart';
 import '../../domain/entities/profile.dart';
 import '../../domain/repositories/profile_repository.dart';
 
 @LazySingleton(as: ProfileRepository)
 class ProfileRepositoryImpl implements ProfileRepository {
-  ProfileRepositoryImpl(this._client, this._user);
+  ProfileRepositoryImpl(this._client, this._user, this._tasksCache);
 
   final SupabaseClient _client;
   final CurrentUser _user;
+
+  /// The offline copy of the tasks, forgotten when the account is deleted.
+  final TaskLocalStore _tasksCache;
 
   @override
   Future<Either<Failure, Profile>> getProfile() => _run((me) async {
@@ -97,6 +101,15 @@ class ProfileRepositoryImpl implements ProfileRepository {
         return unit;
       });
 
+  @override
+  Future<Either<Failure, Unit>> deleteAccount() => _run((me) async {
+    // The function finds the user from the session's token, never from an id
+    // sent by the app, and removes avatars, rows and the auth user.
+    await _client.functions.invoke('delete-account', method: HttpMethod.post);
+    await _tasksCache.clear(me);
+    return unit;
+  });
+
   Future<String> _upload(String me, File file) async {
     final raw = file.path.split('.').last.toLowerCase();
     final ext = const ['jpg', 'jpeg', 'png', 'webp'].contains(raw)
@@ -144,6 +157,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
       return Left(ServerFailure(message: e.message));
     } on AuthException catch (e) {
       return Left(AuthFailure(message: e.message));
+    } on FunctionException catch (e) {
+      return Left(ServerFailure(message: '${e.status}: ${e.reasonPhrase}'));
     }
   }
 }

@@ -14,4 +14,8 @@ abstract class ProfileRepository {
   Future<Either<Failure, Unit>> setColor(String color);
 
   Future<Either<Failure, Unit>> setCalendarPublic({required bool value});
+
+  /// Deletes the account and everything it owns, on the server and on this
+  /// device. The session is no longer valid afterwards; sign out next.
+  Future<Either<Failure, Unit>> deleteAccount();
 }

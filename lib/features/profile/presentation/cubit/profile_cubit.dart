@@ -12,6 +12,10 @@ enum ProfileStatus { loading, ready, failure }
 /// Why a save did not go through; the sheet shows a message for each.
 enum ProfileSaveError { nameMissing, usernameInvalid, usernameTaken, failed }
 
+/// Where deleting the account stands. [deleted] means the server is done and
+/// the page should sign out.
+enum AccountDeletion { idle, deleting, failed, deleted }
+
 class ProfileState extends Equatable {
   const ProfileState({
     this.status = ProfileStatus.loading,
@@ -20,6 +24,7 @@ class ProfileState extends Equatable {
     this.saveError,
     this.saveCount = 0,
     this.updateFailed = 0,
+    this.deletion = AccountDeletion.idle,
   });
 
   final ProfileStatus status;
@@ -33,6 +38,8 @@ class ProfileState extends Equatable {
   /// Bumped when a quick setting (color, visibility) failed and rolled back.
   final int updateFailed;
 
+  final AccountDeletion deletion;
+
   ProfileState copyWith({
     ProfileStatus? status,
     Profile? profile,
@@ -41,6 +48,7 @@ class ProfileState extends Equatable {
     bool clearSaveError = false,
     int? saveCount,
     int? updateFailed,
+    AccountDeletion? deletion,
   }) => ProfileState(
     status: status ?? this.status,
     profile: profile ?? this.profile,
@@ -48,6 +56,7 @@ class ProfileState extends Equatable {
     saveError: clearSaveError ? null : saveError ?? this.saveError,
     saveCount: saveCount ?? this.saveCount,
     updateFailed: updateFailed ?? this.updateFailed,
+    deletion: deletion ?? this.deletion,
   );
 
   @override
@@ -58,6 +67,7 @@ class ProfileState extends Equatable {
     saveError,
     saveCount,
     updateFailed,
+    deletion,
   ];
 }
 
@@ -134,6 +144,23 @@ class ProfileCubit extends Cubit<ProfileState> {
     (p) => p.copyWith(calendarPublic: value),
     () => _repository.setCalendarPublic(value: value),
   );
+
+  /// Deletes the account for good. Only call it after the user confirmed.
+  Future<void> deleteAccount() async {
+    if (state.deletion == AccountDeletion.deleting ||
+        state.deletion == AccountDeletion.deleted) {
+      return;
+    }
+    emit(state.copyWith(deletion: AccountDeletion.deleting));
+    final result = await _repository.deleteAccount();
+    emit(
+      state.copyWith(
+        deletion: result.isRight()
+            ? AccountDeletion.deleted
+            : AccountDeletion.failed,
+      ),
+    );
+  }
 
   Future<void> _quick(
     Profile Function(Profile) change,
