@@ -193,9 +193,12 @@ New personal Play developer accounts must run a **closed test with at least 12 t
 
 | Field | Value |
 | --- | --- |
-| Email | `review@listerineh.dev` (or any inbox you control) |
-| Password | Set by you; never committed |
-| Content | A few tasks for today and this week, one done, one overdue, a friend and a shared task |
+| Email | `kairo.review@example.com` (Alex Rivera) |
+| Password | Set by you in the SQL editor; never committed |
+| Friend | `ana.demo@example.com` (Ana Morales, never signs in) |
+| Content | Tasks for today (one done, one shared run), one overdue, the next days, two without a date, and a shared move |
+
+`supabase/seed/demo_account.sql` creates both accounts if missing and rebuilds their tasks around today's date. Run it in the SQL editor right before each submission, so the reviewer sees a full "Hoy". It does not touch the password.
 
 ## Screenshots
 
