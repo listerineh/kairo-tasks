@@ -77,7 +77,7 @@ In **Authentication → Providers**:
 
 - **Email**: on (the default).
 - **Google**: on. The app signs in natively with an ID token, so add both OAuth client IDs (web and iOS, from Google Cloud Console) to **Authorized Client IDs**, and set the web client ID and secret.
-- **Apple**: on, with the Services ID, Team ID, Key ID and private key from the Apple Developer account.
+- **Apple**: on, with Client IDs `com.kairotasks.kairotasks` (the app signs in natively, so no secret key is needed on iOS). See [ios-release.md](ios-release.md).
 
 In **Authentication → URL Configuration**, add the app's redirect URL:
 

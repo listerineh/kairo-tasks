@@ -239,7 +239,7 @@ flutter build apk --release --dart-define-from-file=.env --split-per-abi
 Two workflows are provided in `.github/workflows/`:
 
 - `release.yml` — builds a signed Android APK and attaches it to a GitHub Release.
-- `release_ios.yml` — builds a signed iOS IPA and attaches it to a GitHub Release.
+- `release_ios.yml` — builds, signs and uploads the iOS app to TestFlight (see [docs/ios-release.md](docs/ios-release.md)).
 
 Both trigger automatically when you push a git tag matching `v*` (for example `git tag v1.17.8+94 && git push origin v1.17.8+94`).
 
@@ -254,15 +254,14 @@ Both trigger automatically when you push a git tag matching `v*` (for example `g
 | `KEYSTORE_PASSWORD` | Android | Keystore password. |
 | `KEY_ALIAS` | Android | Keystore alias. |
 | `KEY_PASSWORD` | Android | Alias key password. |
-| `IOS_P12_CERTIFICATE` | iOS | Base64-encoded `.p12` distribution/development certificate. |
-| `IOS_P12_PASSWORD` | iOS | Password for the `.p12` file. |
-| `IOS_PROVISIONING_PROFILE_BASE64` | iOS | Base64-encoded `.mobileprovision` profile. |
-| `IOS_TEAM_ID` | iOS | Apple Team ID (example: `V9G9CUPUMF`). |
-| `IOS_PROVISIONING_NAME` | iOS | Exact name of the provisioning profile. |
+| `ASC_KEY_P8_BASE64` | iOS | Base64-encoded App Store Connect API key (`AuthKey_XXXX.p8`, role Admin). |
+| `ASC_KEY_ID` | iOS | The API key's ID. |
+| `ASC_ISSUER_ID` | iOS | The issuer ID shown above the API keys list. |
+| `IOS_TEAM_ID` | iOS | Apple Team ID of the paid program (not the personal team). |
 
 ### iOS distribution note
 
-GitHub Releases is convenient for Android APKs. iOS `.ipa` files attached to a release can only be installed on devices registered in the provisioning profile (ad-hoc) or through an Enterprise/Mobile Device Management flow. For public iOS distribution, use TestFlight or the App Store.
+Android APKs go to GitHub Releases. iOS builds go to TestFlight; signing uses Xcode's cloud-managed certificates through the API key, so no certificate or profile is stored in the secrets. One-time setup (App ID capabilities, App Store Connect record, API key, APNs key for Firebase, Apple provider in Supabase) is in [docs/ios-release.md](docs/ios-release.md).
 
 ## Notifications Strategy
 
